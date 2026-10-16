@@ -85,7 +85,9 @@ try {
 
     foreach ($case in $cases) {
         Remove-Item $log -ErrorAction SilentlyContinue
-        $p = Start-App @('--hotkey', $case.arg, '--config', $cfg, '--debug', '--no-tray')
+        $p = Start-App @(
+            '--hotkey', $case.arg, '--config', $cfg, '--debug', '--no-tray', '--lang', 'en'
+        )
 
         # wait for the config to load: the startup lines are "WindowMinimize started..." and
         # "hotkey X parsed as Y"

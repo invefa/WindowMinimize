@@ -14,20 +14,23 @@ internal static class Program {
         AppConfig overrides = new();
         AppConfig.CliResult cli = AppConfig.ApplyCommandLine(overrides, args);
 
+        // before anything can be shown, the interface language has to be known
+        Strings.Init(cli.Language);
+
         AppConfig config = ConfigStore.Load(cli.ExplicitConfigPath);
 
         // even with broken arguments the log has to be set up, so startup problems stay traceable
         if (cli.Error is not null) {
             Log.Init(ConfigStore.LogPath, true);
             Log.Error("bad arguments: " + cli.Error);
-            string text = "bad arguments: " + cli.Error + Environment.NewLine + Environment.NewLine
-                + AppConfig.Usage();
+            string text = Strings.MsgBadArguments(cli.Error) + Environment.NewLine
+                + Environment.NewLine + Strings.Usage;
             WriteError(text);
             return 2;
         }
 
         if (cli.ShowHelp) {
-            WriteUsage(AppConfig.Usage());
+            WriteUsage(Strings.Usage);
             return 0;
         }
 
@@ -41,8 +44,8 @@ internal static class Program {
         if (!isFirstInstance) {
             Log.Info("another WindowMinimize is already running, exiting");
             if (!cli.NoTray) {
-                MessageBox.Show("WindowMinimize is already running, check the notification area.",
-                    "WindowMinimize", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(Strings.MsgAlreadyRunning, Strings.AppName,
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
             return 1;
@@ -61,22 +64,18 @@ internal static class Program {
         if (app.Apply(config, initial: true)) {
             string message;
             if (app.IsUsingHookForWindowsCombo) {
-                message = $"started, hotkey {app.ActiveSpecText} (Windows owns that combination, "
-                    + "this program took it over and the system feature no longer works)";
+                message = Strings.BalloonStartedWindowsOwned(app.ActiveSpecText);
             } else if (app.IsUsingKeyboardHook) {
-                message = $"started, hotkey {app.ActiveSpecText} (another program owns it, "
-                    + "taken over with the key hook)";
+                message = Strings.BalloonStartedHook(app.ActiveSpecText);
             } else {
-                message = $"started, hotkey {app.ActiveSpecText}, "
-                    + "press it once to minimize the current window";
+                message = Strings.BalloonStarted(app.ActiveSpecText);
             }
 
-            app.Notify("WindowMinimize", message);
+            app.Notify(message);
         } else {
-            Log.Error($"hotkey is not active: {app.LastError}");
-            app.Notify(
-                "WindowMinimize", $"hotkey is not active: {app.LastError}", ToolTipIcon.Warning
-            );
+            string message = Strings.BalloonHotkeyNotActive(app.LastError);
+            Log.Error(message);
+            app.Notify(message, ToolTipIcon.Warning);
 
             // only bother the user when even the fallback to the default hotkey failed, so a broken
             // config does not pop a window at every boot; --no-tray is the headless mode used by
@@ -95,9 +94,8 @@ internal static class Program {
     /// </summary>
     private static void WriteUsage(string text) {
         if (!Console.IsOutputRedirected && !HasConsole()) {
-            MessageBox.Show(
-                text, "WindowMinimize", MessageBoxButtons.OK, MessageBoxIcon.Information
-            );
+            MessageBox.Show(text, Strings.AppName, MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
             return;
         }
 
@@ -106,7 +104,7 @@ internal static class Program {
 
     private static void WriteError(string text) {
         if (!Console.IsOutputRedirected && !HasConsole()) {
-            MessageBox.Show(text, "WindowMinimize", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(text, Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 

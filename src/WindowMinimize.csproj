@@ -7,9 +7,10 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
-        <!-- The app does not use ICU data; disabling it avoids pulling in the native ICU library
-             and keeps the self-contained single file runnable as-is -->
-        <InvariantGlobalization>true</InvariantGlobalization>
+        <!-- The interface follows the system language, and that needs the culture aware .NET
+             globalization (the ICU library, part of Windows 10 1903 and later). It does not add
+             anything to the publish output, the single file stays a single file. -->
+        <InvariantGlobalization>false</InvariantGlobalization>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <ApplicationIcon>app.ico</ApplicationIcon>
         <RootNamespace>WindowMinimize</RootNamespace>
@@ -21,7 +22,7 @@
         <FileVersion>1.0.0.0</FileVersion>
         <AssemblyVersion>1.0.0.0</AssemblyVersion>
         <NeutralLanguage>en</NeutralLanguage>
-        <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+        <SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
         <DebugType>none</DebugType>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
         <!-- Publish settings: win-x64 + self-contained + single file; the output does not depend
@@ -41,6 +42,13 @@
     <ItemGroup>
         <!-- The unit tests cover internal types such as HotkeySpec directly -->
         <InternalsVisibleTo Include="WindowMinimize.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The default embedded resource items are off, so the string table is listed by hand.
+             The zh-Hans file becomes the satellite assembly that carries the Chinese text. -->
+        <EmbeddedResource Include="Resources\Strings.resx" />
+        <EmbeddedResource Include="Resources\Strings.zh-Hans.resx" />
     </ItemGroup>
 
 </Project>

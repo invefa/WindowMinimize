@@ -21,7 +21,7 @@ internal sealed class HotkeyDialog : Form {
     internal bool AutoStart => _autoStartBox.Checked;
 
     internal HotkeyDialog(AppConfig config) {
-        Text = "WindowMinimize settings";
+        Text = Strings.DialogTitle;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -32,7 +32,7 @@ internal sealed class HotkeyDialog : Form {
         AutoScaleMode = AutoScaleMode.Font;
 
         var hotkeyLabel = new Label {
-            Text = "Hotkey",
+            Text = Strings.DialogHotkey,
             Location = new Point(16, 20),
             AutoSize = true,
         };
@@ -44,8 +44,7 @@ internal sealed class HotkeyDialog : Form {
         };
 
         var syntaxHint = new Label {
-            Text = "Ctrl, Alt, Shift and Win plus one main key, joined with +, for example "
-                + "Win+Alt+M",
+            Text = Strings.DialogSyntaxHint,
             Location = new Point(84, 45),
             AutoSize = false,
             Size = new Size(288, 34),
@@ -53,27 +52,27 @@ internal sealed class HotkeyDialog : Form {
         };
 
         var modeLabel = new Label {
-            Text = "Mode",
+            Text = Strings.DialogMode,
             Location = new Point(16, 92),
             AutoSize = true,
         };
 
         _minimizeRadio = new RadioButton {
-            Text = "Minimize to taskbar",
+            Text = Strings.DialogMinimize,
             Location = new Point(84, 89),
             AutoSize = true,
             Checked = !config.Mode.Equals("hide", StringComparison.OrdinalIgnoreCase),
         };
 
         _hideRadio = new RadioButton {
-            Text = "Hide window",
+            Text = Strings.DialogHide,
             Location = new Point(232, 89),
             AutoSize = true,
             Checked = config.Mode.Equals("hide", StringComparison.OrdinalIgnoreCase),
         };
 
         _autoStartBox = new CheckBox {
-            Text = "Start with Windows",
+            Text = Strings.MenuAutoStart,
             Location = new Point(84, 122),
             AutoSize = true,
             Checked = ConfigStore.IsAutoStartEnabled(),
@@ -88,13 +87,13 @@ internal sealed class HotkeyDialog : Form {
         };
 
         var save = new Button {
-            Text = "Save",
+            Text = Strings.DialogSave,
             Location = new Point(208, 194),
             Size = new Size(80, 28),
         };
 
         var cancel = new Button {
-            Text = "Cancel",
+            Text = Strings.DialogCancel,
             DialogResult = DialogResult.Cancel,
             Location = new Point(296, 194),
             Size = new Size(76, 28),

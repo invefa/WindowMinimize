@@ -83,15 +83,32 @@ Double-clicking the tray icon also minimizes the current window.
 ```
 WindowMinimize.exe [options]
 
---hotkey <combo>   Set a hotkey for this run, overriding the config file
---mode <mode>      minimize or hide
---config <path>    Use the given config file
---debug            Write the debug log
---no-tray          Do not show the tray icon (also --quiet)
---help             Help
+--hotkey <combo>     Set a hotkey for this run, overriding the config file
+--mode <mode>        minimize or hide
+--config <path>      Use the given config file
+--lang <language>    Interface language, en or zh, defaults to the system language
+--debug              Write the debug log
+--no-tray            Do not show the tray icon (also --quiet)
+--help               Help
 ```
 
-## 6. Implementation Notes
+## 6. Language
+
+The interface follows the system language: a Chinese Windows shows the Chinese text, everything
+else shows English. `--lang en` or `--lang zh` overrides that for one run, to get a Chinese
+interface on an English system for example.
+
+Only what the user sees is translated: the tray menu, the balloons, the settings dialog, the usage
+text and the messages about a hotkey that did not work. The source code and `hotkey.ini` stay
+English.
+
+Both languages live in `src\Resources`, `Strings.resx` for English and `Strings.zh-Hans.resx` for
+Chinese. The Chinese one is published as a `zh-Hans` satellite assembly that is carried inside the
+same single file, so the interface still follows the system language when the exe is copied to
+another machine. The system language is read from the .NET globalization data, which Windows 10
+1903 and later provide.
+
+## 7. Implementation Notes
 
 Hotkey registration prefers the system `RegisterHotKey`. If another program already occupies the
 combination (Win32 error 1409), it automatically falls back to the low level keyboard hook
@@ -123,7 +140,7 @@ search, and the program's own windows (when the tray menu is clicked, the foregr
 taskbar or the menu itself). These windows are never treated as minimize targets, so system UI is
 not tucked away.
 
-## 7. Build
+## 8. Build
 
 Requires .NET SDK 8. Run:
 
@@ -145,14 +162,14 @@ Directory layout:
 ```
 WindowMinimize
   build        Build scripts and icon generation scripts
-  src          Source code and app.ico
+  src          Source code, app.ico and the string table under Resources
   test/e2e     End-to-end verification scripts; need real windows and a global hotkey
-  test/unit    Unit tests for HotkeySpec parsing
+  test/unit    Unit tests for HotkeySpec parsing and for the string table
   dist         Build output (not committed)
   start.bat    Launch entry point
 ```
 
-## 8. Known Limitations
+## 9. Known Limitations
 
 1. When the target window runs with administrator privileges, a normal-privilege process cannot send
    it messages and the minimize fails. Run this program as administrator to handle such windows.

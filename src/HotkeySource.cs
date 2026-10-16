@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -100,9 +101,9 @@ internal sealed class HotkeySource : IDisposable {
                 + "no hotkey is active now");
 
         error = err == 1409
-            ? $"combination {spec.Text} is already registered by another program (Win32 1409)"
-            : $"registering {spec.Text} failed with Win32 error {err}";
-        if (hookError.Length > 0) error += $"; the fallback key hook failed too: {hookError}";
+            ? Strings.ErrorComboTaken(spec.Text)
+            : Strings.ErrorRegisterFailed(spec.Text, err.ToString(CultureInfo.InvariantCulture));
+        if (hookError.Length > 0) error = Strings.ErrorHookFailed(error, hookError);
 
         return false;
     }
@@ -171,7 +172,7 @@ internal sealed class HotkeySource : IDisposable {
             int err = Marshal.GetLastWin32Error();
             _proc     = null;
             _hookSpec = null;
-            error     = $"SetWindowsHookEx failed with Win32 error {err}";
+            error     = Strings.ErrorHookInstallFailed(err.ToString(CultureInfo.InvariantCulture));
             return false;
         }
 

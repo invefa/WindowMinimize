@@ -38,7 +38,8 @@ try {
     ) -Encoding UTF8
     Remove-Item $log -ErrorAction SilentlyContinue
 
-    $app = Start-Process -FilePath $exe -PassThru -ArgumentList @('--config', $cfg)
+    $app = Start-Process -FilePath $exe -PassThru -ArgumentList @(
+        '--config', $cfg, '--lang', 'en')
     Start-Sleep -Milliseconds 1500
     if ($app.HasExited) { throw "the app exited right after start, exit code $($app.ExitCode)" }
 

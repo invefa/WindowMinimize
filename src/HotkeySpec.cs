@@ -123,7 +123,7 @@ internal sealed class HotkeySpec : IEquatable<HotkeySpec> {
         error = string.Empty;
 
         if (string.IsNullOrWhiteSpace(text)) {
-            error = "hotkey is empty";
+            error = Strings.ErrorHotkeyEmpty;
             return false;
         }
 
@@ -147,7 +147,7 @@ internal sealed class HotkeySpec : IEquatable<HotkeySpec> {
         }
 
         if (tokens.Count == 0) {
-            error = "hotkey is empty";
+            error = Strings.ErrorHotkeyEmpty;
             return false;
         }
 
@@ -163,12 +163,12 @@ internal sealed class HotkeySpec : IEquatable<HotkeySpec> {
             }
 
             if (keyName is not null) {
-                error = $"only one main key is allowed, {keyName} and {token} cannot both appear";
+                error = Strings.ErrorOnlyOneMainKey(keyName, token);
                 return false;
             }
 
             if (!TryParseKey(token, out keyCode)) {
-                error = $"unknown key name: {token}";
+                error = Strings.ErrorUnknownKeyName(token);
                 return false;
             }
 
@@ -176,7 +176,7 @@ internal sealed class HotkeySpec : IEquatable<HotkeySpec> {
         }
 
         if (keyName is null) {
-            error = "the main key is missing, for example the S in Win+S";
+            error = Strings.ErrorMainKeyMissing;
             return false;
         }
 
@@ -184,18 +184,17 @@ internal sealed class HotkeySpec : IEquatable<HotkeySpec> {
 
         // F12 is reserved by Windows, and a bare key of any kind would steal normal typing
         if (vk == 0x7B) {
-            error = "F12 is reserved by Windows and cannot be registered, pick another one";
+            error = Strings.ErrorF12Reserved;
             return false;
         }
 
         if (modifiers == 0) {
             if (!IsSafeBareKey(vk)) {
-                error = "a bare key only works for F1 to F24, others steal normal typing";
+                error = Strings.ErrorBareKeyOnlyFunction;
                 return false;
             }
         } else if (IsReservedCombo(modifiers, vk)) {
-            error = "that combination is taken by Windows (like Alt+Tab or Win+L), "
-                + "pick another one";
+            error = Strings.ErrorReservedCombo;
             return false;
         }
 

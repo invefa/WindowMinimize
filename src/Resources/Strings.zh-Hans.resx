@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  中文文案，跟随 zh-Hans 附属程序集一起打包，键必须与 Strings.resx 一一对应。
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppName" xml:space="preserve">
+    <value>WindowMinimize</value>
+  </data>
+  <data name="MenuMinimize" xml:space="preserve">
+    <value>最小化当前窗口</value>
+  </data>
+  <data name="MenuRestore" xml:space="preserve">
+    <value>还原上次隐藏的窗口</value>
+  </data>
+  <data name="MenuSuspend" xml:space="preserve">
+    <value>暂停热键</value>
+  </data>
+  <data name="MenuResume" xml:space="preserve">
+    <value>恢复热键</value>
+  </data>
+  <data name="MenuOpenConfig" xml:space="preserve">
+    <value>打开配置文件…</value>
+  </data>
+  <data name="MenuReload" xml:space="preserve">
+    <value>重新载入配置</value>
+  </data>
+  <data name="MenuAutoStart" xml:space="preserve">
+    <value>开机自动启动</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="HotkeyNone" xml:space="preserve">
+    <value>无</value>
+  </data>
+  <data name="HotkeyNotSet" xml:space="preserve">
+    <value>未设置</value>
+  </data>
+  <data name="HotkeyMenuItem" xml:space="preserve">
+    <value>热键：{0}</value>
+  </data>
+  <data name="HotkeyMenuItemSuspended" xml:space="preserve">
+    <value>热键：{0}（已暂停）</value>
+  </data>
+  <data name="TrayTooltip" xml:space="preserve">
+    <value>WindowMinimize | {0} | 最小化当前窗口</value>
+  </data>
+  <data name="DialogTitle" xml:space="preserve">
+    <value>WindowMinimize 设置</value>
+  </data>
+  <data name="DialogHotkey" xml:space="preserve">
+    <value>热键</value>
+  </data>
+  <data name="DialogSyntaxHint" xml:space="preserve">
+    <value>修饰键 Ctrl、Alt、Shift、Win 加一个主键，用 + 连接，例如 Win+Alt+M</value>
+  </data>
+  <data name="DialogMode" xml:space="preserve">
+    <value>方式</value>
+  </data>
+  <data name="DialogMinimize" xml:space="preserve">
+    <value>最小化到任务栏</value>
+  </data>
+  <data name="DialogHide" xml:space="preserve">
+    <value>直接隐藏窗口</value>
+  </data>
+  <data name="DialogSave" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="DialogCancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="BalloonStarted" xml:space="preserve">
+    <value>已启动，热键 {0}，按一次即可最小化当前窗口</value>
+  </data>
+  <data name="BalloonStartedWindowsOwned" xml:space="preserve">
+    <value>已启动，热键 {0}（该组合由系统占用，已被本程序接管，系统原有功能不再可用）</value>
+  </data>
+  <data name="BalloonStartedHook" xml:space="preserve">
+    <value>已启动，热键 {0}（该组合被其他程序占用，已用键盘钩子接管）</value>
+  </data>
+  <data name="BalloonHotkeyNotActive" xml:space="preserve">
+    <value>热键未生效：{0}</value>
+  </data>
+  <data name="BalloonAutoStartFailed" xml:space="preserve">
+    <value>设置开机自启失败：{0}</value>
+  </data>
+  <data name="MsgAlreadyRunning" xml:space="preserve">
+    <value>WindowMinimize 已经在运行，请查看任务栏的通知区域。</value>
+  </data>
+  <data name="MsgBadArguments" xml:space="preserve">
+    <value>参数错误：{0}</value>
+  </data>
+  <data name="MsgUnknownArgument" xml:space="preserve">
+    <value>无法识别的参数 {0}</value>
+  </data>
+  <data name="MsgArgumentNeedsValue" xml:space="preserve">
+    <value>参数 {0} 后面缺少取值</value>
+  </data>
+  <data name="ErrorHotkeyEmpty" xml:space="preserve">
+    <value>热键不能为空</value>
+  </data>
+  <data name="ErrorOnlyOneMainKey" xml:space="preserve">
+    <value>只允许一个主键，{0} 和 {1} 不能同时出现</value>
+  </data>
+  <data name="ErrorUnknownKeyName" xml:space="preserve">
+    <value>无法识别的键名：{0}</value>
+  </data>
+  <data name="ErrorMainKeyMissing" xml:space="preserve">
+    <value>缺少主键，例如 Win+S 中的 S</value>
+  </data>
+  <data name="ErrorF12Reserved" xml:space="preserve">
+    <value>F12 是系统保留按键，无法注册，请换一个</value>
+  </data>
+  <data name="ErrorBareKeyOnlyFunction" xml:space="preserve">
+    <value>不带修饰键时只能用 F1 到 F24，其他按键会抢走正常输入</value>
+  </data>
+  <data name="ErrorReservedCombo" xml:space="preserve">
+    <value>该组合被系统占用（例如 Alt+Tab、Win+L），请换一个</value>
+  </data>
+  <data name="ErrorComboTaken" xml:space="preserve">
+    <value>组合 {0} 已被其他程序注册（Win32 1409）</value>
+  </data>
+  <data name="ErrorRegisterFailed" xml:space="preserve">
+    <value>注册 {0} 失败，Win32 错误码 {1}</value>
+  </data>
+  <data name="ErrorFallbackUsed" xml:space="preserve">
+    <value>{0}；已回退到默认热键 {1}</value>
+  </data>
+  <data name="ErrorHookInstallFailed" xml:space="preserve">
+    <value>SetWindowsHookEx 失败，Win32 错误码 {0}</value>
+  </data>
+  <data name="ErrorHookFailed" xml:space="preserve">
+    <value>{0}；备用键盘钩子也失败：{1}</value>
+  </data>
+  <data name="Usage" xml:space="preserve">
+    <value>WindowMinimize - 用热键最小化当前窗口
+
+用法:
+  WindowMinimize.exe [选项]
+
+选项:
+  --hotkey &lt;组合&gt;    本次使用的热键，例如 --hotkey Ctrl+Alt+M
+                       写法: 修饰键 Ctrl/Alt/Shift/Win 加一个主键
+                       (A-Z、0-9、F1-F24、Space、Esc、Enter 等)，用 + 连接；
+                       不带修饰键时只能用功能键
+  --mode &lt;方式&gt;      minimize（默认，最小化到任务栏）或 hide（直接隐藏窗口）
+  --config &lt;路径&gt;     使用指定的配置文件，默认是 exe 同目录下的 hotkey.ini
+  --lang &lt;语言&gt;       界面语言，en 或 zh，默认跟随系统
+  --debug             把调试日志写到 exe 同目录的 hotkey.log
+  --no-tray           不显示托盘图标
+  --help              显示本帮助
+
+hotkey.ini 示例:
+  [general]
+  Hotkey=Win+S
+  Mode=minimize
+  AutoStart=true
+  Debug=false
+
+说明:
+  双击启动后程序驻留托盘，按一次热键即可最小化最前面的窗口。托盘菜单可以最小化一次、
+  暂停热键、打开配置文件、切换开机自启或退出。保存 hotkey.ini 立即生效。</value>
+  </data>
+</root>

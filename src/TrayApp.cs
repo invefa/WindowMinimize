@@ -35,15 +35,15 @@ internal sealed class TrayApp : ApplicationContext {
 
         var menu = new ContextMenuStrip();
 
-        var minimizeItem = new ToolStripMenuItem("Minimize current window");
+        var minimizeItem = new ToolStripMenuItem(Strings.MenuMinimize);
         minimizeItem.Click += (_, _) => MinimizeForeground();
 
         // a window hidden with the hide mode leaves no taskbar button, this is the way back
-        _restoreItem = new ToolStripMenuItem("Restore last hidden window") { Enabled = false };
+        _restoreItem = new ToolStripMenuItem(Strings.MenuRestore) { Enabled = false };
         _restoreItem.Click += (_, _) => RestoreLastHidden();
 
         _hotkeyItem = new ToolStripMenuItem { Enabled = false };
-        _suspendItem = new ToolStripMenuItem("Suspend hotkey", null, (_, _) => {
+        _suspendItem = new ToolStripMenuItem(Strings.MenuSuspend, null, (_, _) => {
             // holding Shift while clicking suspends for 5 minutes, it resumes by itself
             if ((Control.ModifierKeys & Keys.Shift) != 0) {
                 SuspendFor(300);
@@ -54,17 +54,17 @@ internal sealed class TrayApp : ApplicationContext {
         });
 
         var openItem = new ToolStripMenuItem(
-            "Open config file...", null, (_, _) => ConfigStore.OpenInNotepad(Config.ConfigPath)
+            Strings.MenuOpenConfig, null, (_, _) => ConfigStore.OpenInNotepad(Config.ConfigPath)
         );
         var reloadItem = new ToolStripMenuItem(
-            "Reload config", null, (_, _) => Reload(interactive: true)
+            Strings.MenuReload, null, (_, _) => Reload(interactive: true)
         );
 
         var autoStartClick = new EventHandler((_, _) =>
             SetAutoStart(!ConfigStore.IsAutoStartEnabled()));
-        _autoStartItem = new ToolStripMenuItem("Start with Windows", null, autoStartClick);
+        _autoStartItem = new ToolStripMenuItem(Strings.MenuAutoStart, null, autoStartClick);
 
-        var exitItem = new ToolStripMenuItem("Exit", null, (_, _) => {
+        var exitItem = new ToolStripMenuItem(Strings.MenuExit, null, (_, _) => {
             Log.Info("exit requested");
             ExitThread();
         });
@@ -83,7 +83,7 @@ internal sealed class TrayApp : ApplicationContext {
 
         _icon = new NotifyIcon {
             Icon = IconFactory.Create(),
-            Text = "WindowMinimize",
+            Text = Strings.AppName,
             ContextMenuStrip = menu,
             Visible = !headless,
         };
@@ -120,7 +120,7 @@ internal sealed class TrayApp : ApplicationContext {
     /// <summary>The hotkey that is in effect, null when nothing could be registered.</summary>
     internal HotkeySpec? ActiveSpec => _spec;
 
-    internal string ActiveSpecText => _spec?.Text ?? "none";
+    internal string ActiveSpecText => _spec?.Text ?? Strings.HotkeyNone;
 
     /// <summary>
     /// Whether the low level keyboard hook is in use because the combination is taken.
@@ -187,7 +187,7 @@ internal sealed class TrayApp : ApplicationContext {
         if (!_source.TryRegister(fallback!, out _)) return false;
 
         _spec = fallback;
-        _lastError += $"; fell back to the default hotkey {fallback!.Text}";
+        _lastError = Strings.ErrorFallbackUsed(_lastError, fallback!.Text);
         Log.Info($"fell back to the default hotkey {fallback.Text}");
         return true;
     }
@@ -199,8 +199,8 @@ internal sealed class TrayApp : ApplicationContext {
         bool ok = Apply(fresh);
 
         if (!ok && interactive) {
-            string message = $"hotkey is not active: {_lastError}";
-            _icon.ShowBalloonTip(4000, "WindowMinimize", message, ToolTipIcon.Warning);
+            string message = Strings.BalloonHotkeyNotActive(_lastError);
+            _icon.ShowBalloonTip(4000, Strings.AppName, message, ToolTipIcon.Warning);
         }
     }
 
@@ -246,9 +246,9 @@ internal sealed class TrayApp : ApplicationContext {
         try {
             ConfigStore.SetAutoStart(enabled);
         } catch (Exception ex) {
-            string message = $"could not set auto start: {ex.Message}";
+            string message = Strings.BalloonAutoStartFailed(ex.Message);
             Log.Error(message);
-            _icon.ShowBalloonTip(4000, "WindowMinimize", message, ToolTipIcon.Error);
+            _icon.ShowBalloonTip(4000, Strings.AppName, message, ToolTipIcon.Error);
         }
 
         RefreshMenu();
@@ -256,17 +256,17 @@ internal sealed class TrayApp : ApplicationContext {
 
     private void RefreshMenu() {
         if (_suspended) {
-            _hotkeyItem.Text  = $"hotkey: {_spec?.Text ?? "none"} (suspended)";
-            _suspendItem.Text = "Resume hotkey";
+            _hotkeyItem.Text  = Strings.HotkeyMenuItemSuspended(_spec?.Text ?? Strings.HotkeyNone);
+            _suspendItem.Text = Strings.MenuResume;
         } else {
-            _hotkeyItem.Text  = $"hotkey: {_spec?.Text ?? "none"}";
-            _suspendItem.Text = "Suspend hotkey";
+            _hotkeyItem.Text  = Strings.HotkeyMenuItem(_spec?.Text ?? Strings.HotkeyNone);
+            _suspendItem.Text = Strings.MenuSuspend;
         }
 
         _autoStartItem.Checked = ConfigStore.IsAutoStartEnabled();
         _restoreItem.Enabled   = _lastHidden != IntPtr.Zero && Native.IsWindow(_lastHidden);
 
-        string tip = $"WindowMinimize | {_spec?.Text ?? "not set"} | minimize current window";
+        string tip = Strings.TrayTooltip(_spec?.Text ?? Strings.HotkeyNotSet);
         _icon.Text = Truncate(tip, 62);
     }
 
@@ -366,13 +366,13 @@ internal sealed class TrayApp : ApplicationContext {
     }
 
     /// <summary>Show one tray balloon.</summary>
-    internal void Notify(string title, string message, ToolTipIcon icon = ToolTipIcon.Info) {
+    internal void Notify(string message, ToolTipIcon icon = ToolTipIcon.Info) {
         if (Headless) {
-            Log.Info($"{title}: {message}");
+            Log.Info($"{Strings.AppName}: {message}");
             return;
         }
 
-        _icon.ShowBalloonTip(5000, title, message, icon);
+        _icon.ShowBalloonTip(5000, Strings.AppName, message, icon);
     }
 
     protected override void Dispose(bool disposing) {

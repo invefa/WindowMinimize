@@ -1,6 +1,3 @@
-using System.Diagnostics;
-using System.Text;
-
 namespace WindowMinimize;
 
 /// <summary>
@@ -45,6 +42,9 @@ internal sealed class AppConfig {
         internal string? Error { get; set; }
 
         internal string? ExplicitConfigPath { get; set; }
+
+        /// <summary>Language of the interface, from --lang.</summary>
+        internal string? Language { get; set; }
 
         /// <summary>--hotkey was given on the command line.</summary>
         internal bool HasHotkey { get; set; }
@@ -102,6 +102,16 @@ internal sealed class AppConfig {
                     result.ExplicitConfigPath = path;
                     break;
 
+                case "--lang":
+                case "-lang":
+                    if (!TryTakeValue(args, ref i, arg, out string lang, out string langError)) {
+                        result.Error = langError;
+                        return result;
+                    }
+
+                    result.Language = lang;
+                    break;
+
                 case "--debug":
                 case "-debug":
                     config.Debug = true;
@@ -122,8 +132,10 @@ internal sealed class AppConfig {
                         result.HasMode = true;
                     } else if (arg.StartsWith("--config=", StringComparison.OrdinalIgnoreCase)) {
                         result.ExplicitConfigPath = arg["--config=".Length..];
+                    } else if (arg.StartsWith("--lang=", StringComparison.OrdinalIgnoreCase)) {
+                        result.Language = arg["--lang=".Length..];
                     } else {
-                        result.Error = $"unknown argument {arg}";
+                        result.Error = Strings.MsgUnknownArgument(arg);
                         return result;
                     }
 
@@ -141,7 +153,7 @@ internal sealed class AppConfig {
         error = string.Empty;
 
         if (index + 1 >= args.Length) {
-            error = $"argument {name} needs a value";
+            error = Strings.MsgArgumentNeedsValue(name);
             return false;
         }
 
@@ -149,35 +161,4 @@ internal sealed class AppConfig {
         value = args[index];
         return true;
     }
-
-    internal static string Usage() =>
-        """
-        WindowMinimize - minimize the current window with a hotkey
-
-        usage:
-          WindowMinimize.exe [options]
-
-        options:
-          --hotkey <combination>  the hotkey to use, for example --hotkey Ctrl+Alt+M
-                                  syntax: a modifier (Ctrl/Alt/Shift/Win) plus one main key
-                                  (A-Z, 0-9, F1-F24, Space, Esc, Enter and so on) joined with +;
-                                  without a modifier only function keys are allowed
-          --mode <mode>           minimize (default, to the taskbar) or hide (hide the window)
-          --config <path>         use this config file, defaults to hotkey.ini next to the exe
-          --debug                 write a debug log to hotkey.log next to the exe
-          --no-tray               do not show the tray icon
-          --help                  show this help
-
-        hotkey.ini example:
-          [general]
-          Hotkey=Win+S
-          Mode=minimize
-          AutoStart=true
-          Debug=false
-
-        notes:
-          Started by double click the tool stays in the tray and the hotkey minimizes whatever
-          window is in front. The tray menu minimizes once, suspends the hotkey, opens the config,
-          toggles the auto start and exits. Saving hotkey.ini takes effect right away.
-        """;
 }

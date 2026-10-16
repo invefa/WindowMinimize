@@ -261,7 +261,7 @@ $form.StartPosition = 'CenterScreen'
     Say "target window 0x$($hwnd.ToInt64().ToString('X')) title=$windowTitle, pid $($target.Id)"
 
     $app = Start-Process -FilePath $exe -PassThru -ArgumentList @(
-        '--config', (Join-Path $PSScriptRoot $iniName))
+        '--config', (Join-Path $PSScriptRoot $iniName), '--lang', 'en')
     Start-Sleep -Milliseconds 1500
     if ($app.HasExited) { throw "the app exited right after start, exit code $($app.ExitCode)" }
     Say "started WindowMinimize (pid $($app.Id)) with hotkey $hotkeyName"

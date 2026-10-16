@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  English strings, the neutral language. Strings.zh-Hans.resx holds the Chinese translation and
+  every key has to exist in both files (a unit test checks that).
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppName" xml:space="preserve">
+    <value>WindowMinimize</value>
+  </data>
+  <data name="MenuMinimize" xml:space="preserve">
+    <value>Minimize current window</value>
+  </data>
+  <data name="MenuRestore" xml:space="preserve">
+    <value>Restore last hidden window</value>
+  </data>
+  <data name="MenuSuspend" xml:space="preserve">
+    <value>Suspend hotkey</value>
+  </data>
+  <data name="MenuResume" xml:space="preserve">
+    <value>Resume hotkey</value>
+  </data>
+  <data name="MenuOpenConfig" xml:space="preserve">
+    <value>Open config file...</value>
+  </data>
+  <data name="MenuReload" xml:space="preserve">
+    <value>Reload config</value>
+  </data>
+  <data name="MenuAutoStart" xml:space="preserve">
+    <value>Start with Windows</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="HotkeyNone" xml:space="preserve">
+    <value>none</value>
+  </data>
+  <data name="HotkeyNotSet" xml:space="preserve">
+    <value>not set</value>
+  </data>
+  <data name="HotkeyMenuItem" xml:space="preserve">
+    <value>hotkey: {0}</value>
+  </data>
+  <data name="HotkeyMenuItemSuspended" xml:space="preserve">
+    <value>hotkey: {0} (suspended)</value>
+  </data>
+  <data name="TrayTooltip" xml:space="preserve">
+    <value>WindowMinimize | {0} | minimize current window</value>
+  </data>
+  <data name="DialogTitle" xml:space="preserve">
+    <value>WindowMinimize settings</value>
+  </data>
+  <data name="DialogHotkey" xml:space="preserve">
+    <value>Hotkey</value>
+  </data>
+  <data name="DialogSyntaxHint" xml:space="preserve">
+    <value>Ctrl, Alt, Shift and Win plus one main key, joined with +, for example Win+Alt+M</value>
+  </data>
+  <data name="DialogMode" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="DialogMinimize" xml:space="preserve">
+    <value>Minimize to taskbar</value>
+  </data>
+  <data name="DialogHide" xml:space="preserve">
+    <value>Hide window</value>
+  </data>
+  <data name="DialogSave" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="DialogCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="BalloonStarted" xml:space="preserve">
+    <value>started, hotkey {0}, press it once to minimize the current window</value>
+  </data>
+  <data name="BalloonStartedWindowsOwned" xml:space="preserve">
+    <value>started, hotkey {0} (Windows owns that combination, this program took it over and the system feature no longer works)</value>
+  </data>
+  <data name="BalloonStartedHook" xml:space="preserve">
+    <value>started, hotkey {0} (another program owns it, taken over with the key hook)</value>
+  </data>
+  <data name="BalloonHotkeyNotActive" xml:space="preserve">
+    <value>hotkey is not active: {0}</value>
+  </data>
+  <data name="BalloonAutoStartFailed" xml:space="preserve">
+    <value>could not set auto start: {0}</value>
+  </data>
+  <data name="MsgAlreadyRunning" xml:space="preserve">
+    <value>WindowMinimize is already running, check the notification area of the taskbar.</value>
+  </data>
+  <data name="MsgBadArguments" xml:space="preserve">
+    <value>bad arguments: {0}</value>
+  </data>
+  <data name="MsgUnknownArgument" xml:space="preserve">
+    <value>unknown argument {0}</value>
+  </data>
+  <data name="MsgArgumentNeedsValue" xml:space="preserve">
+    <value>argument {0} needs a value</value>
+  </data>
+  <data name="ErrorHotkeyEmpty" xml:space="preserve">
+    <value>hotkey is empty</value>
+  </data>
+  <data name="ErrorOnlyOneMainKey" xml:space="preserve">
+    <value>only one main key is allowed, {0} and {1} cannot both appear</value>
+  </data>
+  <data name="ErrorUnknownKeyName" xml:space="preserve">
+    <value>unknown key name: {0}</value>
+  </data>
+  <data name="ErrorMainKeyMissing" xml:space="preserve">
+    <value>the main key is missing, for example the S in Win+S</value>
+  </data>
+  <data name="ErrorF12Reserved" xml:space="preserve">
+    <value>F12 is reserved by Windows and cannot be registered, pick another one</value>
+  </data>
+  <data name="ErrorBareKeyOnlyFunction" xml:space="preserve">
+    <value>a bare key only works for F1 to F24, others steal normal typing</value>
+  </data>
+  <data name="ErrorReservedCombo" xml:space="preserve">
+    <value>that combination is taken by Windows (like Alt+Tab or Win+L), pick another one</value>
+  </data>
+  <data name="ErrorComboTaken" xml:space="preserve">
+    <value>combination {0} is already registered by another program (Win32 1409)</value>
+  </data>
+  <data name="ErrorRegisterFailed" xml:space="preserve">
+    <value>registering {0} failed with Win32 error {1}</value>
+  </data>
+  <data name="ErrorFallbackUsed" xml:space="preserve">
+    <value>{0}; fell back to the default hotkey {1}</value>
+  </data>
+  <data name="ErrorHookInstallFailed" xml:space="preserve">
+    <value>SetWindowsHookEx failed with Win32 error {0}</value>
+  </data>
+  <data name="ErrorHookFailed" xml:space="preserve">
+    <value>{0}; the fallback key hook failed too: {1}</value>
+  </data>
+  <data name="Usage" xml:space="preserve">
+    <value>WindowMinimize - minimize the current window with a hotkey
+
+usage:
+  WindowMinimize.exe [options]
+
+options:
+  --hotkey &lt;combination&gt;  the hotkey to use, for example --hotkey Ctrl+Alt+M
+                          syntax: a modifier (Ctrl/Alt/Shift/Win) plus one main key
+                          (A-Z, 0-9, F1-F24, Space, Esc, Enter and so on) joined with +;
+                          without a modifier only function keys are allowed
+  --mode &lt;mode&gt;           minimize (default, to the taskbar) or hide (hide the window)
+  --config &lt;path&gt;         use this config file, defaults to hotkey.ini next to the exe
+  --lang &lt;language&gt;       interface language, en or zh, defaults to the system language
+  --debug                 write a debug log to hotkey.log next to the exe
+  --no-tray               do not show the tray icon
+  --help                  show this help
+
+hotkey.ini example:
+  [general]
+  Hotkey=Win+S
+  Mode=minimize
+  AutoStart=true
+  Debug=false
+
+notes:
+  Started by double click the tool stays in the tray and the hotkey minimizes whatever
+  window is in front. The tray menu minimizes once, suspends the hotkey, opens the config,
+  toggles the auto start and exits. Saving hotkey.ini takes effect right away.</value>
+  </data>
+</root>
