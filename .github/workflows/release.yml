@@ -1,0 +1,49 @@
+# Publishes a release when a v* tag is pushed: build on Windows, run the unit tests, attach the
+# single file exe to the release and let GitHub write the release notes.
+#
+# The e2e scripts are not part of this run, they need a real desktop, a foreground window and a
+# global hotkey, so they only make sense on a machine someone is sitting at.
+name: release
+
+on:
+    push:
+        tags: ['v*']
+
+permissions:
+    contents: write
+
+jobs:
+    release:
+        runs-on: windows-latest
+        steps:
+            - name: Check out the tag
+              uses: actions/checkout@v4
+
+            - name: Use the pinned .NET SDK
+              uses: actions/setup-dotnet@v4
+              with:
+                  global-json-file: global.json
+
+            - name: Run the unit tests
+              run: dotnet test test\unit\WindowMinimize.Tests.csproj -c Release --nologo
+
+            - name: Build the single file exe
+              run: pwsh -NoProfile -File build\build.ps1
+
+            # a release that does not carry the version of its tag is confusing, so stop here
+            - name: Check the project version against the tag
+              shell: pwsh
+              run: |
+                  $project = [xml](Get-Content -Raw src\WindowMinimize.csproj)
+                  $version = $project.Project.PropertyGroup.Version |
+                      Where-Object { $_ } | Select-Object -First 1
+                  if ("v$version" -ne "${{ github.ref_name }}") {
+                      throw "tag ${{ github.ref_name }} does not match <Version>$version</Version>"
+                  }
+
+            - name: Publish the release
+              uses: softprops/action-gh-release@v2
+              with:
+                  name: ${{ github.ref_name }}
+                  files: dist/WindowMinimize.exe
+                  generate_release_notes: true

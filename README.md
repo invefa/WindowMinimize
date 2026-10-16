@@ -4,6 +4,10 @@ A small Windows tool that minimizes the current foreground window with a custom 
 lives in the tray, its default hotkey is `Win+S`, it is a single-file exe, and it depends on neither
 the .NET runtime nor any third-party component.
 
+Download `WindowMinimize.exe` from the
+[releases page](https://github.com/invefa/WindowMinimize/releases/latest) and run it, no
+installation needed, or build it yourself (section 8).
+
 ## 1. Usage
 
 Double-click `start.bat` or run `dist\WindowMinimize.exe` directly. After startup the program stays
@@ -150,6 +154,9 @@ pwsh -NoProfile -File build\build.ps1
 
 The output is `dist\WindowMinimize.exe`, a self-contained release that runs directly when copied to
 another Windows 10/11 machine. `global.json` in the repository pins the SDK to the 8.0.403 series.
+
+Pushing a tag such as `v1.0.0`, matching `<Version>` in `src\WindowMinimize.csproj`, makes
+`.github\workflows\release.yml` run the unit tests, build the exe and attach it to the release.
 
 Unit tests:
 
