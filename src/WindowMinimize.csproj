@@ -35,4 +35,9 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- 单元测试直接覆盖 HotkeySpec 这类内部类型 -->
+    <InternalsVisibleTo Include="WindowMinimize.Tests" />
+  </ItemGroup>
+
 </Project>

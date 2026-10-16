@@ -1,8 +1,8 @@
 # 验证热加载：程序运行中改写配置文件，热键是否自动切换。
-# 结果写入 test\reload-test.txt（UTF-8），退出码 0 表示通过。
+# 结果写入 test\e2e\reload-test.txt（UTF-8），退出码 0 表示通过。
 
 $ErrorActionPreference = 'Stop'
-$root = Split-Path -Parent $PSScriptRoot
+$root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $exe = Join-Path $root 'dist\WindowMinimize.exe'
 $log = Join-Path $PSScriptRoot 'hotkey.log'
 $cfg = Join-Path $PSScriptRoot 'reload-test.ini'
@@ -32,7 +32,7 @@ try {
     if (-not (Test-Path $exe)) { throw "找不到 $exe，请先构建" }
 
     Set-Content -Path $cfg -Value @(
-        '[general]', 'Hotkey=Ctrl+Alt+M', 'Mode=minimize', 'MinimizeToTray=false', 'Debug=true'
+        '[general]', 'Hotkey=Ctrl+Alt+M', 'Mode=minimize', 'Debug=true'
     ) -Encoding UTF8
     Remove-Item $log -ErrorAction SilentlyContinue
 
@@ -45,7 +45,7 @@ try {
 
     # 改写配置，观察是否自动切换到新热键
     Set-Content -Path $cfg -Value @(
-        '[general]', 'Hotkey=Ctrl+Shift+F10', 'Mode=minimize', 'MinimizeToTray=false', 'Debug=true'
+        '[general]', 'Hotkey=Ctrl+Shift+F10', 'Mode=minimize', 'Debug=true'
     ) -Encoding UTF8
     Start-Sleep -Milliseconds 1500
 

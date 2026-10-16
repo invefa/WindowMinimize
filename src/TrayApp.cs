@@ -13,12 +13,14 @@ internal sealed class TrayApp : ApplicationContext
     private readonly HotkeySource _source;
     private readonly NotifyIcon _icon;
     private readonly ToolStripMenuItem _hotkeyItem;
+    private readonly ToolStripMenuItem _restoreItem;
     private readonly ToolStripMenuItem _suspendItem;
     private readonly ToolStripMenuItem _autoStartItem;
     private readonly System.Windows.Forms.Timer _suspendCountdown;
     private ConfigStore.Watcher? _watcher;
     private HotkeySpec? _spec;
     private string _lastError = string.Empty;
+    private IntPtr _lastHidden;
     private bool _suspended;
     private int _suspendSecondsLeft;
 
@@ -36,6 +38,12 @@ internal sealed class TrayApp : ApplicationContext
 
         var minimizeItem = new ToolStripMenuItem("最小化当前窗口");
         minimizeItem.Click += (_, _) => MinimizeForeground();
+
+        // hide 方式隐藏的窗口在任务栏上不留按钮，只能从这里找回
+        _restoreItem = new ToolStripMenuItem("还原上次隐藏的窗口", null, (_, _) => RestoreLastHidden())
+        {
+            Enabled = false,
+        };
 
         _hotkeyItem = new ToolStripMenuItem { Enabled = false };
         _suspendItem = new ToolStripMenuItem("暂停热键", null, (_, _) =>
@@ -63,6 +71,7 @@ internal sealed class TrayApp : ApplicationContext
         });
 
         menu.Items.Add(minimizeItem);
+        menu.Items.Add(_restoreItem);
         menu.Items.Add(_hotkeyItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(_suspendItem);
@@ -143,6 +152,9 @@ internal sealed class TrayApp : ApplicationContext
 
     /// <summary>是否因为组合被占用而用了低级键盘钩子。</summary>
     internal bool IsUsingKeyboardHook => _source.UsingHook;
+
+    /// <summary>走键盘钩子是否因为该组合被 Windows 自己占用（例如 Win+S）。</summary>
+    internal bool IsUsingHookForWindowsCombo => _source.HookIsWindowsOwned;
 
     /// <summary>处理隐藏消息窗口转发来的消息，命中热键时触发最小化。</summary>
     internal void HandleHotkeyMessage(int msg, IntPtr wParam) => _source.HandleMessage(msg, wParam);
@@ -280,6 +292,7 @@ internal sealed class TrayApp : ApplicationContext
         }
 
         _autoStartItem.Checked = ConfigStore.IsAutoStartEnabled();
+        _restoreItem.Enabled = _lastHidden != IntPtr.Zero && Native.IsWindow(_lastHidden);
         _icon.Text = Truncate($"WindowMinimize | {_spec?.Text ?? "未设置"} | 最小化当前窗口", 62);
     }
 
@@ -302,6 +315,24 @@ internal sealed class TrayApp : ApplicationContext
         }
 
         WindowOps.MinimizeWithRetry(hwnd, Config.Mode);
+
+        if (Config.Mode.Equals("hide", StringComparison.OrdinalIgnoreCase))
+        {
+            _lastHidden = hwnd;
+            RefreshMenu();
+        }
+    }
+
+    /// <summary>还原上一次用 hide 方式隐藏的窗口。</summary>
+    private void RestoreLastHidden()
+    {
+        if (_lastHidden != IntPtr.Zero && !WindowOps.Restore(_lastHidden))
+        {
+            Log.Debug("上次隐藏的窗口已经不存在，无法还原");
+        }
+
+        _lastHidden = IntPtr.Zero;
+        RefreshMenu();
     }
 
     /// <summary>弹出设置窗口。</summary>

@@ -18,24 +18,17 @@ internal static class Native
     internal const uint MOD_NOREPEAT = 0x4000;
 
     internal const int SW_HIDE = 0;
-    internal const int SW_SHOWNORMAL = 1;
     internal const int SW_SHOWMINIMIZED = 2;
+    internal const int SW_SHOW = 5;
     internal const int SW_MINIMIZE = 6;
+    internal const int SW_RESTORE = 9;
     internal const int SW_FORCEMINIMIZE = 11;
-
-    internal const uint SWP_NOSIZE = 0x0001;
-    internal const uint SWP_NOMOVE = 0x0002;
-    internal const uint SWP_NOACTIVATE = 0x0010;
-    internal const uint SWP_NOZORDER = 0x0004;
-    internal const uint SWP_SHOWWINDOW = 0x0040;
 
     internal const int DWMWA_CLOAKED = 14;
 
     internal const uint GA_ROOT = 2;
 
     internal const int SMTO_ABORTIFHUNG = 0x0002;
-
-    internal static readonly IntPtr HWND_TOP = IntPtr.Zero;
 
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
@@ -62,16 +55,19 @@ internal static class Native
     internal static extern bool IsIconic(IntPtr hWnd);
 
     [DllImport("user32.dll")]
-    internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-    [DllImport("user32.dll")]
     internal static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
-
-    [DllImport("user32.dll")]
-    internal static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint flags);
 
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     internal static extern IntPtr SendMessageTimeout(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam, int flags, int timeout, out IntPtr result);
+
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    internal static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder name, int maxCount);
+
+    [DllImport("user32.dll")]
+    internal static extern IntPtr GetShellWindow();
+
+    [DllImport("user32.dll")]
+    internal static extern IntPtr GetDesktopWindow();
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     internal static extern int GetWindowTextLength(IntPtr hWnd);
@@ -157,6 +153,59 @@ internal static class Native
         catch
         {
             return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// 取窗口类名。用于识别系统外壳窗口（任务栏、桌面、开始菜单等）。
+    /// </summary>
+    internal static string GetWindowClassName(IntPtr hWnd)
+    {
+        try
+        {
+            var sb = new System.Text.StringBuilder(256);
+            return GetClassName(hWnd, sb, sb.Capacity) > 0 ? sb.ToString() : string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// 取窗口所属进程名，取不到时返回空串。用于识别开始菜单、搜索这类同样用
+    /// CoreWindow 类名的外壳进程。
+    /// </summary>
+    internal static string GetProcessName(IntPtr hWnd)
+    {
+        try
+        {
+            GetWindowThreadProcessId(hWnd, out uint pid);
+            if (pid == 0)
+            {
+                return string.Empty;
+            }
+
+            using System.Diagnostics.Process process = System.Diagnostics.Process.GetProcessById((int)pid);
+            return process.ProcessName;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    /// <summary>窗口是否属于本进程。托盘菜单弹出时前台窗口就是本进程的菜单窗口。</summary>
+    internal static bool IsOwnProcessWindow(IntPtr hWnd)
+    {
+        try
+        {
+            GetWindowThreadProcessId(hWnd, out uint pid);
+            return pid == (uint)Environment.ProcessId;
+        }
+        catch
+        {
+            return false;
         }
     }
 }

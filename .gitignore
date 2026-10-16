@@ -8,9 +8,9 @@ hotkey.ini
 hotkey.log
 
 # 测试脚本产生的临时文件
-test/*.log
-test/*-test.txt
-test/reload-test.ini
-test/parse-test.ini
-test/wins/wins.ini
-test/stdout.txt
+test/e2e/*.log
+test/e2e/*-test.txt
+test/e2e/parse-test.ini
+test/e2e/reload-test.ini
+test/e2e/wins/wins.ini
+test/e2e/stdout.txt

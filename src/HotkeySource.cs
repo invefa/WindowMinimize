@@ -15,7 +15,6 @@ internal sealed class HotkeySource : IDisposable
     private IntPtr _hook;
     private HotkeySpec? _spec;
     private bool _useHook;
-    private bool _activeIsHook;
     private bool _lastDown;
 
     internal HotkeySource(IntPtr hwnd)
@@ -28,6 +27,12 @@ internal sealed class HotkeySource : IDisposable
 
     /// <summary>当前实际生效的方式：注册表或键盘钩子。</summary>
     internal bool UsingHook => _useHook;
+
+    /// <summary>
+    /// 走键盘钩子是否是因为组合被 Windows 自己占用（例如 Win+S 打开搜索）。
+    /// 这种情况接管后系统原有功能不再可用，提示语要说明清楚。
+    /// </summary>
+    internal bool HookIsWindowsOwned { get; private set; }
 
     internal HotkeySpec? Spec => _spec;
 
@@ -45,7 +50,7 @@ internal sealed class HotkeySource : IDisposable
     }
 
     /// <summary>
-    /// 尝试注册。失败时不改变当前已生效的热键。
+    /// 尝试注册。新组合完全不可用时恢复原来的组合，不会把还能用的热键弄丢。
     /// </summary>
     internal bool TryRegister(HotkeySpec spec, out string error)
     {
@@ -56,13 +61,17 @@ internal sealed class HotkeySource : IDisposable
             return true;
         }
 
-        // 先注册新的，成功后再撤旧的：新键失败不会把旧键弄丢
+        // RegisterHotKey 的注册项按“窗口 + id”唯一，同一个 id 直接再注册等于换成新组合，
+        // 所以要先把旧的撤掉；万一新组合用不了，下面再把旧的恢复回来。
+        HotkeySpec? previous = _spec;
+        UnregisterCurrent();
+        _spec = null;
+
         if (Native.RegisterHotKey(_hwnd, HotkeyId, spec.Modifiers | Native.MOD_NOREPEAT, spec.VirtualKey))
         {
-            UnregisterCurrent();
             _spec = spec;
             _useHook = false;
-            _activeIsHook = false;
+            HookIsWindowsOwned = false;
             Log.Info($"热键已注册：{spec.Text}（RegisterHotKey）");
             return true;
         }
@@ -72,12 +81,18 @@ internal sealed class HotkeySource : IDisposable
 
         if (TryRegisterHook(spec, out string hookError))
         {
-            UnregisterCurrent();
             _spec = spec;
             _useHook = true;
-            _activeIsHook = true;
-            Log.Info($"热键已注册：{spec.Text}（低级键盘钩子，该组合被其他程序占用）");
+            HookIsWindowsOwned = HotkeySpec.IsWindowsOwnedWinCombo(spec.Modifiers, spec.VirtualKey);
+            Log.Info(HookIsWindowsOwned
+                ? $"热键已注册：{spec.Text}（低级键盘钩子，该组合由 Windows 占用，已被本程序接管）"
+                : $"热键已注册：{spec.Text}（低级键盘钩子，该组合被其他程序占用）");
             return true;
+        }
+
+        if (previous is not null && !RestorePrevious(previous))
+        {
+            Log.Error($"原热键 {previous.Text} 也没能恢复，当前没有生效的热键");
         }
 
         error = err == 1409
@@ -91,9 +106,33 @@ internal sealed class HotkeySource : IDisposable
         return false;
     }
 
+    /// <summary>恢复上一次可用的热键，顺序与正常注册一致：先试注册表，再试键盘钩子。</summary>
+    private bool RestorePrevious(HotkeySpec previous)
+    {
+        if (Native.RegisterHotKey(_hwnd, HotkeyId, previous.Modifiers | Native.MOD_NOREPEAT, previous.VirtualKey))
+        {
+            _spec = previous;
+            _useHook = false;
+            HookIsWindowsOwned = false;
+            Log.Info($"已恢复原热键：{previous.Text}（RegisterHotKey）");
+            return true;
+        }
+
+        if (TryRegisterHook(previous, out _))
+        {
+            _spec = previous;
+            _useHook = true;
+            HookIsWindowsOwned = HotkeySpec.IsWindowsOwnedWinCombo(previous.Modifiers, previous.VirtualKey);
+            Log.Info($"已恢复原热键：{previous.Text}（低级键盘钩子）");
+            return true;
+        }
+
+        return false;
+    }
+
     private void UnregisterCurrent()
     {
-        if (_activeIsHook)
+        if (_useHook)
         {
             if (_hook != IntPtr.Zero)
             {
@@ -104,21 +143,19 @@ internal sealed class HotkeySource : IDisposable
             _proc = null;
             _hookSpec = null;
             _lastDown = false;
-            _activeIsHook = false;
+            _useHook = false;
+            return;
         }
-        else
-        {
-            Native.UnregisterHotKey(_hwnd, HotkeyId);
-            _activeIsHook = false;
-        }
+
+        Native.UnregisterHotKey(_hwnd, HotkeyId);
     }
 
     /// <summary>彻底清空当前注册，用于“暂停热键”。</summary>
     internal void Reset()
     {
         UnregisterCurrent();
-        _activeIsHook = false;
         _useHook = false;
+        HookIsWindowsOwned = false;
         _spec = null;
     }
 

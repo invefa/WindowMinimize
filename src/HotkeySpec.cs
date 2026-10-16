@@ -33,8 +33,6 @@ internal sealed class HotkeySpec : IEquatable<HotkeySpec>
 
     public override string ToString() => Text;
 
-    // ---------------------------------------------------------------- 解析
-
     /// <summary>
     /// 修饰键别名。这里绝不能收单字母（C、A、S），否则 Win+S、Ctrl+C 里的主键会被当成修饰键。
     /// </summary>
@@ -104,13 +102,16 @@ internal sealed class HotkeySpec : IEquatable<HotkeySpec>
         ["DIVIDE"] = 0x6F,
     };
 
-    /// <summary>修饰键显示顺序按书写习惯排列：Ctrl、Alt、Shift、Win。</summary>
+    /// <summary>
+    /// 修饰键显示顺序按 Windows 自己的写法排列：Win、Ctrl、Alt、Shift。
+    /// 这样 Win+Alt+M 回显成 Win+Alt+M，而不是 Alt+Win+M。
+    /// </summary>
     private static readonly (uint Bit, string Name)[] ModifierNames =
     [
+        (Native.MOD_WIN, "Win"),
         (Native.MOD_CONTROL, "Ctrl"),
         (Native.MOD_ALT, "Alt"),
         (Native.MOD_SHIFT, "Shift"),
-        (Native.MOD_WIN, "Win"),
     ];
 
     /// <summary>

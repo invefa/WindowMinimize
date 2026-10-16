@@ -1,8 +1,8 @@
 # 实测 Win+S 能否被本程序接管：独立日志目录，避免与其他测试互相覆盖。
-# 结果写入 test\wins-test.txt（UTF-8），退出码 0 表示注册成功。
+# 结果写入 test\e2e\wins-test.txt（UTF-8），退出码 0 表示注册成功。
 
 $ErrorActionPreference = 'Stop'
-$root = Split-Path -Parent $PSScriptRoot
+$root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $exe = Join-Path $root 'dist\WindowMinimize.exe'
 $dir = Join-Path $PSScriptRoot 'wins'
 $cfg = Join-Path $dir 'wins.ini'
@@ -20,7 +20,7 @@ function Say($text) {
 try {
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     Set-Content -Path $cfg -Value @(
-        '[general]', 'Hotkey=Win+S', 'Mode=minimize', 'AutoStart=false', 'Debug=true'
+        '[general]', 'Hotkey=Win+S', 'Mode=minimize', 'Debug=true'
     ) -Encoding UTF8
     Remove-Item $log -ErrorAction SilentlyContinue
 

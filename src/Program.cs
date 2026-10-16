@@ -77,9 +77,20 @@ internal static class Program
 
         if (app.Apply(config, initial: true))
         {
-            string message = app.IsUsingKeyboardHook
-                ? $"已启动，热键 {app.ActiveSpecText}（该组合被其他程序占用，已用按键钩子接管）"
-                : $"已启动，热键 {app.ActiveSpecText}，按一次最小化当前窗口";
+            string message;
+            if (app.IsUsingHookForWindowsCombo)
+            {
+                message = $"已启动，热键 {app.ActiveSpecText}（该组合由 Windows 占用，已被本程序接管，系统原有功能不再可用）";
+            }
+            else if (app.IsUsingKeyboardHook)
+            {
+                message = $"已启动，热键 {app.ActiveSpecText}（该组合被其他程序占用，已用按键钩子接管）";
+            }
+            else
+            {
+                message = $"已启动，热键 {app.ActiveSpecText}，按一次最小化当前窗口";
+            }
+
             app.Notify("WindowMinimize", message);
         }
         else
@@ -87,8 +98,9 @@ internal static class Program
             Log.Error($"热键未生效：{app.LastError}");
             app.Notify("WindowMinimize", $"热键未生效：{app.LastError}", ToolTipIcon.Warning);
 
-            // 自动退回默认热键也失败时才打扰用户，避免每次开机弹窗
-            if (app.ActiveSpec is null)
+            // 自动退回默认热键也失败时才打扰用户，避免每次开机弹窗；
+            // --no-tray 是脚本用的无界面模式，失败只记日志，不弹设置窗口
+            if (app.ActiveSpec is null && !cli.NoTray)
             {
                 app.ShowSettingsDialog();
             }

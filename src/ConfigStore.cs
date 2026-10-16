@@ -110,13 +110,12 @@ internal static class ConfigStore
         ;            示例：Win+S、Ctrl+Shift+Q、Ctrl+Alt+F9、Alt+Space
         ;            注意 Win+S 是系统保留组合（搜索），会被本程序接管，搜索将不再弹出。
         ; Mode       minimize = 最小化到任务栏（默认）；hide = 直接隐藏窗口
-        ; AutoStart  是否跟随 Windows 启动
+        ; AutoStart  是否跟随 Windows 启动，填 true 或 false 才生效；整行不写则不动注册表
         ; Debug      是否写 hotkey.log 调试日志
 
         [general]
         Hotkey={hotkey}
         Mode=minimize
-        AutoStart=true
         Debug=false
 
         """;
@@ -208,8 +207,6 @@ internal static class ConfigStore
         config.Mode = config.Mode.ToLowerInvariant();
     }
 
-    // --------------------------------------------------------------- 热加载
-
     internal sealed class Watcher : IDisposable
     {
         private readonly FileSystemWatcher _watcher;
@@ -235,6 +232,8 @@ internal static class ConfigStore
             };
             _watcher.Changed += OnFileEvent;
             _watcher.Created += OnFileEvent;
+            // 编辑器保存时常先写临时文件再改名，这种写法只触发 Renamed
+            _watcher.Renamed += (sender, e) => OnFileEvent(sender, e);
         }
 
         private void OnFileEvent(object? sender, FileSystemEventArgs e)
@@ -276,8 +275,6 @@ internal static class ConfigStore
             _timer.Dispose();
         }
     }
-
-    // --------------------------------------------------------------- 辅助
 
     internal static void OpenInNotepad(string path)
     {

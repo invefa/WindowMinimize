@@ -42,8 +42,6 @@ internal sealed class AppConfig
         }
     }
 
-    // ------------------------------------------------------------- 命令行
-
     internal sealed class CliResult
     {
         internal bool ShowHelp { get; set; }

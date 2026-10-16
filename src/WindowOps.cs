@@ -7,7 +7,34 @@ namespace WindowMinimize;
 /// </summary>
 internal static class WindowOps
 {
-    /// <summary>取当前前台窗口的顶层窗口，跳过本程序自己的窗口。</summary>
+    /// <summary>
+    /// 系统外壳窗口的类名。点击托盘菜单时这些窗口常常成为前台窗口，但它们不是
+    /// 用户想最小化的目标。开始菜单与搜索也归在这里，但它们的类名和普通 UWP 应用
+    /// 一样是 Windows.UI.Core.CoreWindow，只能按进程名区分，见 ShellProcessNames。
+    /// </summary>
+    private static readonly HashSet<string> ShellWindowClasses = new(StringComparer.Ordinal)
+    {
+        "Shell_TrayWnd",
+        "Shell_SecondaryTrayWnd",
+        "NotifyIconOverflowWindow",
+        "Progman",
+        "WorkerW",
+        "TaskListThumbnailWnd",
+        "MultitaskingViewFrame",
+        "ForegroundStaging",
+        "XamlExplorerHostIslandWindow",
+    };
+
+    private static readonly HashSet<string> ShellProcessNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "StartMenuExperienceHost",
+        "SearchHost",
+        "SearchApp",
+        "ShellExperienceHost",
+        "ShellHost",
+    };
+
+    /// <summary>取当前前台窗口的顶层窗口，跳过系统外壳与本程序自己的窗口。</summary>
     internal static IntPtr GetForegroundTarget(IntPtr selfHandle)
     {
         IntPtr hwnd = Native.GetAncestor(Native.GetForegroundWindow(), Native.GA_ROOT);
@@ -21,7 +48,49 @@ internal static class WindowOps
             return IntPtr.Zero;
         }
 
+        if (!Native.IsWindowVisible(hwnd))
+        {
+            Log.Debug("前台窗口不可见，忽略本次触发");
+            return IntPtr.Zero;
+        }
+
+        if (IsShellSurface(hwnd))
+        {
+            Log.Debug($"前台窗口是系统外壳（类名 {Native.GetWindowClassName(hwnd)}），忽略本次触发");
+            return IntPtr.Zero;
+        }
+
         return hwnd;
+    }
+
+    /// <summary>任务栏、桌面、开始菜单、搜索以及本程序自己的窗口，都不该被当成最小化目标。</summary>
+    private static bool IsShellSurface(IntPtr hwnd)
+    {
+        if (hwnd == Native.GetShellWindow() || hwnd == Native.GetDesktopWindow())
+        {
+            return true;
+        }
+
+        if (Native.IsOwnProcessWindow(hwnd) || ShellWindowClasses.Contains(Native.GetWindowClassName(hwnd)))
+        {
+            return true;
+        }
+
+        return ShellProcessNames.Contains(Native.GetProcessName(hwnd));
+    }
+
+    /// <summary>还原一个此前用 hide 方式隐藏的窗口。</summary>
+    internal static bool Restore(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd))
+        {
+            return false;
+        }
+
+        Native.ShowWindowAsync(hwnd, Native.SW_RESTORE);
+        Native.SetForegroundWindow(hwnd);
+        Log.Debug($"已还原窗口：hwnd=0x{hwnd.ToInt64():X}");
+        return true;
     }
 
     /// <summary>

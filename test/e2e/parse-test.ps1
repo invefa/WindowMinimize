@@ -1,8 +1,8 @@
 # 逐条验证 --hotkey 写法的解析与注册结果。
-# 结果写入 test\parse-test.txt（UTF-8），退出码 0 表示全部通过。
+# 结果写入 test\e2e\parse-test.txt（UTF-8），退出码 0 表示全部通过。
 
 $ErrorActionPreference = 'Stop'
-$root = Split-Path -Parent $PSScriptRoot
+$root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $exe = Join-Path $root 'dist\WindowMinimize.exe'
 $cfg = Join-Path $PSScriptRoot 'parse-test.ini'
 # 日志固定与配置文件同目录，文件名 hotkey.log
@@ -21,7 +21,7 @@ function Say($text) {
 $cases = @(
     @{ arg = 'Ctrl+Alt+M';     expect = 'Ctrl+Alt+M' },
     @{ arg = 'ctrl+alt+m';     expect = 'Ctrl+Alt+M' },
-    @{ arg = 'Win+Alt+M';      expect = 'Alt+Win+M' },
+    @{ arg = 'Win+Alt+M';      expect = 'Win+Alt+M' },
     @{ arg = 'Win+S';          expect = 'Win+S' },
     @{ arg = 'Ctrl+C';         expect = 'Ctrl+C' },
     @{ arg = 'Alt+A';          expect = 'Alt+A' },
@@ -35,7 +35,7 @@ $cases = @(
     @{ arg = 'Ctrl+Minus';     expect = 'Ctrl+Minus' },
     @{ arg = 'Ctrl+-';         expect = 'Ctrl+Minus' },
     @{ arg = 'Ctrl++';         expect = 'Ctrl+Plus' },
-    @{ arg = 'Ctrl+Alt+Win+M'; expect = 'Ctrl+Alt+Win+M' },
+    @{ arg = 'Ctrl+Alt+Win+M'; expect = 'Win+Ctrl+Alt+M' },
     @{ arg = 'Ctrl+Num5';      expect = 'Ctrl+Num5' },
     @{ arg = 'M';              expect = $null },
     @{ arg = 'M+N';            expect = $null },
@@ -57,25 +57,43 @@ function Get-LogLine([string]$pattern) {
     return ''
 }
 
+# 上一条用例的进程刚被结束，exe 可能还没完全释放，启动失败就稍等重试
+function Start-App([string[]]$arguments) {
+    for ($attempt = 1; $attempt -le 10; $attempt++) {
+        try {
+            return Start-Process -FilePath $exe -PassThru -ArgumentList $arguments
+        }
+        catch {
+            Start-Sleep -Milliseconds 300
+        }
+    }
+
+    throw "启动 $exe 失败，文件一直被占用"
+}
+
 try {
     if (-not (Test-Path $exe)) { throw "找不到 $exe，请先构建" }
 
+    # 每次自带一份干净的配置：不写 AutoStart，测试就不会去动开机自启注册表
+    Set-Content -Path $cfg -Value @(
+        '[general]', 'Hotkey=Win+Alt+M', 'Mode=minimize', 'Debug=false'
+    ) -Encoding UTF8
+
     foreach ($case in $cases) {
         Remove-Item $log -ErrorAction SilentlyContinue
-        $p = Start-Process -FilePath $exe -PassThru -ArgumentList @(
-            '--hotkey', $case.arg, '--config', $cfg, '--debug', '--no-tray')
+        $p = Start-App @('--hotkey', $case.arg, '--config', $cfg, '--debug', '--no-tray')
 
-        # 等待配置加载完成：启动后会写“WindowMinimize 启动...”与“解析 ... 得到 ...”
+        # 等待配置加载完成：启动后会写“WindowMinimize 启动...”与“热键 X 解析为 Y”
         $startLine = Get-LogLine 'WindowMinimize 启动'
-        $parseLine = Get-LogLine '得到'
+        $parseLine = Get-LogLine '解析为'
         $registerLine = Get-LogLine '热键已注册'
-        $errorLine = Get-LogLine '错误'
+        $errorLine = Get-LogLine '错误: '
         $exited = $p.HasExited
         $exitCode = if ($exited) { $p.ExitCode } else { $null }
 
-        # 日志里“解析 “X” 得到 Y”的 Y 才是规范化后的热键
+        # 日志里“热键 X 解析为 Y”的 Y 才是规范化后的热键
         $effective = $null
-        $anchor = '得到 '
+        $anchor = '解析为 '
         $start = $parseLine.IndexOf($anchor)
         if ($start -ge 0) {
             $rest = $parseLine.Substring($start + $anchor.Length)
@@ -102,6 +120,7 @@ try {
 
         if (-not $p.HasExited) { $p.Kill() }
         $p.WaitForExit(2000) | Out-Null
+        $p.Dispose()
     }
 }
 catch {

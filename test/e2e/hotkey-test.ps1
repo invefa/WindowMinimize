@@ -1,22 +1,24 @@
 # 端到端验证：按热键能否最小化当前前台窗口。
-# 目标窗口用 DSH 界面所在的那个 Electron 窗口（本机确定存在的普通顶层窗口）。
+# 目标窗口由本脚本自己拉起（一个 pwsh 进程里的 WinForms 窗口），不依赖机器上正好开着什么程序。
 # 用法: hotkey-test.ps1           测键盘钩子路径（配置热键 Win+S，系统保留组合，必然走钩子）
 #       hotkey-test.ps1 -Register 测 RegisterHotKey 路径（配置热键 Ctrl+Shift+F9）
-# 结果写入 test\hotkey-test.txt（UTF-8），退出码 0 表示通过。
+# 结果写入 test\e2e\hotkey-test.txt（UTF-8），退出码 0 表示通过。
 
 param(
     [switch]$Register
 )
 
 $ErrorActionPreference = 'Stop'
-$root = Split-Path -Parent $PSScriptRoot
+$root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $exe = Join-Path $root 'dist\WindowMinimize.exe'
 $outFile = Join-Path $PSScriptRoot 'hotkey-test.txt'
 $iniName = if ($Register) { 'test-hotkey2.ini' } else { 'test-hotkey.ini' }
 $hotkeyName = if ($Register) { 'Ctrl+Shift+F9' } else { 'Win+S' }
+$windowTitle = 'WindowMinimize E2E 目标窗口'
 $lines = [System.Collections.Generic.List[string]]::new()
 $passed = $false
 $app = $null
+$target = $null
 $hwnd = [IntPtr]::Zero
 
 function Say($text) {
@@ -24,34 +26,29 @@ function Say($text) {
     Write-Host $text
 }
 
-Add-Type -AssemblyName System.Windows.Forms
-
 Add-Type @'
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
+
 public static class Win32Test {
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left, Top, Right, Bottom; }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct POINT { public int X, Y; }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct WINDOWPLACEMENT {
         public int length; public int flags; public int showCmd;
         public POINT ptMinPosition; public POINT ptMaxPosition;
         public RECT rcNormalPosition;
     }
-    delegate bool EnumProc(IntPtr h, IntPtr l);
-    [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc cb, IntPtr l);
-    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern IntPtr FindWindow(string cls, string title);
     [DllImport("user32.dll")] public static extern bool GetWindowPlacement(IntPtr h, ref WINDOWPLACEMENT p);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
-    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
     [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint attach, uint attachTo, bool fAttach);
     [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr h);
@@ -60,6 +57,29 @@ public static class Win32Test {
     [DllImport("user32.dll", SetLastError = true)] public static extern bool AllowSetForegroundWindow(int pid);
     [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
     [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+
+    const byte VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12, VK_LWIN = 0x5B, VK_RWIN = 0x5C;
+    const byte VK_F9 = 0x78, VK_S = 0x53, VK_ESCAPE = 0x1B;
+    const uint KEYUP = 0x0002;
+
+    /// 按标题找窗口，用来确认自建的目标窗口已经出现。
+    public static IntPtr FindWindowByTitle(string title) {
+        return FindWindow(null, title);
+    }
+
+    /// 松开可能还按着的修饰键。合成按键前清一次，避免上一次测试留下的
+    /// 修饰键让热键带上多余的组合（例如 Alt 没松开，Win+S 就匹配不上）。
+    public static void ResetModifiers() {
+        Release(VK_SHIFT);
+        Release(VK_CONTROL);
+        Release(VK_MENU);
+        Release(VK_LWIN);
+        Release(VK_RWIN);
+    }
+
+    static void Release(byte vk) {
+        keybd_event(vk, 0, KEYUP, UIntPtr.Zero);
+    }
 
     /// 强制把窗口拿到前台：临时允许抢前台，挂接前台线程后反复尝试。
     public static bool ForceForeground(IntPtr h) {
@@ -90,9 +110,8 @@ public static class Win32Test {
             SwitchToThisWindow(h, false);
             SetForegroundWindow(h);
 
-            // 模拟一次 Alt 抬起，解除前台锁定
-            keybd_event(0x12, 0, 0, UIntPtr.Zero);
-            keybd_event(0x12, 0, 0x0002, UIntPtr.Zero);
+            // 只补一次 Alt 抬起解除前台锁定：不要按下再抬起，按下若被别的钩子吃掉会留下卡住的 Alt
+            Release(VK_MENU);
 
             if (attached) {
                 AttachThreadInput(myThread, fgThread, false);
@@ -110,14 +129,17 @@ public static class Win32Test {
         Send(VK_CONTROL, VK_SHIFT, VK_F9);
     }
 
-    /// 合成 Win+S。
+    /// 合成 Win+S。程序只吞 S 键，Win 键会照常传给 Windows。
     public static void SendWinS() {
         Send(VK_LWIN, 0, VK_S);
     }
 
-    const byte VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_LWIN = 0x5B;
-    const byte VK_F9 = 0x78, VK_S = 0x53;
-    const uint KEYUP = 0x0002;
+    /// 合成 Esc，用来收掉上面副作用弹出的开始菜单。
+    public static void SendEsc() {
+        keybd_event(VK_ESCAPE, 0, 0, UIntPtr.Zero);
+        System.Threading.Thread.Sleep(60);
+        keybd_event(VK_ESCAPE, 0, KEYUP, UIntPtr.Zero);
+    }
 
     static void Send(byte mod1, byte mod2, byte key) {
         keybd_event(mod1, 0, 0, UIntPtr.Zero);
@@ -127,26 +149,6 @@ public static class Win32Test {
         keybd_event(key, 0, KEYUP, UIntPtr.Zero);
         if (mod2 != 0) keybd_event(mod2, 0, KEYUP, UIntPtr.Zero);
         keybd_event(mod1, 0, KEYUP, UIntPtr.Zero);
-    }
-
-    /// 收集所有可见的 Electron 顶层窗口（DSH 界面）与 QQ 窗口，作为测试目标候选。
-    public static IntPtr[] FindElectronWindows() {
-        var found = new List<IntPtr>();
-        EnumWindows((h, l) => {
-            if (!IsWindowVisible(h)) return true;
-            var cls = new StringBuilder(256);
-            GetClassName(h, cls, 256);
-            string name = cls.ToString();
-            if (name == "Chrome_WidgetWin_1") found.Add(h);
-            return true;
-        }, IntPtr.Zero);
-        return found.ToArray();
-    }
-
-    public static string Title(IntPtr h) {
-        var t = new StringBuilder(256);
-        GetWindowText(h, t, 256);
-        return t.ToString();
     }
 }
 '@
@@ -161,31 +163,41 @@ function Get-ShowCmd([IntPtr]$handle) {
 try {
     if (-not (Test-Path $exe)) { throw "找不到 $exe，请先构建" }
 
-    $targets = [Win32Test]::FindElectronWindows()
-    if ($targets.Count -eq 0) { throw '没找到可用的目标窗口（Electron 类的顶层窗口）' }
-    Say "候选目标窗口 $($targets.Count) 个"
+    # 自己拉起一个普通窗口当目标：有标题、能最小化、进程随测试一起关掉
+    $formScript = @'
+Add-Type -AssemblyName System.Windows.Forms
+$form = New-Object System.Windows.Forms.Form
+$form.Text = '{0}'
+$form.Width = 480
+$form.Height = 320
+$form.StartPosition = 'CenterScreen'
+[System.Windows.Forms.Application]::Run($form)
+'@ -f $windowTitle
+
+    $encoded = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($formScript))
+    $target = Start-Process pwsh -PassThru -ArgumentList '-NoProfile', '-EncodedCommand', $encoded
+
+    for ($i = 0; $i -lt 60 -and $hwnd -eq [IntPtr]::Zero; $i++) {
+        Start-Sleep -Milliseconds 250
+        $hwnd = [Win32Test]::FindWindowByTitle($windowTitle)
+    }
+
+    if ($hwnd -eq [IntPtr]::Zero) { throw "目标窗口没有出现（标题 $windowTitle），测试条件不成立" }
+    Say "目标窗口 0x$($hwnd.ToInt64().ToString('X')) 标题=$windowTitle，进程 pid $($target.Id)"
 
     $app = Start-Process -FilePath $exe -PassThru -ArgumentList @(
-        '--config', (Join-Path $root "test\$iniName"))
+        '--config', (Join-Path $PSScriptRoot $iniName))
     Start-Sleep -Milliseconds 1500
     if ($app.HasExited) { throw "程序启动后立即退出，退出码 $($app.ExitCode)" }
     Say "已启动 WindowMinimize (pid $($app.Id))，配置热键 $hotkeyName"
 
-    # 先把目标窗口拿到前台，拿不到就换一个目标，保证测的是“前台窗口被最小化”
+    # 把目标窗口拿到前台，测的才是“前台窗口被最小化”
+    [Win32Test]::ResetModifiers()
     $ok = $false
-    foreach ($candidate in $targets) {
-        $hwnd = $candidate
-        Say "尝试目标窗口 0x$($hwnd.ToInt64().ToString('X')) 标题=$([Win32Test]::Title($hwnd))"
-        [void][Win32Test]::ForceForeground($hwnd)
-        Start-Sleep -Milliseconds 400
-        if ([Win32Test]::GetForegroundWindow() -eq $hwnd) { $ok = $true; break }
-    }
-
-    # 个别窗口会被别的程序抢回前台，多试几轮
     for ($round = 0; $round -lt 3 -and -not $ok; $round++) {
         [void][Win32Test]::ForceForeground($hwnd)
-        Start-Sleep -Milliseconds 500
-        $ok = ([Win32Test]::GetForegroundWindow() -eq $hwnd)
+        Start-Sleep -Milliseconds 400
+        $ok = [Win32Test]::GetForegroundWindow() -eq $hwnd
     }
 
     if (-not $ok) { throw '无法把目标窗口设为前台，测试条件不成立' }
@@ -196,9 +208,15 @@ try {
     $before = Get-ShowCmd $hwnd
     Say "发送热键前 showCmd=$before（1=正常 2=最小化 3=最大化）"
 
-    # 合成热键
+    [Win32Test]::ResetModifiers()
     if ($Register) { [Win32Test]::SendRegisterCombo() } else { [Win32Test]::SendWinS() }
-    Start-Sleep -Milliseconds 1500
+    Start-Sleep -Milliseconds 1200
+
+    if (-not $Register) {
+        # 程序吞掉了 S 键但没吞 Win 键，Windows 会把开始菜单弹出来，按 Esc 收掉免得影响后续
+        [Win32Test]::SendEsc()
+        Start-Sleep -Milliseconds 300
+    }
 
     $after = Get-ShowCmd $hwnd
     Say "发送热键后 showCmd=$after"
@@ -229,10 +247,7 @@ catch {
 }
 finally {
     if ($app -and -not $app.HasExited) { Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue }
-    if ($hwnd -ne [IntPtr]::Zero) {
-        # 把测试目标窗口还原成正常状态，避免留下最小化的界面
-        [void][Win32Test]::ForceForeground($hwnd)
-    }
+    if ($target -and -not $target.HasExited) { Stop-Process -Id $target.Id -Force -ErrorAction SilentlyContinue }
 
     [System.IO.File]::WriteAllLines($outFile, $lines, (New-Object System.Text.UTF8Encoding($false)))
 }
