@@ -15,7 +15,10 @@ $root                  = Split-Path -Parent $PSScriptRoot
 $project               = Join-Path $root 'src\WindowMinimize.csproj'
 $dist                  = Join-Path $root 'dist'
 $name                  = if ($Lite) { 'WindowMinimize-lite' } else { 'WindowMinimize' }
-$exe                   = Join-Path $dist "$name.exe"
+# a single file publish deletes the exe of the previous publish in the same folder, so the small
+# one gets a folder of its own and the two can sit side by side
+$out                   = if ($Lite) { Join-Path $dist 'lite' } else { $dist }
+$exe                   = Join-Path $out "$name.exe"
 # a framework dependent single file cannot be compressed, but it is small either way
 $extra                 = if ($Lite) {
     @('--self-contained', 'false', "-p:AssemblyName=$name",
@@ -25,7 +28,7 @@ $extra                 = if ($Lite) {
 Write-Host "project: $project"
 Write-Host "output:  $exe"
 
-dotnet publish $project -c Release -r win-x64 -o $dist @extra --nologo
+dotnet publish $project -c Release -r win-x64 -o $out @extra --nologo
 if ($LASTEXITCODE -ne 0) { throw "publish failed with exit code $LASTEXITCODE" }
 
 if (-not (Test-Path $exe)) { throw "publish finished but $exe was not produced" }
