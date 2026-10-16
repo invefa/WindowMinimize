@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace WindowMinimize;
 
@@ -194,6 +195,11 @@ internal sealed class HotkeySource : IDisposable
                     if (!_lastDown)
                     {
                         _lastDown = true;
+
+                        // 按键马上要被吞掉，系统在这段 Win（或 Alt）按住的时间里就看不到别的按键了，
+                        // 松开 Win 会被当成“单独按了一下 Win”而弹出开始面板，所以补一次掩码键。
+                        QueueMenuMask(_hookSpec.Modifiers);
+
                         Log.Debug($"热键触发（键盘钩子）{_hookSpec}");
                         Triggered?.Invoke();
                     }
@@ -202,7 +208,7 @@ internal sealed class HotkeySource : IDisposable
                     return 1;
                 }
             }
-            else if (message is 0x0101 or 0x0105) // WM_KEYUP / WM_SYSKEYUP
+            else if (message is Native.WM_KEYUP or Native.WM_SYSKEYUP)
             {
                 var info = Marshal.PtrToStructure<Native.KbdLlHookStruct>(lParam);
                 if (info.VkCode == _hookSpec.VirtualKey)
@@ -213,6 +219,42 @@ internal sealed class HotkeySource : IDisposable
         }
 
         return Native.CallNextHookEx(_hook, nCode, wParam, lParam);
+    }
+
+    /// <summary>
+    /// 补一个掩码键：吞掉按键后，系统在 Win（或 Alt）按住期间一个按键事件都看不到，
+    /// 会把松开 Win 当成“单独按了一下 Win”并弹出开始面板。轻敲一次别的修饰键，系统就认为
+    /// Win 期间按过别的键，松开顺序怎么来都不会弹。只有 Win 和 Alt 有这种行为，其他组合不补。
+    /// </summary>
+    private void QueueMenuMask(uint modifiers)
+    {
+        if ((modifiers & (Native.MOD_WIN | Native.MOD_ALT)) == 0)
+        {
+            return;
+        }
+
+        byte mask;
+        if (!IsDown(Native.VK_CONTROL))
+        {
+            mask = Native.VK_CONTROL;
+        }
+        else if (!IsDown(Native.VK_SHIFT))
+        {
+            mask = Native.VK_SHIFT;
+        }
+        else
+        {
+            // 两个候选掩码键都正被按着，补不了，只能维持原样
+            return;
+        }
+
+        // 不能在键盘钩子回调里直接合成按键，丢到线程池去发
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+            Log.Debug($"补掩码键 0x{mask:X2}，避免松开 Win 被当成单独按 Win");
+            Native.keybd_event(mask, 0, 0, UIntPtr.Zero);
+            Native.keybd_event(mask, 0, Native.KEYEVENTF_KEYUP, UIntPtr.Zero);
+        });
     }
 
     private static bool ModifiersMatch(uint modifiers)

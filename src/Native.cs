@@ -88,6 +88,8 @@ internal static class Native
 
     internal const int WM_KEYDOWN = 0x0100;
     internal const int WM_SYSKEYDOWN = 0x0104;
+    internal const int WM_KEYUP = 0x0101;
+    internal const int WM_SYSKEYUP = 0x0105;
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct KbdLlHookStruct
@@ -113,6 +115,15 @@ internal static class Native
 
     [DllImport("user32.dll")]
     internal static extern short GetAsyncKeyState(int vKey);
+
+    /// <summary>合成一次按键，用于热键吞键之后补发掩码键。</summary>
+    [DllImport("user32.dll")]
+    internal static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+    internal const uint KEYEVENTF_KEYUP = 0x0002;
+
+    internal const byte VK_SHIFT = 0x10;
+    internal const byte VK_CONTROL = 0x11;
 
     /// <summary>
     /// UWP 窗口在挂起时只被 DWM 遮蔽，仍然处于“未最小化”状态，直接最小化会被忽略，需要特殊处理。

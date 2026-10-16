@@ -2,6 +2,7 @@
 # 目标窗口由本脚本自己拉起（一个 pwsh 进程里的 WinForms 窗口），不依赖机器上正好开着什么程序。
 # 用法: hotkey-test.ps1           测键盘钩子路径（配置热键 Win+S，系统保留组合，必然走钩子）
 #       hotkey-test.ps1 -Register 测 RegisterHotKey 路径（配置热键 Ctrl+Shift+F9）
+# 钩子路径额外回归“松开顺序”：先松 Win 再松 S 时不能弹出开始或搜索面板。
 # 结果写入 test\e2e\hotkey-test.txt（UTF-8），退出码 0 表示通过。
 
 param(
@@ -130,11 +131,33 @@ public static class Win32Test {
     }
 
     /// 合成 Win+S。程序只吞 S 键，Win 键会照常传给 Windows。
-    public static void SendWinS() {
-        Send(VK_LWIN, 0, VK_S);
+    /// winFirstRelease 为 true 时先松 Win 再松 S：程序吞掉 S 按下后系统以为只是单独按了 Win，
+    /// 这个顺序最容易把开始面板顶出来，用来回归“掩码键”。
+    public static void SendWinS(bool winFirstRelease) {
+        keybd_event(VK_LWIN, 0, 0, UIntPtr.Zero);
+        System.Threading.Thread.Sleep(50);
+        keybd_event(VK_S, 0, 0, UIntPtr.Zero);
+        System.Threading.Thread.Sleep(50);
+
+        if (winFirstRelease) {
+            keybd_event(VK_LWIN, 0, KEYUP, UIntPtr.Zero);
+            System.Threading.Thread.Sleep(50);
+            keybd_event(VK_S, 0, KEYUP, UIntPtr.Zero);
+        }
+        else {
+            keybd_event(VK_S, 0, KEYUP, UIntPtr.Zero);
+            System.Threading.Thread.Sleep(50);
+            keybd_event(VK_LWIN, 0, KEYUP, UIntPtr.Zero);
+        }
     }
 
-    /// 合成 Esc，用来收掉上面副作用弹出的开始菜单。
+    /// 前台窗口所属进程 id，用来判断是不是外壳面板（开始菜单、搜索面板）被顶到了前台。
+    public static uint ForegroundPid() {
+        GetWindowThreadProcessId(GetForegroundWindow(), out uint pid);
+        return pid;
+    }
+
+    /// 合成 Esc，用来收掉可能弹出来的外壳面板。
     public static void SendEsc() {
         keybd_event(VK_ESCAPE, 0, 0, UIntPtr.Zero);
         System.Threading.Thread.Sleep(60);
@@ -158,6 +181,13 @@ function Get-ShowCmd([IntPtr]$handle) {
     $wp.length = [System.Runtime.InteropServices.Marshal]::SizeOf($wp)
     [void][Win32Test]::GetWindowPlacement($handle, [ref]$wp)
     return $wp.showCmd
+}
+
+function Get-ForegroundShellPanel {
+    $fgPid = [Win32Test]::ForegroundPid()
+    try { $name = (Get-Process -Id $fgPid -ErrorAction Stop).ProcessName } catch { return '' }
+    if ($name -in @('StartMenuExperienceHost', 'SearchHost', 'ShellExperienceHost')) { return $name }
+    return ''
 }
 
 try {
@@ -209,11 +239,12 @@ $form.StartPosition = 'CenterScreen'
     Say "发送热键前 showCmd=$before（1=正常 2=最小化 3=最大化）"
 
     [Win32Test]::ResetModifiers()
-    if ($Register) { [Win32Test]::SendRegisterCombo() } else { [Win32Test]::SendWinS() }
+    if ($Register) { [Win32Test]::SendRegisterCombo() } else { [Win32Test]::SendWinS($false) }
     Start-Sleep -Milliseconds 1200
 
+    # 先看前台有没有被外壳面板抢走，再按 Esc 收尾（Esc 会把面板关掉，所以要放在判断之前）
+    $panelNormal = Get-ForegroundShellPanel
     if (-not $Register) {
-        # 程序吞掉了 S 键但没吞 Win 键，Windows 会把开始菜单弹出来，按 Esc 收掉免得影响后续
         [Win32Test]::SendEsc()
         Start-Sleep -Milliseconds 300
     }
@@ -221,8 +252,8 @@ $form.StartPosition = 'CenterScreen'
     $after = Get-ShowCmd $hwnd
     Say "发送热键后 showCmd=$after"
 
-    # 合成按键松开 Win 键时，Windows 会把开始菜单弹出来，可能又把窗口顶回去，
-    # 所以这里以“程序确实收到热键并执行了最小化”作为主判据。
+    # 程序吞掉了 S 键，系统在这段 Win 按住的时间里看不到别的按键，松开 Win 会被当成
+    # “单独按了一下 Win”而弹出开始面板。程序补的掩码键就是挡这个的，所以这里也把它当判据。
     $log = Join-Path $PSScriptRoot 'hotkey.log'
     $logText = if (Test-Path $log) { Get-Content $log -Encoding UTF8 -Raw } else { '' }
     $triggered = $logText -match '热键触发'
@@ -236,10 +267,46 @@ $form.StartPosition = 'CenterScreen'
     }
     elseif ($triggered -and $minimized) {
         $passed = $true
-        Say '结果: 通过，程序收到热键并执行了最小化；窗口随即被开始菜单顶回（合成按键的副作用）'
+        Say '结果: 通过，程序收到热键并执行了最小化'
     }
     else {
         Say "结果: 未通过，showCmd $before -> $after，日志未见触发记录"
+    }
+
+    if ($panelNormal) {
+        Say "回归（先松 S）: 未通过，前台变成外壳面板 $panelNormal"
+        $passed = $false
+    }
+    else {
+        Say '回归（先松 S）: 通过，没弹出开始或搜索面板'
+    }
+
+    # 松开顺序回归：先松 Win 再松 S。这个顺序下系统只看到 Win 按下抬起，
+    # 没有掩码键就会弹出开始面板。
+    if (-not $Register -and $passed) {
+        [Win32Test]::ResetModifiers()
+        [void][Win32Test]::ForceForeground($hwnd)
+        Start-Sleep -Milliseconds 400
+
+        if ([Win32Test]::GetForegroundWindow() -ne $hwnd) {
+            Say '回归（先松 Win）: 未通过，没法把目标窗口设回前台，测试条件不成立'
+            $passed = $false
+        }
+        else {
+            [Win32Test]::SendWinS($true)
+            Start-Sleep -Milliseconds 1200
+            $panelWinFirst = Get-ForegroundShellPanel
+            [Win32Test]::SendEsc()
+            Start-Sleep -Milliseconds 300
+
+            if ($panelWinFirst) {
+                Say "回归（先松 Win）: 未通过，前台变成外壳面板 $panelWinFirst"
+                $passed = $false
+            }
+            else {
+                Say '回归（先松 Win）: 通过，没弹出开始或搜索面板'
+            }
+        }
     }
 }
 catch {
