@@ -1,0 +1,5 @@
+# 仓库统一用 LF；.bat 必须保持 CRLF，否则 cmd.exe 解析会出错
+* text=auto eol=lf
+*.bat text eol=crlf
+*.ico binary
+*.exe binary

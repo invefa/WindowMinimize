@@ -1,0 +1,16 @@
+# 构建产物
+dist/
+bin/
+obj/
+
+# 运行期文件：配置与日志由程序自己生成
+hotkey.ini
+hotkey.log
+
+# 测试脚本产生的临时文件
+test/*.log
+test/*-test.txt
+test/reload-test.ini
+test/parse-test.ini
+test/wins/wins.ini
+test/stdout.txt
