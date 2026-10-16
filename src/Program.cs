@@ -55,8 +55,8 @@ internal static class Program {
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        Log.Info($"WindowMinimize started, hotkey {config.Hotkey}, mode {config.Mode}, "
-            + $"config {config.ConfigPath}");
+        Log.Info($"WindowMinimize started, version {AppInfo.Version}, hotkey {config.Hotkey}, "
+            + $"mode {config.Mode}, config {config.ConfigPath}");
         foreach (string warning in config.Warnings) Log.Error(warning);
 
         var app = new TrayApp(config, cli.NoTray);

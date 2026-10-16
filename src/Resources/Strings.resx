@@ -43,6 +43,9 @@
   <data name="MenuExit" xml:space="preserve">
     <value>Exit</value>
   </data>
+  <data name="MenuVersion" xml:space="preserve">
+    <value>Version {0}</value>
+  </data>
   <data name="HotkeyNone" xml:space="preserve">
     <value>none</value>
   </data>

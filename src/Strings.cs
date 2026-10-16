@@ -34,6 +34,9 @@ internal static class Strings {
     internal static string HotkeyNone     => Get(nameof(HotkeyNone));
     internal static string HotkeyNotSet   => Get(nameof(HotkeyNotSet));
 
+    internal static string MenuVersion(string version) =>
+        Format(nameof(MenuVersion), version);
+
     internal static string HotkeyMenuItem(string hotkey) =>
         Format(nameof(HotkeyMenuItem), hotkey);
 
