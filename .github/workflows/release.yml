@@ -30,6 +30,10 @@ jobs:
             - name: Build the single file exe
               run: pwsh -NoProfile -File build\build.ps1
 
+            # the small one, for machines that already have the .NET 8 Desktop Runtime
+            - name: Build the framework dependent exe
+              run: pwsh -NoProfile -File build\build.ps1 -Lite
+
             # a release that does not carry the version of its tag is confusing, so stop here
             - name: Check the project version against the tag
               shell: pwsh
@@ -45,5 +49,7 @@ jobs:
               uses: softprops/action-gh-release@v2
               with:
                   name: ${{ github.ref_name }}
-                  files: dist/WindowMinimize.exe
+                  files: |
+                      dist/WindowMinimize.exe
+                      dist/WindowMinimize-lite.exe
                   generate_release_notes: true

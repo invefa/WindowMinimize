@@ -2,7 +2,11 @@
 
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
+        <!-- The framework keeps its plain form on purpose. A Windows version such as
+             net8.0-windows10.0.17763.0 pulls the WinRT projections into the publish output
+             (Microsoft.Windows.SDK.NET.dll, about 23 MB unpacked), and this tool uses no WinRT
+             API at all. -->
+        <TargetFramework>net8.0-windows</TargetFramework>
         <UseWindowsForms>true</UseWindowsForms>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>

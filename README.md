@@ -6,7 +6,8 @@ the .NET runtime nor any third-party component.
 
 Download `WindowMinimize.exe` from the
 [releases page](https://github.com/invefa/WindowMinimize/releases/latest) and run it, no
-installation needed, or build it yourself (section 8).
+installation needed. The `WindowMinimize-lite.exe` on the same page is about 200 KB, but it needs
+the .NET 8 Desktop Runtime on the machine. Both can be built from source too (section 8).
 
 ## 1. Usage
 
@@ -154,9 +155,12 @@ pwsh -NoProfile -File build\build.ps1
 
 The output is `dist\WindowMinimize.exe`, a self-contained release that runs directly when copied to
 another Windows 10/11 machine. `global.json` in the repository pins the SDK to the 8.0.403 series.
+Add `-Lite` to get `dist\WindowMinimize-lite.exe` instead, the framework dependent single file that
+needs the .NET 8 Desktop Runtime on the machine it runs on.
 
 Pushing a tag such as `v1.0.0`, matching `<Version>` in `src\WindowMinimize.csproj`, makes
-`.github\workflows\release.yml` run the unit tests, build the exe and attach it to the release.
+`.github\workflows\release.yml` run the unit tests, build both exe files and attach them to the
+release.
 
 Unit tests:
 
