@@ -1,26 +1,29 @@
 namespace WindowMinimize.Tests;
 
 /// <summary>
-/// HotkeySpec.TryParse 是纯函数，这里覆盖写法规范化、修饰键识别和各类拒绝规则。
-/// 这些规则直接决定用户写在 hotkey.ini 里的东西能不能生效，改解析逻辑时必须一起看。
+/// HotkeySpec.TryParse is a pure function, so this covers spelling normalization, modifier
+/// recognition and every rejection rule. Those rules decide whether what the user writes into
+/// hotkey.ini works at all, so this file has to be read along with any change to the parsing.
 /// </summary>
-public class HotkeySpecTests
-{
-    private static HotkeySpec Parse(string text)
-    {
-        Assert.True(HotkeySpec.TryParse(text, out HotkeySpec? spec, out string error), $"应当能解析 “{text}”，实际报错：{error}");
+public class HotkeySpecTests {
+    private static HotkeySpec Parse(string text) {
+        bool ok = HotkeySpec.TryParse(text, out HotkeySpec? spec, out string error);
+        Assert.True(ok, $"should have parsed {text}, but it reported: {error}");
         return spec!;
     }
 
-    private static string ParseError(string text)
-    {
-        Assert.False(HotkeySpec.TryParse(text, out HotkeySpec? spec, out string error), $"不该解析成功：{text}");
+    private static string ParseError(string text) {
+        bool ok = HotkeySpec.TryParse(text, out HotkeySpec? spec, out string error);
+        Assert.False(ok, $"should not have parsed: {text}");
         Assert.Null(spec);
         Assert.NotEmpty(error);
         return error;
     }
 
-    /// <summary>写法规范化：大小写、分隔符、词序都不影响结果，回显统一成 Win、Ctrl、Alt、Shift 加主键。</summary>
+    /// <summary>
+    /// Spelling: case, separator and word order do not matter, the result always reads Win, Ctrl,
+    /// Alt, Shift plus the main key.
+    /// </summary>
     [Theory]
     [InlineData("Ctrl+Alt+M", "Ctrl+Alt+M")]
     [InlineData("ctrl+alt+m", "Ctrl+Alt+M")]
@@ -45,42 +48,46 @@ public class HotkeySpecTests
     [InlineData("Ctrl++", "Ctrl+Plus")]
     [InlineData("Ctrl+Grave", "Ctrl+Grave")]
     [InlineData("Ctrl+Semicolon", "Ctrl+Semicolon")]
-    public void NormalizesSpelling(string text, string expected) => Assert.Equal(expected, Parse(text).Text);
+    public void NormalizesSpelling(string text, string expected) =>
+        Assert.Equal(expected, Parse(text).Text);
 
-    /// <summary>修饰键本身怎么排都认，主键也要落对虚拟键码。</summary>
+    /// <summary>
+    /// The modifiers may be written in any order, and the main key still lands on the right virtual
+    /// key code.
+    /// </summary>
     [Fact]
-    public void ParsesModifiersAndKey()
-    {
+    public void ParsesModifiersAndKey() {
         HotkeySpec spec = Parse("Alt+M+Ctrl");
 
         Assert.Equal(Native.MOD_CONTROL | Native.MOD_ALT, spec.Modifiers);
         Assert.Equal((uint)'M', spec.VirtualKey);
     }
 
-    /// <summary>只有 Win 一个修饰键时也要认成修饰键，而不是当成主键。</summary>
+    /// <summary>A lone Win is a modifier too, not the main key.</summary>
     [Fact]
-    public void TreatsLoneWinAsModifier()
-    {
+    public void TreatsLoneWinAsModifier() {
         HotkeySpec spec = Parse("S+Win");
 
         Assert.Equal(Native.MOD_WIN, spec.Modifiers);
         Assert.Equal((uint)'S', spec.VirtualKey);
     }
 
-    /// <summary>规范化后的写法再解析一次，必须还是同一个热键。</summary>
+    /// <summary>Parsing the canonical text again has to give the same hotkey.</summary>
     [Theory]
     [InlineData("Win+S")]
     [InlineData("ctrl+alt+shift+f9")]
     [InlineData("Ctrl+-")]
     [InlineData("Ctrl+Num5")]
-    public void CanonicalTextRoundTrips(string text)
-    {
+    public void CanonicalTextRoundTrips(string text) {
         HotkeySpec first = Parse(text);
 
         Assert.Equal(first, Parse(first.Text));
     }
 
-    /// <summary>不该被接受的写法：空、缺主键、多主键、未知键名，以及会抢走正常输入的单键。</summary>
+    /// <summary>
+    /// Spellings that must not be accepted: empty, no main key, two main keys, an unknown key name
+    /// and bare keys that would steal normal typing.
+    /// </summary>
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
@@ -94,7 +101,10 @@ public class HotkeySpecTests
     [InlineData("Ctrl+Num99")]
     public void RejectsInvalidSpelling(string text) => ParseError(text);
 
-    /// <summary>系统保留与系统占用的组合必须拒绝，否则注册不上或抢掉系统功能。</summary>
+    /// <summary>
+    /// Combinations that Windows reserves or owns have to be rejected, they cannot be registered
+    /// or would steal a system feature.
+    /// </summary>
     [Theory]
     [InlineData("F12")]
     [InlineData("Ctrl+F12")]
@@ -103,20 +113,24 @@ public class HotkeySpecTests
     [InlineData("Win+L")]
     public void RejectsSystemReservedCombo(string text) => ParseError(text);
 
-    /// <summary>单键只放行功能键，避免 Ctrl+C 之外又把普通按键抢走。</summary>
+    /// <summary>
+    /// A bare key only passes for function keys, so anything else keeps its normal typing.
+    /// </summary>
     [Theory]
     [InlineData("F1", true)]
     [InlineData("F24", true)]
     [InlineData("M", false)]
     [InlineData("0", false)]
-    public void BareKeyAllowsFunctionKeysOnly(string text, bool allowed)
-    {
+    public void BareKeyAllowsFunctionKeysOnly(string text, bool allowed) {
         bool parsed = HotkeySpec.TryParse(text, out _, out _);
 
         Assert.Equal(allowed, parsed);
     }
 
-    /// <summary>被 Windows 自己占用的 Win 组合要认出来，注册时会改用键盘钩子并提示接管。</summary>
+    /// <summary>
+    /// Win combinations owned by Windows have to be recognized, registering them switches to the
+    /// keyboard hook and the message says so.
+    /// </summary>
     [Theory]
     [InlineData("Win+S", true)]
     [InlineData("Win+D", true)]
@@ -125,17 +139,17 @@ public class HotkeySpecTests
     [InlineData("Win+Q", false)]
     [InlineData("Ctrl+S", false)]
     [InlineData("Win+Alt+S", false)]
-    public void DetectsWindowsOwnedWinCombo(string text, bool expected)
-    {
+    public void DetectsWindowsOwnedWinCombo(string text, bool expected) {
         HotkeySpec spec = Parse(text);
 
         Assert.Equal(expected, HotkeySpec.IsWindowsOwnedWinCombo(spec.Modifiers, spec.VirtualKey));
     }
 
-    /// <summary>同一组合的等价性只按修饰键位与虚拟键码判定。</summary>
+    /// <summary>
+    /// Two hotkeys are the same when the modifier bits and the virtual key match.
+    /// </summary>
     [Fact]
-    public void EqualityUsesModifiersAndVirtualKey()
-    {
+    public void EqualityUsesModifiersAndVirtualKey() {
         Assert.Equal(Parse("ctrl+alt+m"), Parse("Ctrl+Alt+M"));
         Assert.NotEqual(Parse("Ctrl+Alt+M"), Parse("Ctrl+Shift+M"));
     }

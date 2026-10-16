@@ -1,4 +1,4 @@
-# 仓库统一用 LF；.bat 必须保持 CRLF，否则 cmd.exe 解析会出错
+# The repository uses LF everywhere; .bat must stay CRLF or cmd.exe parsing breaks
 * text=auto eol=lf
 *.bat text eol=crlf
 *.ico binary

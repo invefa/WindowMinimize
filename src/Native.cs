@@ -3,10 +3,9 @@ using System.Runtime.InteropServices;
 namespace WindowMinimize;
 
 /// <summary>
-/// 用到的 Win32 接口都集中在这里。
+/// Every Win32 call this tool uses, collected in one place.
 /// </summary>
-internal static class Native
-{
+internal static class Native {
     internal const int WM_HOTKEY = 0x0312;
     internal const int WM_SYSCOMMAND = 0x0112;
     internal const int SC_MINIMIZE = 0xF020;
@@ -58,10 +57,15 @@ internal static class Native
     internal static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
 
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    internal static extern IntPtr SendMessageTimeout(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam, int flags, int timeout, out IntPtr result);
+    internal static extern IntPtr SendMessageTimeout(
+        IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam, int flags, int timeout,
+        out IntPtr result
+    );
 
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    internal static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder name, int maxCount);
+    internal static extern int GetClassName(
+        IntPtr hWnd, System.Text.StringBuilder name, int maxCount
+    );
 
     [DllImport("user32.dll")]
     internal static extern IntPtr GetShellWindow();
@@ -73,15 +77,19 @@ internal static class Native
     internal static extern int GetWindowTextLength(IntPtr hWnd);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    internal static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int maxCount);
+    internal static extern int GetWindowText(
+        IntPtr hWnd, System.Text.StringBuilder text, int maxCount
+    );
 
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     [DllImport("dwmapi.dll")]
-    internal static extern int DwmGetWindowAttribute(IntPtr hWnd, int attribute, out int value, int size);
+    internal static extern int DwmGetWindowAttribute(
+        IntPtr hWnd, int attribute, out int value, int size
+    );
 
-    // 低级键盘钩子用的接口
+    // low level keyboard hook
     internal delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
     internal const int WH_KEYBOARD_LL = 13;
@@ -92,8 +100,7 @@ internal static class Native
     internal const int WM_SYSKEYUP = 0x0105;
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct KbdLlHookStruct
-    {
+    internal struct KbdLlHookStruct {
         internal uint VkCode;
         internal uint ScanCode;
         internal uint Flags;
@@ -102,13 +109,17 @@ internal static class Native
     }
 
     [DllImport("user32.dll", SetLastError = true)]
-    internal static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+    internal static extern IntPtr SetWindowsHookEx(
+        int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId
+    );
 
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern bool UnhookWindowsHookEx(IntPtr hhk);
 
     [DllImport("user32.dll")]
-    internal static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+    internal static extern IntPtr CallNextHookEx(
+        IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam
+    );
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     internal static extern IntPtr GetModuleHandle(string? lpModuleName);
@@ -116,9 +127,13 @@ internal static class Native
     [DllImport("user32.dll")]
     internal static extern short GetAsyncKeyState(int vKey);
 
-    /// <summary>合成一次按键，用于热键吞键之后补发掩码键。</summary>
+    /// <summary>
+    /// Synthesize one key press, used to tap the mask key after a hotkey swallowed a key.
+    /// </summary>
     [DllImport("user32.dll")]
-    internal static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+    internal static extern void keybd_event(
+        byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo
+    );
 
     internal const uint KEYEVENTF_KEYUP = 0x0002;
 
@@ -126,96 +141,73 @@ internal static class Native
     internal const byte VK_CONTROL = 0x11;
 
     /// <summary>
-    /// UWP 窗口在挂起时只被 DWM 遮蔽，仍然处于“未最小化”状态，直接最小化会被忽略，需要特殊处理。
+    /// A suspended UWP window is only cloaked by DWM and still counts as not minimized, so a plain
+    /// minimize is ignored and it needs special handling.
     /// </summary>
-    internal static bool IsCloaked(IntPtr hWnd)
-    {
-        try
-        {
-            return DwmGetWindowAttribute(hWnd, DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0;
-        }
-        catch (DllNotFoundException)
-        {
+    internal static bool IsCloaked(IntPtr hWnd) {
+        try {
+            return DwmGetWindowAttribute(hWnd, DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0
+                && cloaked != 0;
+        } catch (DllNotFoundException) {
             return false;
-        }
-        catch (EntryPointNotFoundException)
-        {
+        } catch (EntryPointNotFoundException) {
             return false;
         }
     }
 
-    /// <summary>
-    /// 取窗口标题，仅用于日志。
-    /// </summary>
-    internal static string GetWindowTitle(IntPtr hWnd)
-    {
-        try
-        {
+    /// <summary>Window title, used by the log only.</summary>
+    internal static string GetWindowTitle(IntPtr hWnd) {
+        try {
             int len = GetWindowTextLength(hWnd);
-            if (len <= 0)
-            {
-                return string.Empty;
-            }
+            if (len <= 0) return string.Empty;
 
             var sb = new System.Text.StringBuilder(len + 2);
             int copied = GetWindowText(hWnd, sb, sb.Capacity);
             return copied > 0 ? sb.ToString() : string.Empty;
-        }
-        catch
-        {
+        } catch {
             return string.Empty;
         }
     }
 
     /// <summary>
-    /// 取窗口类名。用于识别系统外壳窗口（任务栏、桌面、开始菜单等）。
+    /// Window class name, used to recognize the shell surfaces such as the taskbar, the desktop and
+    /// the start menu.
     /// </summary>
-    internal static string GetWindowClassName(IntPtr hWnd)
-    {
-        try
-        {
+    internal static string GetWindowClassName(IntPtr hWnd) {
+        try {
             var sb = new System.Text.StringBuilder(256);
             return GetClassName(hWnd, sb, sb.Capacity) > 0 ? sb.ToString() : string.Empty;
-        }
-        catch
-        {
+        } catch {
             return string.Empty;
         }
     }
 
     /// <summary>
-    /// 取窗口所属进程名，取不到时返回空串。用于识别开始菜单、搜索这类同样用
-    /// CoreWindow 类名的外壳进程。
+    /// Process name of the window, empty when it cannot be read. Used to recognize the shell
+    /// processes such as the start menu and search, which use the CoreWindow class name too.
     /// </summary>
-    internal static string GetProcessName(IntPtr hWnd)
-    {
-        try
-        {
+    internal static string GetProcessName(IntPtr hWnd) {
+        try {
             GetWindowThreadProcessId(hWnd, out uint pid);
-            if (pid == 0)
-            {
-                return string.Empty;
-            }
+            if (pid == 0) return string.Empty;
 
-            using System.Diagnostics.Process process = System.Diagnostics.Process.GetProcessById((int)pid);
+            using System.Diagnostics.Process process =
+                System.Diagnostics.Process.GetProcessById((int)pid);
             return process.ProcessName;
-        }
-        catch
-        {
+        } catch {
             return string.Empty;
         }
     }
 
-    /// <summary>窗口是否属于本进程。托盘菜单弹出时前台窗口就是本进程的菜单窗口。</summary>
-    internal static bool IsOwnProcessWindow(IntPtr hWnd)
-    {
-        try
-        {
+    /// <summary>
+    /// Whether the window belongs to this process. While a tray menu is open the foreground window
+    /// is the menu window of this process.
+    /// </summary>
+    internal static bool IsOwnProcessWindow(IntPtr hWnd) {
+        try {
             GetWindowThreadProcessId(hWnd, out uint pid);
             return pid == (uint)Environment.ProcessId;
-        }
-        catch
-        {
+        } catch {
             return false;
         }
     }

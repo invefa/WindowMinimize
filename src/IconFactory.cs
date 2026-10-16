@@ -5,32 +5,25 @@ using System.Runtime.InteropServices;
 namespace WindowMinimize;
 
 /// <summary>
-/// 托盘图标。按系统小图标尺寸直接画（从 exe 里的 32×32 缩到 16 会发虚），画不出来时退回 exe 内嵌图标。
+/// Tray icon. It is drawn right at the small icon size of the system, because scaling the 32x32
+/// icon from the exe down to 16 comes out blurry, and the icon embedded in the exe is used when
+/// drawing fails.
 /// </summary>
-internal static class IconFactory
-{
+internal static class IconFactory {
     private static Icon? _cached;
 
-    internal static Icon Create()
-    {
-        if (_cached is not null)
-        {
-            return (Icon)_cached.Clone();
-        }
+    internal static Icon Create() {
+        if (_cached is not null) return (Icon)_cached.Clone();
 
-        try
-        {
+        try {
             _cached = Draw(SystemInformation.SmallIconSize.Width);
             return (Icon)_cached.Clone();
-        }
-        catch
-        {
-            // 现画失败就退回 exe 内嵌图标
+        } catch {
+            // drawing failed, fall back to the icon embedded in the exe
         }
 
         Icon? fromExe = LoadFromExecutable();
-        if (fromExe is not null)
-        {
+        if (fromExe is not null) {
             _cached = fromExe;
             return (Icon)fromExe.Clone();
         }
@@ -39,67 +32,51 @@ internal static class IconFactory
         return (Icon)_cached.Clone();
     }
 
-    private static Icon? LoadFromExecutable()
-    {
-        try
-        {
+    private static Icon? LoadFromExecutable() {
+        try {
             string? exe = Environment.ProcessPath;
-            if (exe is null || !File.Exists(exe))
-            {
-                return null;
-            }
+            if (exe is null || !File.Exists(exe)) return null;
 
             Icon? icon = Icon.ExtractAssociatedIcon(exe);
-            if (icon is null)
-            {
-                return null;
-            }
+            if (icon is null) return null;
 
-            // 退回路径：拿到的内嵌图标是 32×32，再由系统缩到托盘尺寸
-            using var bmp = icon.ToBitmap();
+            // fallback path: the embedded icon comes out 32x32 and the system scales it to the tray
+            using var bmp    = icon.ToBitmap();
             using var scaled = new Bitmap(32, 32);
-            using (var g = Graphics.FromImage(scaled))
-            {
+            using (var g = Graphics.FromImage(scaled)) {
                 g.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 g.DrawImage(bmp, 0, 0, 32, 32);
             }
 
             IntPtr handle = scaled.GetHicon();
-            try
-            {
+            try {
                 using Icon temp = Icon.FromHandle(handle);
                 return (Icon)temp.Clone();
-            }
-            finally
-            {
+            } finally {
                 DestroyIcon(handle);
             }
-        }
-        catch
-        {
+        } catch {
             return null;
         }
     }
 
     /// <summary>
-    /// 画一个“最小化”图标：两条向下的折线箭头收到底部一条横线上，示意把窗口收起到任务栏。
-    /// 几何与 build\make-icon.ps1 保持一致（都是 32 单位坐标系），改一边要同步改另一边。
+    /// Draw a minimize glyph: two chevrons pointing down onto a bar at the bottom, the window
+    /// collapsing into the taskbar. The geometry matches build\make-icon.ps1, both use a 32 unit
+    /// grid, so a change on one side has to be made on the other side too.
     /// </summary>
-    private static Icon Draw(int size)
-    {
+    private static Icon Draw(int size) {
         using var bmp = new Bitmap(size, size);
-        using (Graphics g = Graphics.FromImage(bmp))
-        {
+        using (Graphics g = Graphics.FromImage(bmp)) {
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.Clear(Color.Transparent);
 
             float scale = size / 32f;
             PointF P(float x, float y) => new(x * scale, y * scale);
 
-            using var pen = new Pen(Color.FromArgb(46, 124, 246), 3f * scale)
-            {
+            using var pen = new Pen(Color.FromArgb(46, 124, 246), 3f * scale) {
                 StartCap = LineCap.Round,
-                EndCap = LineCap.Round,
+                EndCap   = LineCap.Round,
                 LineJoin = LineJoin.Round,
             };
 
@@ -109,13 +86,10 @@ internal static class IconFactory
         }
 
         IntPtr handle = bmp.GetHicon();
-        try
-        {
+        try {
             using Icon temp = Icon.FromHandle(handle);
             return (Icon)temp.Clone();
-        }
-        finally
-        {
+        } finally {
             DestroyIcon(handle);
         }
     }

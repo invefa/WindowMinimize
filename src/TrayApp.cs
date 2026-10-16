@@ -5,10 +5,10 @@ using System.Windows.Forms;
 namespace WindowMinimize;
 
 /// <summary>
-/// 托盘应用主体：隐藏消息窗口收热键，托盘菜单提供开关与配置入口。
+/// The tray application: a hidden message window receives the hotkey, the tray menu holds the
+/// switches and the way into the settings.
 /// </summary>
-internal sealed class TrayApp : ApplicationContext
-{
+internal sealed class TrayApp : ApplicationContext {
     private readonly MessageWindow _window;
     private readonly HotkeySource _source;
     private readonly NotifyIcon _icon;
@@ -24,8 +24,7 @@ internal sealed class TrayApp : ApplicationContext
     private bool _suspended;
     private int _suspendSecondsLeft;
 
-    internal TrayApp(AppConfig config, bool headless)
-    {
+    internal TrayApp(AppConfig config, bool headless) {
         Config = config;
         Headless = headless;
 
@@ -36,21 +35,17 @@ internal sealed class TrayApp : ApplicationContext
 
         var menu = new ContextMenuStrip();
 
-        var minimizeItem = new ToolStripMenuItem("最小化当前窗口");
+        var minimizeItem = new ToolStripMenuItem("Minimize current window");
         minimizeItem.Click += (_, _) => MinimizeForeground();
 
-        // hide 方式隐藏的窗口在任务栏上不留按钮，只能从这里找回
-        _restoreItem = new ToolStripMenuItem("还原上次隐藏的窗口", null, (_, _) => RestoreLastHidden())
-        {
-            Enabled = false,
-        };
+        // a window hidden with the hide mode leaves no taskbar button, this is the way back
+        _restoreItem = new ToolStripMenuItem("Restore last hidden window") { Enabled = false };
+        _restoreItem.Click += (_, _) => RestoreLastHidden();
 
         _hotkeyItem = new ToolStripMenuItem { Enabled = false };
-        _suspendItem = new ToolStripMenuItem("暂停热键", null, (_, _) =>
-        {
-            // 按住 Shift 点击等于暂停 5 分钟，到点自动恢复
-            if ((Control.ModifierKeys & Keys.Shift) != 0)
-            {
+        _suspendItem = new ToolStripMenuItem("Suspend hotkey", null, (_, _) => {
+            // holding Shift while clicking suspends for 5 minutes, it resumes by itself
+            if ((Control.ModifierKeys & Keys.Shift) != 0) {
                 SuspendFor(300);
                 return;
             }
@@ -58,15 +53,19 @@ internal sealed class TrayApp : ApplicationContext
             SetSuspended(!_suspended);
         });
 
-        var openItem = new ToolStripMenuItem("打开配置文件…", null, (_, _) => ConfigStore.OpenInNotepad(Config.ConfigPath));
-        var reloadItem = new ToolStripMenuItem("重新载入配置", null, (_, _) => Reload(interactive: true));
+        var openItem = new ToolStripMenuItem(
+            "Open config file...", null, (_, _) => ConfigStore.OpenInNotepad(Config.ConfigPath)
+        );
+        var reloadItem = new ToolStripMenuItem(
+            "Reload config", null, (_, _) => Reload(interactive: true)
+        );
 
-        var autoStartClick = new EventHandler((_, _) => SetAutoStart(!ConfigStore.IsAutoStartEnabled()));
-        _autoStartItem = new ToolStripMenuItem("开机自动启动", null, autoStartClick);
+        var autoStartClick = new EventHandler((_, _) =>
+            SetAutoStart(!ConfigStore.IsAutoStartEnabled()));
+        _autoStartItem = new ToolStripMenuItem("Start with Windows", null, autoStartClick);
 
-        var exitItem = new ToolStripMenuItem("退出", null, (_, _) =>
-        {
-            Log.Info("收到退出指令");
+        var exitItem = new ToolStripMenuItem("Exit", null, (_, _) => {
+            Log.Info("exit requested");
             ExitThread();
         });
 
@@ -82,8 +81,7 @@ internal sealed class TrayApp : ApplicationContext
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(exitItem);
 
-        _icon = new NotifyIcon
-        {
+        _icon = new NotifyIcon {
             Icon = IconFactory.Create(),
             Text = "WindowMinimize",
             ContextMenuStrip = menu,
@@ -92,47 +90,21 @@ internal sealed class TrayApp : ApplicationContext
         _icon.DoubleClick += (_, _) => MinimizeForeground();
 
         _suspendCountdown = new System.Windows.Forms.Timer { Interval = 1000 };
-        _suspendCountdown.Tick += (_, _) =>
-        {
+        _suspendCountdown.Tick += (_, _) => {
             _suspendSecondsLeft--;
-            if (_suspendSecondsLeft <= 0)
-            {
-                _suspendCountdown.Stop();
-                SetSuspended(false);
-            }
+            if (_suspendSecondsLeft > 0) return;
+
+            _suspendCountdown.Stop();
+            SetSuspended(false);
         };
 
         Apply(config, initial: true);
         SyncAutoStart();
 
-        try
-        {
+        try {
             _watcher = new ConfigStore.Watcher(config.ConfigPath, () => Reload(interactive: false));
-        }
-        catch (Exception ex)
-        {
-            Log.Error($"无法监视配置文件变化：{ex.Message}");
-        }
-    }
-
-    /// <summary>按配置里的 AutoStart 同步开机自启注册表项，只在配置显式写了且状态不一致时才写。</summary>
-    private void SyncAutoStart()
-    {
-        if (Config.AutoStart is not bool wanted)
-        {
-            return;
-        }
-
-        try
-        {
-            if (ConfigStore.IsAutoStartEnabled() != wanted)
-            {
-                ConfigStore.SetAutoStart(wanted);
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error($"同步开机自启设置失败：{ex.Message}");
+        } catch (Exception ex) {
+            Log.Error($"cannot watch the config file: {ex.Message}");
         }
     }
 
@@ -142,68 +114,59 @@ internal sealed class TrayApp : ApplicationContext
 
     internal string LastError => _lastError;
 
-    /// <summary>本程序的隐藏消息窗口句柄。</summary>
+    /// <summary>Handle of the hidden message window of this program.</summary>
     internal IntPtr MessageWindowHandle => _window.Handle;
 
-    /// <summary>当前生效的热键；未注册成功时为 null。</summary>
+    /// <summary>The hotkey that is in effect, null when nothing could be registered.</summary>
     internal HotkeySpec? ActiveSpec => _spec;
 
-    internal string ActiveSpecText => _spec?.Text ?? "无";
+    internal string ActiveSpecText => _spec?.Text ?? "none";
 
-    /// <summary>是否因为组合被占用而用了低级键盘钩子。</summary>
+    /// <summary>
+    /// Whether the low level keyboard hook is in use because the combination is taken.
+    /// </summary>
     internal bool IsUsingKeyboardHook => _source.UsingHook;
 
-    /// <summary>走键盘钩子是否因为该组合被 Windows 自己占用（例如 Win+S）。</summary>
+    /// <summary>
+    /// Whether the hook is in use because Windows itself owns the combination (Win+S).
+    /// </summary>
     internal bool IsUsingHookForWindowsCombo => _source.HookIsWindowsOwned;
 
-    /// <summary>处理隐藏消息窗口转发来的消息，命中热键时触发最小化。</summary>
+    /// <summary>
+    /// Handle a message forwarded by the hidden window, a hotkey hit minimizes now.
+    /// </summary>
     internal void HandleHotkeyMessage(int msg, IntPtr wParam) => _source.HandleMessage(msg, wParam);
 
-    /// <summary>应用配置：注册热键、刷新菜单。热键失败时保留原来的热键并返回 false。</summary>
-    internal bool Apply(AppConfig config, bool initial = false)
-    {
+    /// <summary>
+    /// Apply a config: register the hotkey and refresh the menu. On failure the hotkey that was in
+    /// effect is kept and false is returned.
+    /// </summary>
+    internal bool Apply(AppConfig config, bool initial = false) {
         Config = config;
 
-        if (!HotkeySpec.TryParse(config.Hotkey, out HotkeySpec? spec, out string parseError))
-        {
+        if (!HotkeySpec.TryParse(config.Hotkey, out HotkeySpec? spec, out string parseError)) {
             _lastError = parseError;
-            if (initial)
-            {
-                Log.Error($"配置里的热键无效：{parseError}");
-            }
-            else
-            {
-                Log.Error($"热键写法无效，保持原热键：{parseError}");
-            }
-
+            Log.Error(initial
+                ? $"hotkey in the config is invalid: {parseError}"
+                : $"hotkey text is invalid, keeping the current hotkey: {parseError}");
             RefreshMenu();
             return false;
         }
 
-        if (_suspended)
-        {
+        if (_suspended) {
             _spec = spec;
             RefreshMenu();
             return true;
         }
 
-        if (!_source.TryRegister(spec!, out string registerError))
-        {
+        if (!_source.TryRegister(spec!, out string registerError)) {
             _lastError = registerError;
             Log.Error(registerError);
-            if (initial)
-            {
-                // 首次注册失败就退回默认热键，保证程序可用
-                if (!spec!.Text.Equals(AppConfig.DefaultHotkey, StringComparison.OrdinalIgnoreCase)
-                    && HotkeySpec.TryParse(AppConfig.DefaultHotkey, out HotkeySpec? fallback, out _)
-                    && _source.TryRegister(fallback!, out _))
-                {
-                    _spec = fallback;
-                    _lastError += $"；已退回默认热键 {fallback!.Text}";
-                    Log.Info($"已退回默认热键 {fallback.Text}");
-                    RefreshMenu();
-                    return true;
-                }
+
+            // the very first registration falls back to the default hotkey so the tool stays usable
+            if (initial && TryFallbackToDefault(spec!)) {
+                RefreshMenu();
+                return true;
             }
 
             RefreshMenu();
@@ -216,32 +179,39 @@ internal sealed class TrayApp : ApplicationContext
         return true;
     }
 
-    /// <summary>重新读取配置文件并应用。</summary>
-    internal void Reload(bool interactive)
-    {
+    private bool TryFallbackToDefault(HotkeySpec spec) {
+        if (spec.Text.Equals(AppConfig.DefaultHotkey, StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (!HotkeySpec.TryParse(AppConfig.DefaultHotkey, out HotkeySpec? fallback, out _))
+            return false;
+        if (!_source.TryRegister(fallback!, out _)) return false;
+
+        _spec = fallback;
+        _lastError += $"; fell back to the default hotkey {fallback!.Text}";
+        Log.Info($"fell back to the default hotkey {fallback.Text}");
+        return true;
+    }
+
+    /// <summary>Read the config file again and apply it.</summary>
+    internal void Reload(bool interactive) {
         AppConfig fresh = ConfigStore.Load(Config.ConfigPath);
-        Log.Debug($"重新载入配置：热键 {fresh.Hotkey}，方式 {fresh.Mode}");
+        Log.Debug($"config reloaded: hotkey {fresh.Hotkey}, mode {fresh.Mode}");
         bool ok = Apply(fresh);
 
-        if (!ok && interactive)
-        {
-            _icon.ShowBalloonTip(4000, "WindowMinimize", $"热键未生效：{_lastError}", ToolTipIcon.Warning);
+        if (!ok && interactive) {
+            string message = $"hotkey is not active: {_lastError}";
+            _icon.ShowBalloonTip(4000, "WindowMinimize", message, ToolTipIcon.Warning);
         }
     }
 
-    private void SetSuspended(bool suspended)
-    {
+    private void SetSuspended(bool suspended) {
         _suspended = suspended;
 
-        if (suspended)
-        {
+        if (suspended) {
             _source.Reset();
-            Log.Info("热键已暂停");
-        }
-        else if (_spec is not null)
-        {
-            if (!_source.TryRegister(_spec, out string error))
-            {
+            Log.Info("hotkey suspended");
+        } else if (_spec is not null) {
+            if (!_source.TryRegister(_spec, out string error)) {
                 _lastError = error;
                 Log.Error(error);
             }
@@ -250,175 +220,154 @@ internal sealed class TrayApp : ApplicationContext
         RefreshMenu();
     }
 
-    /// <summary>托盘菜单里的“暂停热键”带倒计时。</summary>
-    internal void SuspendFor(int seconds)
-    {
-        if (!_suspended)
-        {
-            SetSuspended(true);
-        }
+    /// <summary>The Suspend hotkey menu entry, with a countdown that resumes by itself.</summary>
+    internal void SuspendFor(int seconds) {
+        if (!_suspended) SetSuspended(true);
 
         _suspendSecondsLeft = seconds;
         _suspendCountdown.Stop();
         _suspendCountdown.Start();
     }
 
-    private void SetAutoStart(bool enabled)
-    {
-        try
-        {
-            ConfigStore.SetAutoStart(enabled);
+    /// <summary>
+    /// Sync the auto start registry value with the config, only when it says so explicitly.
+    /// </summary>
+    private void SyncAutoStart() {
+        if (Config.AutoStart is not bool wanted) return;
+
+        try {
+            if (ConfigStore.IsAutoStartEnabled() != wanted) ConfigStore.SetAutoStart(wanted);
+        } catch (Exception ex) {
+            Log.Error($"could not sync the auto start setting: {ex.Message}");
         }
-        catch (Exception ex)
-        {
-            Log.Error($"设置开机自启失败：{ex.Message}");
-            _icon.ShowBalloonTip(4000, "WindowMinimize", $"设置开机自启失败：{ex.Message}", ToolTipIcon.Error);
+    }
+
+    private void SetAutoStart(bool enabled) {
+        try {
+            ConfigStore.SetAutoStart(enabled);
+        } catch (Exception ex) {
+            string message = $"could not set auto start: {ex.Message}";
+            Log.Error(message);
+            _icon.ShowBalloonTip(4000, "WindowMinimize", message, ToolTipIcon.Error);
         }
 
         RefreshMenu();
     }
 
-    private void RefreshMenu()
-    {
-        if (_suspended)
-        {
-            _hotkeyItem.Text = $"热键：{_spec?.Text ?? "无"}（已暂停）";
-            _suspendItem.Text = "恢复热键";
-        }
-        else
-        {
-            _hotkeyItem.Text = $"热键：{_spec?.Text ?? "无"}";
-            _suspendItem.Text = "暂停热键";
+    private void RefreshMenu() {
+        if (_suspended) {
+            _hotkeyItem.Text  = $"hotkey: {_spec?.Text ?? "none"} (suspended)";
+            _suspendItem.Text = "Resume hotkey";
+        } else {
+            _hotkeyItem.Text  = $"hotkey: {_spec?.Text ?? "none"}";
+            _suspendItem.Text = "Suspend hotkey";
         }
 
         _autoStartItem.Checked = ConfigStore.IsAutoStartEnabled();
-        _restoreItem.Enabled = _lastHidden != IntPtr.Zero && Native.IsWindow(_lastHidden);
-        _icon.Text = Truncate($"WindowMinimize | {_spec?.Text ?? "未设置"} | 最小化当前窗口", 62);
+        _restoreItem.Enabled   = _lastHidden != IntPtr.Zero && Native.IsWindow(_lastHidden);
+
+        string tip = $"WindowMinimize | {_spec?.Text ?? "not set"} | minimize current window";
+        _icon.Text = Truncate(tip, 62);
     }
 
     private static string Truncate(string text, int max) => text.Length <= max ? text : text[..max];
 
-    /// <summary>热键与托盘菜单共用的动作。</summary>
-    internal void MinimizeForeground()
-    {
+    /// <summary>The action shared by the hotkey and the tray menu.</summary>
+    internal void MinimizeForeground() {
         IntPtr hwnd = WindowOps.GetForegroundTarget(_window.Handle);
-        if (hwnd == IntPtr.Zero)
-        {
-            Log.Debug("没有取到可最小化的前台窗口，忽略本次触发");
+        if (hwnd == IntPtr.Zero) {
+            Log.Debug("no foreground window to minimize, ignoring this trigger");
             return;
         }
 
-        if (Native.IsIconic(hwnd) && !Config.Mode.Equals("hide", StringComparison.OrdinalIgnoreCase))
-        {
-            Log.Debug("前台窗口已经是最小化状态，忽略");
+        bool hiding = Config.Mode.Equals("hide", StringComparison.OrdinalIgnoreCase);
+        if (Native.IsIconic(hwnd) && !hiding) {
+            Log.Debug("foreground window is already minimized, ignoring");
             return;
         }
 
         WindowOps.MinimizeWithRetry(hwnd, Config.Mode);
 
-        if (Config.Mode.Equals("hide", StringComparison.OrdinalIgnoreCase))
-        {
+        if (hiding) {
             _lastHidden = hwnd;
             RefreshMenu();
         }
     }
 
-    /// <summary>还原上一次用 hide 方式隐藏的窗口。</summary>
-    private void RestoreLastHidden()
-    {
-        if (_lastHidden != IntPtr.Zero && !WindowOps.Restore(_lastHidden))
-        {
-            Log.Debug("上次隐藏的窗口已经不存在，无法还原");
+    /// <summary>Bring back the window that the last hide action put away.</summary>
+    private void RestoreLastHidden() {
+        if (_lastHidden != IntPtr.Zero && !WindowOps.Restore(_lastHidden)) {
+            Log.Debug("the window hidden last time is gone, cannot restore it");
         }
 
         _lastHidden = IntPtr.Zero;
         RefreshMenu();
     }
 
-    /// <summary>弹出设置窗口。</summary>
-    internal void ShowSettingsDialog()
-    {
+    /// <summary>Show the settings dialog.</summary>
+    internal void ShowSettingsDialog() {
         using var dialog = new HotkeyDialog(Config);
-        if (dialog.ShowDialog() != DialogResult.OK)
-        {
-            return;
-        }
+        if (dialog.ShowDialog() != DialogResult.OK) return;
 
         Config.Hotkey = dialog.HotkeyText;
         Config.Mode = dialog.Mode;
         Apply(Config);
 
-        try
-        {
+        try {
             ConfigStore.SetAutoStart(dialog.AutoStart);
-        }
-        catch (Exception ex)
-        {
-            Log.Error($"设置开机自启失败：{ex.Message}");
+        } catch (Exception ex) {
+            Log.Error($"could not set auto start: {ex.Message}");
         }
 
         SaveToFile();
         RefreshMenu();
     }
 
-    /// <summary>把内存里的设置写回 hotkey.ini（保留注释，逐行替换值）。</summary>
-    private void SaveToFile()
-    {
-        try
-        {
+    /// <summary>
+    /// Write the settings back to hotkey.ini, comments kept, values replaced line by line.
+    /// </summary>
+    private void SaveToFile() {
+        try {
             string path = Config.ConfigPath;
-            string text = File.Exists(path) ? File.ReadAllText(path) : ConfigStore.DefaultIni(Config.Hotkey);
+            string text = File.Exists(path)
+                ? File.ReadAllText(path)
+                : ConfigStore.DefaultIni(Config.Hotkey);
 
             text = SetIniValue(text, "Hotkey", Config.Hotkey);
             text = SetIniValue(text, "Mode", Config.Mode);
             File.WriteAllText(path, text);
-            Log.Info($"设置已写入 {path}");
-        }
-        catch (Exception ex)
-        {
-            Log.Error($"写入配置文件失败：{ex.Message}");
+            Log.Info($"settings written to {path}");
+        } catch (Exception ex) {
+            Log.Error($"could not write the config file: {ex.Message}");
         }
     }
 
-    private static string SetIniValue(string text, string key, string value)
-    {
+    private static string SetIniValue(string text, string key, string value) {
         string[] lines = text.Replace("\r\n", "\n").Split('\n');
         bool replaced = false;
 
-        for (int i = 0; i < lines.Length; i++)
-        {
+        for (int i = 0; i < lines.Length; i++) {
             string trimmed = lines[i].TrimStart();
-            if (trimmed.StartsWith(';') || trimmed.StartsWith('#'))
-            {
-                continue;
-            }
+            if (trimmed.StartsWith(';') || trimmed.StartsWith('#')) continue;
 
             int split = lines[i].IndexOf('=');
-            if (split <= 0)
-            {
-                continue;
-            }
+            if (split <= 0) continue;
 
-            if (lines[i][..split].Trim().Equals(key, StringComparison.OrdinalIgnoreCase))
-            {
+            if (lines[i][..split].Trim().Equals(key, StringComparison.OrdinalIgnoreCase)) {
                 lines[i] = $"{key}={value}";
                 replaced = true;
             }
         }
 
         if (!replaced)
-        {
             return text.TrimEnd('\n') + $"{Environment.NewLine}{key}={value}{Environment.NewLine}";
-        }
 
         return string.Join(Environment.NewLine, lines);
     }
 
-    /// <summary>显示一条托盘气泡提示。</summary>
-    internal void Notify(string title, string message, ToolTipIcon icon = ToolTipIcon.Info)
-    {
-        if (Headless)
-        {
+    /// <summary>Show one tray balloon.</summary>
+    internal void Notify(string title, string message, ToolTipIcon icon = ToolTipIcon.Info) {
+        if (Headless) {
             Log.Info($"{title}: {message}");
             return;
         }
@@ -426,10 +375,8 @@ internal sealed class TrayApp : ApplicationContext
         _icon.ShowBalloonTip(5000, title, message, icon);
     }
 
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
+    protected override void Dispose(bool disposing) {
+        if (disposing) {
             _watcher?.Dispose();
             _suspendCountdown.Dispose();
             _source.Dispose();
@@ -441,28 +388,27 @@ internal sealed class TrayApp : ApplicationContext
         base.Dispose(disposing);
     }
 
-    /// <summary>只收 WM_HOTKEY 的消息窗口，不占任务栏、不显示。</summary>
-    private sealed class MessageWindow : NativeWindow
-    {
-        internal MessageWindow()
-        {
-            // 只收 WM_HOTKEY，窗口放在屏幕外且不显示。这里不要自定义 ClassName：
-            // NativeWindow 不会注册窗口类，写了自己造的新类名会导致 CreateHandle 失败。
-            CreateHandle(new CreateParams
-            {
+    /// <summary>
+    /// A message window that only receives WM_HOTKEY, off screen and with no taskbar button.
+    /// </summary>
+    private sealed class MessageWindow : NativeWindow {
+        internal MessageWindow() {
+            // only WM_HOTKEY is received, the window sits off screen and is never shown. Do not
+            // set a custom ClassName here: NativeWindow does not register a window class, so a
+            // made up name would make CreateHandle fail.
+            CreateHandle(new CreateParams {
                 Caption = "WindowMinimize",
                 X = -32000,
                 Y = -32000,
                 Style = 0,
             });
 
-            Log.Debug($"消息窗口句柄 = 0x{Handle.ToInt64():X}");
+            Log.Debug($"message window handle = 0x{Handle.ToInt64():X}");
         }
 
         internal event Action<int, IntPtr>? MessageReceived;
 
-        protected override void WndProc(ref Message m)
-        {
+        protected override void WndProc(ref Message m) {
             MessageReceived?.Invoke(m.Msg, m.WParam);
             base.WndProc(ref m);
         }

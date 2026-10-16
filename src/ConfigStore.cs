@@ -5,48 +5,45 @@ using Microsoft.Win32;
 namespace WindowMinimize;
 
 /// <summary>
-/// 配置文件的定位、读写与热加载。
+/// Locating, reading, writing and live reloading of the config file.
 /// </summary>
-internal static class ConfigStore
-{
+internal static class ConfigStore {
     private const string AppFolderName = "WindowMinimize";
     private const string ConfigFileName = "hotkey.ini";
     private const string LogFileName = "hotkey.log";
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string RunValueName = "WindowMinimize";
 
-    /// <summary>配置实际所在目录（exe 同目录，不可写时用 %APPDATA%\WindowMinimize）。</summary>
+    /// <summary>
+    /// Directory the config lives in: next to the exe, or %APPDATA%\WindowMinimize when the exe
+    /// directory is not writable.
+    /// </summary>
     internal static string Directory { get; private set; } = AppContext.BaseDirectory;
 
     internal static string LogPath => Path.Combine(Directory, LogFileName);
 
     /// <summary>
-    /// 读取配置。exe 同目录没有 hotkey.ini 时，优先在那里写一份带注释的默认配置；
-    /// 该目录不可写则退到 %APPDATA%，保证绿色包放在只读位置也能跑。
+    /// Read the config. When there is no hotkey.ini next to the exe, a commented default one is
+    /// written there first, and the location falls back to %APPDATA% when that directory is not
+    /// writable, so a portable copy can also live in a read only place.
     /// </summary>
-    internal static AppConfig Load(string? explicitPath)
-    {
+    internal static AppConfig Load(string? explicitPath) {
         var config = new AppConfig();
         string path;
 
-        if (!string.IsNullOrWhiteSpace(explicitPath))
-        {
+        if (!string.IsNullOrWhiteSpace(explicitPath)) {
             path = Path.GetFullPath(explicitPath);
             Directory = Path.GetDirectoryName(path) is { Length: > 0 } dir ? dir : Directory;
-        }
-        else
-        {
+        } else {
             string exeDir = AppContext.BaseDirectory;
             string exeDirConfig = Path.Combine(exeDir, ConfigFileName);
-            if (File.Exists(exeDirConfig) || IsWritable(exeDir))
-            {
+            if (File.Exists(exeDirConfig) || IsWritable(exeDir)) {
                 Directory = exeDir;
-            }
-            else
-            {
+            } else {
                 Directory = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    AppFolderName);
+                    AppFolderName
+                );
                 System.IO.Directory.CreateDirectory(Directory);
             }
 
@@ -57,61 +54,52 @@ internal static class ConfigStore
         config.ConfigFileExists = File.Exists(path);
 
         if (!config.ConfigFileExists)
-        {
             TryWriteDefault(path, config);
-        }
         else
-        {
             ParseIni(path, config);
-        }
 
         Normalize(config);
         return config;
     }
 
-    private static bool IsWritable(string dir)
-    {
-        try
-        {
+    private static bool IsWritable(string dir) {
+        try {
             string probe = Path.Combine(dir, ".wm-write-probe");
             File.WriteAllText(probe, "x");
             File.Delete(probe);
             return true;
-        }
-        catch
-        {
+        } catch {
             return false;
         }
     }
 
-    private static void TryWriteDefault(string path, AppConfig config)
-    {
-        try
-        {
+    private static void TryWriteDefault(string path, AppConfig config) {
+        try {
             System.IO.Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, DefaultIni(config.Hotkey), new UTF8Encoding(false));
             config.ConfigFileExists = true;
-            Log.Info($"已生成默认配置：{path}");
-        }
-        catch (Exception ex)
-        {
-            config.AddWarning($"无法生成配置文件 {path}：{ex.Message}");
+            Log.Info($"wrote the default config: {path}");
+        } catch (Exception ex) {
+            config.AddWarning($"cannot write the config file {path}: {ex.Message}");
         }
     }
 
     internal static string DefaultIni(string hotkey) =>
         $"""
-        ; WindowMinimize 配置文件
-        ; 改完保存即生效，不必重启（格式写错时会保留上一次可用的热键）
+        ; WindowMinimize configuration file
+        ; saving the file takes effect right away, no restart needed (a broken line keeps the
+        ; hotkey that worked last)
         ;
-        ; Hotkey     修饰键用 + 连接，可用 Ctrl、Alt、Shift、Win；
-        ;            主键可用 A-Z、0-9、F1-F24、Space、Esc、Enter、Tab、方向键等。
-        ;            不带修饰键时只能用功能键，例如 F11。
-        ;            示例：Win+S、Ctrl+Shift+Q、Ctrl+Alt+F9、Alt+Space
-        ;            注意 Win+S 是系统保留组合（搜索），会被本程序接管，搜索将不再弹出。
-        ; Mode       minimize = 最小化到任务栏（默认）；hide = 直接隐藏窗口
-        ; AutoStart  是否跟随 Windows 启动，填 true 或 false 才生效；整行不写则不动注册表
-        ; Debug      是否写 hotkey.log 调试日志
+        ; Hotkey     modifiers Ctrl, Alt, Shift and Win joined with +, plus one main key:
+        ;            A-Z, 0-9, F1-F24, Space, Esc, Enter, Tab, the arrow keys and so on.
+        ;            without a modifier only function keys work, F11 for example.
+        ;            examples: Win+S, Ctrl+Shift+Q, Ctrl+Alt+F9, Alt+Space
+        ;            note: Win+S is reserved by Windows (search), this program takes it over and
+        ;            the search panel stops opening.
+        ; Mode       minimize = minimize to the taskbar (default), hide = hide the window
+        ; AutoStart  start with Windows, true or false to take effect, leave the line out to keep
+        ;            the registry untouched
+        ; Debug      write the hotkey.log debug log
 
         [general]
         Hotkey={hotkey}
@@ -120,52 +108,35 @@ internal static class ConfigStore
 
         """;
 
-    private static void ParseIni(string path, AppConfig config)
-    {
+    private static void ParseIni(string path, AppConfig config) {
         string[] lines;
-        try
-        {
+        try {
             lines = File.ReadAllLines(path, Encoding.UTF8);
-        }
-        catch (Exception ex)
-        {
-            config.AddWarning($"读取配置失败，改用默认值：{ex.Message}");
+        } catch (Exception ex) {
+            config.AddWarning($"cannot read the config, using the defaults: {ex.Message}");
             return;
         }
 
-        foreach (string raw in lines)
-        {
+        foreach (string raw in lines) {
             string line = raw.Trim();
-            if (line.Length == 0 || line[0] is ';' or '#' or '[')
-            {
-                continue;
-            }
+            if (line.Length == 0 || line[0] is ';' or '#' or '[') continue;
 
             int split = line.IndexOf('=');
-            if (split < 0)
-            {
-                split = line.IndexOf(':');
-            }
+            if (split < 0) split = line.IndexOf(':');
 
-            if (split <= 0)
-            {
-                config.AddWarning($"配置行无法解析，已忽略：{line}");
+            if (split <= 0) {
+                config.AddWarning($"cannot parse the config line, ignoring it: {line}");
                 continue;
             }
 
             string key = line[..split].Trim();
             string value = line[(split + 1)..].Trim().Trim('"');
-            Log.Debug($"配置项 {key} = {value}");
+            Log.Debug($"config entry {key} = {value}");
 
-            switch (key.ToLowerInvariant())
-            {
+            switch (key.ToLowerInvariant()) {
                 case "hotkey":
                 case "hotkeykey":
-                    if (value.Length > 0)
-                    {
-                        config.Hotkey = value;
-                    }
-
+                    if (value.Length > 0) config.Hotkey = value;
                     break;
 
                 case "mode":
@@ -182,146 +153,120 @@ internal static class ConfigStore
                     break;
 
                 default:
-                    config.AddWarning($"配置项 “{key}” 不是有效项，已忽略");
+                    config.AddWarning($"unknown config entry {key}, ignoring it");
                     break;
             }
         }
     }
 
-    private static bool ParseBool(string value, bool fallback) => value.ToLowerInvariant() switch
-    {
-        "1" or "true" or "yes" or "on" or "是" => true,
-        "0" or "false" or "no" or "off" or "否" => false,
+    private static bool ParseBool(string value, bool fallback) => value.ToLowerInvariant() switch {
+        "1" or "true" or "yes" or "on" => true,
+        "0" or "false" or "no" or "off" => false,
         _ => fallback,
     };
 
-    private static void Normalize(AppConfig config)
-    {
+    private static void Normalize(AppConfig config) {
         if (!config.Mode.Equals("minimize", StringComparison.OrdinalIgnoreCase)
-            && !config.Mode.Equals("hide", StringComparison.OrdinalIgnoreCase))
-        {
-            config.AddWarning($"Mode 只能填 minimize 或 hide，已按 minimize 处理");
+            && !config.Mode.Equals("hide", StringComparison.OrdinalIgnoreCase)) {
+            config.AddWarning("Mode must be minimize or hide, using minimize");
             config.Mode = "minimize";
         }
 
         config.Mode = config.Mode.ToLowerInvariant();
     }
 
-    internal sealed class Watcher : IDisposable
-    {
+    internal sealed class Watcher : IDisposable {
         private readonly FileSystemWatcher _watcher;
         private readonly System.Windows.Forms.Timer _timer;
         private readonly Action _onChanged;
         private long _lastEventTicks;
 
-        internal Watcher(string path, Action onChanged)
-        {
+        internal Watcher(string path, Action onChanged) {
             _onChanged = onChanged;
 
-            // 定时器只负责在 UI 线程上检查到期；文件事件可能来自后台线程，
-            // 不能在那里直接操作 WinForms 定时器，只更新时间戳。
+            // the timer only checks on the UI thread whether the file went quiet: file events can
+            // arrive on a background thread, where a WinForms timer must not be touched, so only
+            // the timestamp is passed between the two
             _timer = new System.Windows.Forms.Timer { Interval = 400 };
             _timer.Tick += (_, _) => OnDebounceTick();
             _timer.Start();
 
             string dir = Path.GetDirectoryName(path)!;
-            _watcher = new FileSystemWatcher(dir, Path.GetFileName(path))
-            {
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName,
+            _watcher = new FileSystemWatcher(dir, Path.GetFileName(path)) {
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size
+                    | NotifyFilters.FileName,
                 EnableRaisingEvents = true,
             };
             _watcher.Changed += OnFileEvent;
             _watcher.Created += OnFileEvent;
-            // 编辑器保存时常先写临时文件再改名，这种写法只触发 Renamed
+            // editors often write a temporary file and rename it, which only raises Renamed
             _watcher.Renamed += (sender, e) => OnFileEvent(sender, e);
         }
 
-        private void OnFileEvent(object? sender, FileSystemEventArgs e)
-        {
-            // 编辑器保存往往触发多次事件，这里只记时间，等静默一段时间再载入
+        private void OnFileEvent(object? sender, FileSystemEventArgs e) {
+            // one save raises several events, so only the time is kept and the file is loaded once
+            // the events went quiet
             Interlocked.Exchange(ref _lastEventTicks, DateTime.UtcNow.Ticks);
         }
 
-        private void OnDebounceTick()
-        {
+        private void OnDebounceTick() {
             long ticks = Interlocked.Read(ref _lastEventTicks);
-            if (ticks == 0)
-            {
-                return;
-            }
+            if (ticks == 0) return;
 
-            if (DateTime.UtcNow.Ticks - ticks < TimeSpan.FromMilliseconds(600).Ticks)
-            {
-                return;
-            }
+            if (DateTime.UtcNow.Ticks - ticks < TimeSpan.FromMilliseconds(600).Ticks) return;
 
             Interlocked.Exchange(ref _lastEventTicks, 0);
-            Log.Debug("配置文件已稳定，开始重新载入");
+            Log.Debug("the config file settled down, reloading");
 
-            try
-            {
+            try {
                 _onChanged();
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"重新载入配置失败：{ex.Message}");
+            } catch (Exception ex) {
+                Log.Error($"reload failed: {ex.Message}");
             }
         }
 
-        public void Dispose()
-        {
+        public void Dispose() {
             _watcher.EnableRaisingEvents = false;
             _watcher.Dispose();
             _timer.Dispose();
         }
     }
 
-    internal static void OpenInNotepad(string path)
-    {
-        try
-        {
-            if (!File.Exists(path))
-            {
-                File.WriteAllText(path, DefaultIni(AppConfig.DefaultHotkey), new UTF8Encoding(false));
+    internal static void OpenInNotepad(string path) {
+        try {
+            if (!File.Exists(path)) {
+                string defaultText = DefaultIni(AppConfig.DefaultHotkey);
+                File.WriteAllText(path, defaultText, new UTF8Encoding(false));
             }
 
-            Process.Start(new ProcessStartInfo("notepad.exe", $"\"{path}\"") { UseShellExecute = true });
-        }
-        catch (Exception ex)
-        {
-            Log.Error($"打开配置失败：{ex.Message}");
+            var startInfo = new ProcessStartInfo("notepad.exe", $"\"{path}\"") {
+                UseShellExecute = true,
+            };
+            Process.Start(startInfo);
+        } catch (Exception ex) {
+            Log.Error($"cannot open the config: {ex.Message}");
         }
     }
 
-    internal static bool IsAutoStartEnabled()
-    {
+    internal static bool IsAutoStartEnabled() {
         using RegistryKey? key = Registry.CurrentUser.OpenSubKey(RunKeyPath, false);
         return key?.GetValue(RunValueName) is string value && value.Length > 0;
     }
 
-    internal static void SetAutoStart(bool enabled)
-    {
+    internal static void SetAutoStart(bool enabled) {
         using RegistryKey? key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true);
-        if (key is null)
-        {
-            Log.Error("无法打开开机自启注册表项");
+        if (key is null) {
+            Log.Error("cannot open the Run registry key");
             return;
         }
 
-        if (enabled)
-        {
+        if (enabled) {
             string exe = Environment.ProcessPath ?? Application.ExecutablePath;
             key.SetValue(RunValueName, $"\"{exe}\"");
-            Log.Info($"已设置开机自启：{exe}");
-        }
-        else
-        {
-            if (key.GetValue(RunValueName) is not null)
-            {
-                key.DeleteValue(RunValueName, false);
-            }
-
-            Log.Info("已取消开机自启");
+            Log.Info($"auto start set to {exe}");
+        } else {
+            if (key.GetValue(RunValueName) is not null) key.DeleteValue(RunValueName, false);
+            Log.Info("auto start removed");
         }
     }
 }

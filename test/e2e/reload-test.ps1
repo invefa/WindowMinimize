@@ -1,5 +1,5 @@
-# 验证热加载：程序运行中改写配置文件，热键是否自动切换。
-# 结果写入 test\e2e\reload-test.txt（UTF-8），退出码 0 表示通过。
+# Checks live reload: while the app runs the config file is rewritten and the hotkey has to switch.
+# The result goes to test\e2e\reload-test.txt (UTF-8), exit code 0 means it passed.
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
@@ -23,13 +23,15 @@ function Wait-Registered([string]$pattern, [int]$timeoutMs = 4000) {
             $hit = Select-String -Path $log -Pattern $pattern -Encoding UTF8 | Select-Object -Last 1
             if ($hit) { return $hit.Line }
         }
+
         Start-Sleep -Milliseconds 150
     }
+
     return ''
 }
 
 try {
-    if (-not (Test-Path $exe)) { throw "找不到 $exe，请先构建" }
+    if (-not (Test-Path $exe)) { throw "$exe not found, build it first" }
 
     Set-Content -Path $cfg -Value @(
         '[general]', 'Hotkey=Ctrl+Alt+M', 'Mode=minimize', 'Debug=true'
@@ -38,33 +40,35 @@ try {
 
     $app = Start-Process -FilePath $exe -PassThru -ArgumentList @('--config', $cfg)
     Start-Sleep -Milliseconds 1500
-    if ($app.HasExited) { throw "程序启动后立即退出，退出码 $($app.ExitCode)" }
+    if ($app.HasExited) { throw "the app exited right after start, exit code $($app.ExitCode)" }
 
-    $first = Wait-Registered '热键已注册'
-    Say "启动后注册：$first"
+    $first = Wait-Registered 'hotkey registered'
+    Say "registered at startup: $first"
 
-    # 改写配置，观察是否自动切换到新热键
+    # rewrite the config and watch whether it switches to the new hotkey
     Set-Content -Path $cfg -Value @(
         '[general]', 'Hotkey=Ctrl+Shift+F10', 'Mode=minimize', 'Debug=true'
     ) -Encoding UTF8
     Start-Sleep -Milliseconds 1500
 
-    $second = Wait-Registered '热键已注册：Ctrl\+Shift\+F10'
-    Say "改写配置后注册：$second"
+    $second = Wait-Registered 'hotkey registered: Ctrl\+Shift\+F10'
+    Say "registered after the config was rewritten: $second"
 
     if ($first -match 'Ctrl\+Alt\+M' -and $second -match 'Ctrl\+Shift\+F10') {
         $passed = $true
-        Say '结果: 通过，改动配置文件后热键自动切换'
-    }
-    else {
-        Say '结果: 未通过，没有观察到热键自动切换'
+        Say 'result: passed, the hotkey switched by itself after the config changed'
+    } else {
+        Say 'result: failed, no automatic switch of the hotkey was seen'
     }
 }
 catch {
-    Say "异常: $($_.Exception.Message)"
+    Say "exception: $($_.Exception.Message)"
 }
 finally {
-    if ($app -and -not $app.HasExited) { Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue }
+    if ($app -and -not $app.HasExited) {
+        Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue
+    }
+
     [System.IO.File]::WriteAllLines($outFile, $lines, (New-Object System.Text.UTF8Encoding($false)))
 }
 

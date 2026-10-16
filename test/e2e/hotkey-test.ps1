@@ -1,9 +1,12 @@
-# 端到端验证：按热键能否最小化当前前台窗口。
-# 目标窗口由本脚本自己拉起（一个 pwsh 进程里的 WinForms 窗口），不依赖机器上正好开着什么程序。
-# 用法: hotkey-test.ps1           测键盘钩子路径（配置热键 Win+S，系统保留组合，必然走钩子）
-#       hotkey-test.ps1 -Register 测 RegisterHotKey 路径（配置热键 Ctrl+Shift+F9）
-# 钩子路径额外回归“松开顺序”：先松 Win 再松 S 时不能弹出开始或搜索面板。
-# 结果写入 test\e2e\hotkey-test.txt（UTF-8），退出码 0 表示通过。
+# End to end check: does pressing the hotkey minimize the foreground window.
+# The target window is started by this script itself (a WinForms window inside a pwsh process), so
+# the test does not depend on whatever happens to be open on the machine.
+# usage: hotkey-test.ps1           tests the keyboard hook path (hotkey Win+S, reserved by Windows,
+#                                  so it always goes through the hook)
+#        hotkey-test.ps1 -Register tests the RegisterHotKey path (hotkey Ctrl+Shift+F9)
+# The hook path also regresses the release order: releasing Win before S must not open the start or
+# search panel.
+# The result goes to test\e2e\hotkey-test.txt (UTF-8), exit code 0 means it passed.
 
 param(
     [switch]$Register
@@ -15,7 +18,7 @@ $exe = Join-Path $root 'dist\WindowMinimize.exe'
 $outFile = Join-Path $PSScriptRoot 'hotkey-test.txt'
 $iniName = if ($Register) { 'test-hotkey2.ini' } else { 'test-hotkey.ini' }
 $hotkeyName = if ($Register) { 'Ctrl+Shift+F9' } else { 'Win+S' }
-$windowTitle = 'WindowMinimize E2E 目标窗口'
+$windowTitle = 'WindowMinimize E2E target'
 $lines = [System.Collections.Generic.List[string]]::new()
 $passed = $false
 $app = $null
@@ -45,31 +48,67 @@ public static class Win32Test {
         public RECT rcNormalPosition;
     }
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern IntPtr FindWindow(string cls, string title);
-    [DllImport("user32.dll")] public static extern bool GetWindowPlacement(IntPtr h, ref WINDOWPLACEMENT p);
-    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
-    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
-    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
-    [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint attach, uint attachTo, bool fAttach);
-    [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr h);
-    [DllImport("user32.dll")] public static extern void SwitchToThisWindow(IntPtr h, bool altTab);
-    [DllImport("user32.dll", SetLastError = true)] public static extern bool SystemParametersInfo(uint action, uint param, ref uint value, uint winIni);
-    [DllImport("user32.dll", SetLastError = true)] public static extern bool AllowSetForegroundWindow(int pid);
-    [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
-    [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    static extern IntPtr FindWindow(string cls, string title);
 
-    const byte VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12, VK_LWIN = 0x5B, VK_RWIN = 0x5C;
-    const byte VK_F9 = 0x78, VK_S = 0x53, VK_ESCAPE = 0x1B;
+    [DllImport("user32.dll")]
+    public static extern bool GetWindowPlacement(IntPtr h, ref WINDOWPLACEMENT p);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr h);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    public static extern bool ShowWindow(IntPtr h, int cmd);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+
+    [DllImport("user32.dll")]
+    public static extern bool AttachThreadInput(uint attach, uint attachTo, bool fAttach);
+
+    [DllImport("user32.dll")]
+    public static extern bool BringWindowToTop(IntPtr h);
+
+    [DllImport("user32.dll")]
+    public static extern void SwitchToThisWindow(IntPtr h, bool altTab);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool SystemParametersInfo(
+        uint action, uint param, ref uint value, uint winIni
+    );
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool AllowSetForegroundWindow(int pid);
+
+    [DllImport("user32.dll")]
+    public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+
+    [DllImport("kernel32.dll")]
+    public static extern uint GetCurrentThreadId();
+
+    const byte VK_SHIFT   = 0x10,
+               VK_CONTROL = 0x11,
+               VK_MENU    = 0x12,
+               VK_LWIN    = 0x5B,
+               VK_RWIN    = 0x5C;
+
+    const byte VK_F9     = 0x78,
+               VK_S      = 0x53,
+               VK_ESCAPE = 0x1B;
+
     const uint KEYUP = 0x0002;
 
-    /// 按标题找窗口，用来确认自建的目标窗口已经出现。
+    /// Find a window by title, used to confirm that the target window showed up.
     public static IntPtr FindWindowByTitle(string title) {
         return FindWindow(null, title);
     }
 
-    /// 松开可能还按着的修饰键。合成按键前清一次，避免上一次测试留下的
-    /// 修饰键让热键带上多余的组合（例如 Alt 没松开，Win+S 就匹配不上）。
+    /// Release the modifiers that may still be held down. This runs before any synthetic key press,
+    /// so a modifier left over from the previous test cannot add to the combination (an Alt that is
+    /// still down makes Win+S match nothing).
     public static void ResetModifiers() {
         Release(VK_SHIFT);
         Release(VK_CONTROL);
@@ -82,7 +121,8 @@ public static class Win32Test {
         keybd_event(vk, 0, KEYUP, UIntPtr.Zero);
     }
 
-    /// 强制把窗口拿到前台：临时允许抢前台，挂接前台线程后反复尝试。
+    /// Force a window to the foreground: steal the right to do so for a moment and attach to the
+    /// foreground thread while trying again.
     public static bool ForceForeground(IntPtr h) {
         ShowWindow(h, 9); // SW_RESTORE
         AllowSetForegroundWindow(-1); // ASFW_ANY
@@ -95,7 +135,7 @@ public static class Win32Test {
         SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, ref zero, 0);
 
         for (int attempt = 0; attempt < 8 && GetForegroundWindow() != h; attempt++) {
-            // 先最小化再还原，往往能把它顶到前台
+            // minimizing and restoring first usually pushes it forward
             if (attempt == 4) {
                 ShowWindow(h, 6); // SW_MINIMIZE
                 System.Threading.Thread.Sleep(150);
@@ -111,12 +151,11 @@ public static class Win32Test {
             SwitchToThisWindow(h, false);
             SetForegroundWindow(h);
 
-            // 只补一次 Alt 抬起解除前台锁定：不要按下再抬起，按下若被别的钩子吃掉会留下卡住的 Alt
+            // release Alt once to lift the foreground lock, without pressing it first: a press that
+            // another hook swallows would leave Alt stuck down
             Release(VK_MENU);
 
-            if (attached) {
-                AttachThreadInput(myThread, fgThread, false);
-            }
+            if (attached) AttachThreadInput(myThread, fgThread, false);
 
             System.Threading.Thread.Sleep(120);
         }
@@ -125,14 +164,15 @@ public static class Win32Test {
         return GetForegroundWindow() == h;
     }
 
-    /// 合成 Ctrl+Shift+F9：keybd_event 不要求 STA，比 SendKeys 稳。
+    /// Synthesize Ctrl+Shift+F9. keybd_event needs no STA, which makes it steadier than SendKeys.
     public static void SendRegisterCombo() {
         Send(VK_CONTROL, VK_SHIFT, VK_F9);
     }
 
-    /// 合成 Win+S。程序只吞 S 键，Win 键会照常传给 Windows。
-    /// winFirstRelease 为 true 时先松 Win 再松 S：程序吞掉 S 按下后系统以为只是单独按了 Win，
-    /// 这个顺序最容易把开始面板顶出来，用来回归“掩码键”。
+    /// Synthesize Win+S. The app swallows only the S key, Win goes to Windows as usual.
+    /// With winFirstRelease the Win key is released before S: once the app has swallowed the S
+    /// press the system thinks Win was pressed on its own, and that order is the one that pushes
+    /// the start panel up most easily, which is why it is used to regress the mask key.
     public static void SendWinS(bool winFirstRelease) {
         keybd_event(VK_LWIN, 0, 0, UIntPtr.Zero);
         System.Threading.Thread.Sleep(50);
@@ -143,21 +183,21 @@ public static class Win32Test {
             keybd_event(VK_LWIN, 0, KEYUP, UIntPtr.Zero);
             System.Threading.Thread.Sleep(50);
             keybd_event(VK_S, 0, KEYUP, UIntPtr.Zero);
-        }
-        else {
+        } else {
             keybd_event(VK_S, 0, KEYUP, UIntPtr.Zero);
             System.Threading.Thread.Sleep(50);
             keybd_event(VK_LWIN, 0, KEYUP, UIntPtr.Zero);
         }
     }
 
-    /// 前台窗口所属进程 id，用来判断是不是外壳面板（开始菜单、搜索面板）被顶到了前台。
+    /// Process id of the foreground window, used to tell whether a shell panel (start menu, search)
+    /// took the foreground.
     public static uint ForegroundPid() {
         GetWindowThreadProcessId(GetForegroundWindow(), out uint pid);
         return pid;
     }
 
-    /// 合成 Esc，用来收掉可能弹出来的外壳面板。
+    /// Synthesize Esc, used to close a shell panel that popped up.
     public static void SendEsc() {
         keybd_event(VK_ESCAPE, 0, 0, UIntPtr.Zero);
         System.Threading.Thread.Sleep(60);
@@ -186,14 +226,16 @@ function Get-ShowCmd([IntPtr]$handle) {
 function Get-ForegroundShellPanel {
     $fgPid = [Win32Test]::ForegroundPid()
     try { $name = (Get-Process -Id $fgPid -ErrorAction Stop).ProcessName } catch { return '' }
-    if ($name -in @('StartMenuExperienceHost', 'SearchHost', 'ShellExperienceHost')) { return $name }
+    $panels = @('StartMenuExperienceHost', 'SearchHost', 'ShellExperienceHost')
+    if ($name -in $panels) { return $name }
     return ''
 }
 
 try {
-    if (-not (Test-Path $exe)) { throw "找不到 $exe，请先构建" }
+    if (-not (Test-Path $exe)) { throw "$exe not found, build it first" }
 
-    # 自己拉起一个普通窗口当目标：有标题、能最小化、进程随测试一起关掉
+    # bring up an ordinary window as the target: it has a title, it minimizes and it dies with
+    # the test
     $formScript = @'
 Add-Type -AssemblyName System.Windows.Forms
 $form = New-Object System.Windows.Forms.Form
@@ -212,16 +254,20 @@ $form.StartPosition = 'CenterScreen'
         $hwnd = [Win32Test]::FindWindowByTitle($windowTitle)
     }
 
-    if ($hwnd -eq [IntPtr]::Zero) { throw "目标窗口没有出现（标题 $windowTitle），测试条件不成立" }
-    Say "目标窗口 0x$($hwnd.ToInt64().ToString('X')) 标题=$windowTitle，进程 pid $($target.Id)"
+    if ($hwnd -eq [IntPtr]::Zero) {
+        throw "the target window never showed up (title $windowTitle), the test cannot run"
+    }
+
+    Say "target window 0x$($hwnd.ToInt64().ToString('X')) title=$windowTitle, pid $($target.Id)"
 
     $app = Start-Process -FilePath $exe -PassThru -ArgumentList @(
         '--config', (Join-Path $PSScriptRoot $iniName))
     Start-Sleep -Milliseconds 1500
-    if ($app.HasExited) { throw "程序启动后立即退出，退出码 $($app.ExitCode)" }
-    Say "已启动 WindowMinimize (pid $($app.Id))，配置热键 $hotkeyName"
+    if ($app.HasExited) { throw "the app exited right after start, exit code $($app.ExitCode)" }
+    Say "started WindowMinimize (pid $($app.Id)) with hotkey $hotkeyName"
 
-    # 把目标窗口拿到前台，测的才是“前台窗口被最小化”
+    # bring the target window to the foreground, so what is tested is "the foreground window gets
+    # minimized"
     [Win32Test]::ResetModifiers()
     $ok = $false
     for ($round = 0; $round -lt 3 -and -not $ok; $round++) {
@@ -230,19 +276,24 @@ $form.StartPosition = 'CenterScreen'
         $ok = [Win32Test]::GetForegroundWindow() -eq $hwnd
     }
 
-    if (-not $ok) { throw '无法把目标窗口设为前台，测试条件不成立' }
+    if (-not $ok) {
+        throw 'the target window cannot be brought to the foreground, the test cannot run'
+    }
 
     $fg = [Win32Test]::GetForegroundWindow()
-    Say "前台窗口 0x$($fg.ToInt64().ToString('X'))，目标 0x$($hwnd.ToInt64().ToString('X')) 一致=$ok"
+    $fgHex = $fg.ToInt64().ToString('X')
+    $targetHex = $hwnd.ToInt64().ToString('X')
+    Say "foreground 0x$fgHex target 0x$targetHex match=$ok"
 
     $before = Get-ShowCmd $hwnd
-    Say "发送热键前 showCmd=$before（1=正常 2=最小化 3=最大化）"
+    Say "showCmd before the hotkey = $before (1=normal 2=minimized 3=maximized)"
 
     [Win32Test]::ResetModifiers()
     if ($Register) { [Win32Test]::SendRegisterCombo() } else { [Win32Test]::SendWinS($false) }
     Start-Sleep -Milliseconds 1200
 
-    # 先看前台有没有被外壳面板抢走，再按 Esc 收尾（Esc 会把面板关掉，所以要放在判断之前）
+    # look at the foreground first, then press Esc to clean up (Esc closes the panel, so it has to
+    # come after the check)
     $panelNormal = Get-ForegroundShellPanel
     if (-not $Register) {
         [Win32Test]::SendEsc()
@@ -250,49 +301,46 @@ $form.StartPosition = 'CenterScreen'
     }
 
     $after = Get-ShowCmd $hwnd
-    Say "发送热键后 showCmd=$after"
+    Say "showCmd after the hotkey = $after"
 
-    # 程序吞掉了 S 键，系统在这段 Win 按住的时间里看不到别的按键，松开 Win 会被当成
-    # “单独按了一下 Win”而弹出开始面板。程序补的掩码键就是挡这个的，所以这里也把它当判据。
+    # the app swallowed the S key, so the system sees no other key while Win is held down and
+    # releasing Win counts as a single Win press that opens the start panel. The mask key the app
+    # taps is there to stop that, so it counts as a pass here too.
     $log = Join-Path $PSScriptRoot 'hotkey.log'
     $logText = if (Test-Path $log) { Get-Content $log -Encoding UTF8 -Raw } else { '' }
-    $triggered = $logText -match '热键触发'
-    $minimized = $logText -match '已发送最小化'
+    $triggered = $logText -match 'hotkey triggered'
+    $minimized = $logText -match 'minimize sent'
 
-    Say "程序日志：收到热键=$triggered，执行最小化=$minimized"
+    Say "app log: hotkey seen=$triggered, minimize sent=$minimized"
 
     if ($after -eq 2) {
         $passed = $true
-        Say '结果: 通过，热键把前台窗口最小化了'
-    }
-    elseif ($triggered -and $minimized) {
+        Say 'result: passed, the hotkey minimized the foreground window'
+    } elseif ($triggered -and $minimized) {
         $passed = $true
-        Say '结果: 通过，程序收到热键并执行了最小化'
-    }
-    else {
-        Say "结果: 未通过，showCmd $before -> $after，日志未见触发记录"
+        Say 'result: passed, the app saw the hotkey and sent the minimize'
+    } else {
+        Say "result: failed, showCmd $before -> $after, no trigger in the log"
     }
 
     if ($panelNormal) {
-        Say "回归（先松 S）: 未通过，前台变成外壳面板 $panelNormal"
+        Say "regression (release S first): failed, the shell panel $panelNormal took the foreground"
         $passed = $false
-    }
-    else {
-        Say '回归（先松 S）: 通过，没弹出开始或搜索面板'
+    } else {
+        Say 'regression (release S first): passed, no start or search panel'
     }
 
-    # 松开顺序回归：先松 Win 再松 S。这个顺序下系统只看到 Win 按下抬起，
-    # 没有掩码键就会弹出开始面板。
+    # release order regression: release Win before S. In that order the system only sees Win go down
+    # and up, so without the mask key the start panel opens.
     if (-not $Register -and $passed) {
         [Win32Test]::ResetModifiers()
         [void][Win32Test]::ForceForeground($hwnd)
         Start-Sleep -Milliseconds 400
 
         if ([Win32Test]::GetForegroundWindow() -ne $hwnd) {
-            Say '回归（先松 Win）: 未通过，没法把目标窗口设回前台，测试条件不成立'
+            Say 'regression (release Win first): failed, the target window cannot be brought back'
             $passed = $false
-        }
-        else {
+        } else {
             [Win32Test]::SendWinS($true)
             Start-Sleep -Milliseconds 1200
             $panelWinFirst = Get-ForegroundShellPanel
@@ -300,21 +348,25 @@ $form.StartPosition = 'CenterScreen'
             Start-Sleep -Milliseconds 300
 
             if ($panelWinFirst) {
-                Say "回归（先松 Win）: 未通过，前台变成外壳面板 $panelWinFirst"
+                Say "regression (release Win first): failed, $panelWinFirst took the foreground"
                 $passed = $false
-            }
-            else {
-                Say '回归（先松 Win）: 通过，没弹出开始或搜索面板'
+            } else {
+                Say 'regression (release Win first): passed, no start or search panel'
             }
         }
     }
 }
 catch {
-    Say "异常: $($_.Exception.Message)"
+    Say "exception: $($_.Exception.Message)"
 }
 finally {
-    if ($app -and -not $app.HasExited) { Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue }
-    if ($target -and -not $target.HasExited) { Stop-Process -Id $target.Id -Force -ErrorAction SilentlyContinue }
+    if ($app -and -not $app.HasExited) {
+        Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue
+    }
+
+    if ($target -and -not $target.HasExited) {
+        Stop-Process -Id $target.Id -Force -ErrorAction SilentlyContinue
+    }
 
     [System.IO.File]::WriteAllLines($outFile, $lines, (New-Object System.Text.UTF8Encoding($false)))
 }

@@ -1,43 +1,46 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
-    <!-- 本程序用不到 ICU 数据，关掉可避免引入 icu 原生库，保证自包含单文件可直接跑 -->
-    <InvariantGlobalization>true</InvariantGlobalization>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>app.ico</ApplicationIcon>
-    <RootNamespace>WindowMinimize</RootNamespace>
-    <AssemblyName>WindowMinimize</AssemblyName>
-    <Product>WindowMinimize</Product>
-    <AssemblyTitle>WindowMinimize</AssemblyTitle>
-    <Company>WindowMinimize</Company>
-    <Version>1.0.0</Version>
-    <FileVersion>1.0.0.0</FileVersion>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <NeutralLanguage>zh-Hans</NeutralLanguage>
-    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <DebugType>none</DebugType>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <!-- 发布参数：win-x64 + 自包含 + 单文件，产物不依赖本机 .NET 运行时 -->
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <SelfContained>true</SelfContained>
-    <PublishSingleFile>true</PublishSingleFile>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <PublishTrimmed>false</PublishTrimmed>
-    <PublishReadyToRun>false</PublishReadyToRun>
-    <!-- 图标由 ApplicationIcon 嵌进 exe，不必再进程序集资源 -->
-    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
+        <UseWindowsForms>true</UseWindowsForms>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <!-- The app does not use ICU data; disabling it avoids pulling in the native ICU library
+             and keeps the self-contained single file runnable as-is -->
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <ApplicationIcon>app.ico</ApplicationIcon>
+        <RootNamespace>WindowMinimize</RootNamespace>
+        <AssemblyName>WindowMinimize</AssemblyName>
+        <Product>WindowMinimize</Product>
+        <AssemblyTitle>WindowMinimize</AssemblyTitle>
+        <Company>WindowMinimize</Company>
+        <Version>1.0.0</Version>
+        <FileVersion>1.0.0.0</FileVersion>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <NeutralLanguage>en</NeutralLanguage>
+        <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+        <DebugType>none</DebugType>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <!-- Publish settings: win-x64 + self-contained + single file; the output does not depend
+             on the local .NET runtime -->
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <SelfContained>true</SelfContained>
+        <PublishSingleFile>true</PublishSingleFile>
+        <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+        <PublishTrimmed>false</PublishTrimmed>
+        <PublishReadyToRun>false</PublishReadyToRun>
+        <!-- The icon is embedded into the exe via ApplicationIcon, so it does not need to go
+             into the assembly resources -->
+        <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <!-- 单元测试直接覆盖 HotkeySpec 这类内部类型 -->
-    <InternalsVisibleTo Include="WindowMinimize.Tests" />
-  </ItemGroup>
+    <ItemGroup>
+        <!-- The unit tests cover internal types such as HotkeySpec directly -->
+        <InternalsVisibleTo Include="WindowMinimize.Tests" />
+    </ItemGroup>
 
 </Project>

@@ -1,31 +1,41 @@
 # WindowMinimize
 
-按自定义全局热键最小化当前前台窗口的 Windows 小工具。常驻托盘，默认热键 `Win+S`，单文件 exe，不依赖 .NET 运行时与任何第三方组件。
+A small Windows tool that minimizes the current foreground window with a custom global hotkey. It
+lives in the tray, its default hotkey is `Win+S`, it is a single-file exe, and it depends on neither
+the .NET runtime nor any third-party component.
 
-## 一、使用
+## 1. Usage
 
-双击 `start.bat` 或直接运行 `dist\WindowMinimize.exe`。程序启动后驻留在任务栏通知区域，按一次热键即可把当时的前台窗口最小化。
+Double-click `start.bat` or run `dist\WindowMinimize.exe` directly. After startup the program stays
+in the taskbar notification area; press the hotkey once to minimize the foreground window at that
+moment.
 
-首次运行会在 exe 同目录生成 `hotkey.ini`，改完保存立即生效，不必重启。
+The first run creates `hotkey.ini` next to the exe. Save your changes and they take effect
+immediately, with no restart.
 
-退出方式：右键托盘图标，选“退出”。
+To exit: right-click the tray icon and choose "Exit".
 
-## 二、热键写法
+## 2. Hotkey Syntax
 
-修饰键用 `+` 连接，主键放最后即可，顺序不影响结果；分隔符用 `+` 或 `-` 都行。
+Join modifiers with `+` and put the main key last; the order does not change the result. Use `+` or
+`-` as the separator.
 
-| 部分 | 可取值 |
+| Part | Values |
 | --- | --- |
-| 修饰键 | `Ctrl`（也可写 `Control`）、`Alt`、`Shift`、`Win`（也可写 `Windows`） |
-| 主键 | `A` 到 `Z`、`0` 到 `9`、`F1` 到 `F24`、`Space`、`Esc`、`Enter`、`Tab`、`Backspace`、`Delete`、`Insert`、`Home`、`End`、`PageUp`、`PageDown`、四个方向键、`Num0` 到 `Num9`、`Minus`、`Plus` 等 |
+| Modifier | `Ctrl` (also `Control`), `Alt`, `Shift`, `Win` (also `Windows`) |
+| Main key | `A` to `Z`, `0` to `9`, `F1` to `F24`, `Space`, `Esc`, `Enter`, `Tab`, `Backspace`, `Delete`, `Insert`, `Home`, `End`, `PageUp`, `PageDown`, the four arrow keys, `Num0` to `Num9`, `Minus`, `Plus`, and so on |
 
-写法示例：`Win+Alt+M`、`Ctrl+Shift+Q`、`Ctrl+Alt+F9`、`Alt+Space`、`F11`、`Ctrl+-`。
+Examples: `Win+Alt+M`, `Ctrl+Shift+Q`, `Ctrl+Alt+F9`, `Alt+Space`, `F11`, `Ctrl+-`.
 
-不带修饰键时只允许功能键（`F1` 到 `F24`），避免抢走正常打字输入。`F12` 是系统保留键，无法注册，程序会直接拒绝。`Alt+Tab`、`Ctrl+Alt+Del`、`Win+L` 这类系统占用组合也会被拒绝。
+Without a modifier, only function keys (`F1` to `F24`) are allowed, so normal typing is not stolen.
+`F12` is a system-reserved key and cannot be registered; the program rejects it outright.
+System-reserved combinations such as `Alt+Tab`, `Ctrl+Alt+Del`, and `Win+L` are rejected as well.
 
-被 Windows 自己占用的组合（例如 `Win+S` 打开搜索、`Win+D` 显示桌面）不在拒绝之列。这些组合用 `RegisterHotKey` 一定失败，程序改用键盘钩子接管，接管后系统原有功能不再可用。
+Combinations that Windows itself occupies (for example `Win+S` to open search, or `Win+D` to show
+the desktop) are not rejected. `RegisterHotKey` always fails for these, so the program takes them
+over with a keyboard hook; once taken over, the original system function is no longer available.
 
-## 三、配置文件 hotkey.ini
+## 3. Configuration File hotkey.ini
 
 ```ini
 [general]
@@ -34,97 +44,126 @@ Mode=minimize
 Debug=false
 ```
 
-| 配置项 | 默认值 | 说明 |
+| Setting | Default | Description |
 | --- | --- | --- |
-| Hotkey | Win+S | 全局热键，写法见上节 |
-| Mode | minimize | `minimize` 最小化到任务栏；`hide` 直接隐藏窗口 |
-| AutoStart | 不写入 | 写成 `true` 或 `false` 时，启动时按它同步开机自启项；整行删掉则不动注册表，尊重手动设置 |
-| Debug | false | 是否写 `hotkey.log` 调试日志 |
+| Hotkey | Win+S | Global hotkey; see the previous section for the syntax |
+| Mode | minimize | `minimize` minimizes to the taskbar; `hide` hides the window directly |
+| AutoStart | not written | When set to `true` or `false`, the startup entry is synced from it at launch; delete the whole line to leave the registry alone and respect the manual setting |
+| Debug | false | Whether to write the `hotkey.log` debug log |
 
-程序生成的默认配置里不含 `AutoStart`。需要开机自启时自己补一行，或者用托盘菜单勾选。
+The default configuration the program generates does not contain `AutoStart`. To start with Windows,
+add the line yourself, or tick it in the tray menu.
 
-旧版配置里的 `MinimizeToTray` 仍可作为 `AutoStart` 的别名使用。
+`MinimizeToTray` in older configurations still works as an alias for `AutoStart`.
 
-配置写错时不会打断已有功能：解析失败会保留上一次可用的热键，并在托盘气泡和日志里给出原因。
+A bad configuration does not break existing behavior: if parsing fails, the last working hotkey is
+kept, and the reason is reported in a tray balloon and in the log.
 
-配置文件默认放在 exe 同目录。若该目录不可写（例如解包到 `C:\Program Files`），自动改用 `%APPDATA%\WindowMinimize\hotkey.ini`。
+The configuration file lives next to the exe by default. If that directory is not writable (for
+example when unpacked to `C:\Program Files`), it falls back to
+`%APPDATA%\WindowMinimize\hotkey.ini`.
 
-## 四、托盘菜单
+## 4. Tray Menu
 
-| 菜单项 | 作用 |
+| Menu item | Action |
 | --- | --- |
-| 最小化当前窗口 | 等同按一次热键 |
-| 还原上次隐藏的窗口 | 把上一次用 `hide` 方式隐藏的窗口放回前台；没有隐藏过窗口时不可点 |
-| 热键：xxx | 只显示当前生效的热键 |
-| 暂停热键 / 恢复热键 | 临时停用，适合玩游戏或录屏时使用；按住 Shift 点击则暂停 5 分钟后自动恢复 |
-| 打开配置文件 | 用记事本打开 `hotkey.ini` |
-| 重新载入配置 | 手动重新读取，正常情况不需要 |
-| 开机自动启动 | 勾选后写入注册表 `HKCU\...\Run`，只改注册表，不动配置文件 |
-| 退出 | 结束程序 |
+| Minimize current window | Same as pressing the hotkey once |
+| Restore last hidden window | Brings the last window hidden with `hide` back to the foreground; not clickable when no window has been hidden |
+| Hotkey: xxx | Shows only the hotkey currently in effect |
+| Suspend hotkey / Resume hotkey | Temporarily disables it, handy while gaming or recording; hold Shift and click to suspend for 5 minutes and then resume automatically |
+| Open config file | Opens `hotkey.ini` in Notepad |
+| Reload config | Reads it again manually; not needed normally |
+| Start with Windows | When ticked, writes the registry `HKCU\...\Run` entry; only touches the registry, not the config file |
+| Exit | Ends the program |
 
-双击托盘图标同样会最小化当前窗口。
+Double-clicking the tray icon also minimizes the current window.
 
-## 五、命令行参数
+## 5. Command-Line Arguments
 
 ```
-WindowMinimize.exe [选项]
+WindowMinimize.exe [options]
 
---hotkey <组合>   临时指定热键，覆盖配置文件
---mode <方式>     minimize 或 hide
---config <路径>   指定配置文件
---debug           写调试日志
---no-tray         不显示托盘图标（也可写 --quiet）
---help            帮助
+--hotkey <combo>   Set a hotkey for this run, overriding the config file
+--mode <mode>      minimize or hide
+--config <path>    Use the given config file
+--debug            Write the debug log
+--no-tray          Do not show the tray icon (also --quiet)
+--help             Help
 ```
 
-## 六、实现要点
+## 6. Implementation Notes
 
-热键注册优先用系统 `RegisterHotKey`。若该组合已被别的程序占用（Win32 错误码 1409），自动退回到低级键盘钩子 `WH_KEYBOARD_LL` 抢下按键，保证热键始终可用，此时托盘气泡会说明接管方式。
+Hotkey registration prefers the system `RegisterHotKey`. If another program already occupies the
+combination (Win32 error 1409), it automatically falls back to the low level keyboard hook
+`WH_KEYBOARD_LL` to grab the key, so the hotkey always works; the tray balloon then explains how it
+was taken over.
 
-`RegisterHotKey` 的注册项按“窗口 + id”唯一，换热键要先撤掉旧的再注册新的。新组合用不了时，程序会把上一个还能用的热键恢复回来，改配置文件写错不会弄得没有热键可用。
+A `RegisterHotKey` registration is unique per window + id, so changing the hotkey means
+unregistering the old one before registering the new one. When the new combination does not work,
+the program restores the last working hotkey, so a bad config file never leaves you without a
+usable hotkey.
 
-被 Windows 自己占用的组合（例如 `Win+S` 打开搜索、`Win+D` 显示桌面）走的是同一套回退。这类组合注册必然失败，气泡会写明是被 Windows 占用、接管后系统原有功能不再可用。
+Combinations that Windows itself occupies (for example `Win+S` to open search, or `Win+D` to show
+the desktop) use the same fallback. Registration always fails for these; the balloon states that
+Windows occupies it and that the original system function is no longer available after the takeover.
 
-键盘钩子吞掉按键后，系统在 Win（或 Alt）按住期间看不到别的按键，松开 Win 会被当成“单独按了一下 Win”而弹出开始面板。程序因此在吞键的同时补一次掩码键（轻敲 Ctrl，Ctrl 已在组合里时改用 Shift），先松 Win 还是先松 S 都不会弹。
+After the keyboard hook swallows a key, the system sees no other key while Win (or Alt) is held, so
+releasing Win is treated as "Win pressed on its own" and the Start panel pops up. The program
+therefore sends a mask key while swallowing the key (a tap of Ctrl, or Shift when Ctrl is already
+part of the combination); the panel does not pop up whether Win or S is released first.
 
-最小化按窗口类型分三条路径：常规窗口发 `SW_MINIMIZE`；被 DWM 遮蔽的 UWP 挂起窗口改发 `WM_SYSCOMMAND`/`SC_MINIMIZE`；个别自绘窗口首次最小化无效时，会在 350 毫秒后复查并按需补发或改为放前台后强制最小化。
+Minimizing takes one of three paths depending on the window type: a regular window gets
+`SW_MINIMIZE`; a UWP suspended window occluded by DWM gets `WM_SYSCOMMAND`/`SC_MINIMIZE` instead;
+and for the occasional self-drawn window where the first minimize does nothing, the program
+rechecks after 350 milliseconds and re-sends it or brings the window to the foreground and forces a
+minimize as needed.
 
-取前台窗口时会跳过系统界面：任务栏、桌面、开始菜单、搜索，以及本程序自己的窗口（点托盘菜单时前台往往是任务栏或菜单本身）。这些窗口不会被当成最小化目标，以免把系统界面收起来。
+When it gets the foreground window, it skips system UI: the taskbar, the desktop, the Start menu,
+search, and the program's own windows (when the tray menu is clicked, the foreground is usually the
+taskbar or the menu itself). These windows are never treated as minimize targets, so system UI is
+not tucked away.
 
-## 七、构建
+## 7. Build
 
-需要 .NET SDK 8，执行：
+Requires .NET SDK 8. Run:
 
 ```
 pwsh -NoProfile -File build\build.ps1
 ```
 
-产物为 `dist\WindowMinimize.exe`，自包含发布，拷到别的 Windows 10/11 机器可直接运行。仓库内 `global.json` 把 SDK 固定到 8.0.403 系列。
+The output is `dist\WindowMinimize.exe`, a self-contained release that runs directly when copied to
+another Windows 10/11 machine. `global.json` in the repository pins the SDK to the 8.0.403 series.
 
-单元测试：
+Unit tests:
 
 ```
 dotnet test test\unit\WindowMinimize.Tests.csproj
 ```
 
-目录结构：
+Directory layout:
 
 ```
 WindowMinimize
-  build        构建脚本与图标生成脚本
-  src          源码与 app.ico
-  test/e2e     端到端验证脚本，需要真实窗口与全局热键
-  test/unit    HotkeySpec 解析的单元测试
-  dist         构建产物（不入库）
-  start.bat    启动入口
+  build        Build scripts and icon generation scripts
+  src          Source code and app.ico
+  test/e2e     End-to-end verification scripts; need real windows and a global hotkey
+  test/unit    Unit tests for HotkeySpec parsing
+  dist         Build output (not committed)
+  start.bat    Launch entry point
 ```
 
-## 八、已知限制
+## 8. Known Limitations
 
-一、目标窗口以管理员权限运行时，普通权限的进程无法向其发送消息，最小化会失败。需要处理这类窗口时，请以管理员身份运行本程序。
+1. When the target window runs with administrator privileges, a normal-privilege process cannot send
+   it messages and the minimize fails. Run this program as administrator to handle such windows.
 
-二、`hide` 方式会把窗口完全隐藏，任务栏上不再有按钮，要用托盘菜单的“还原上次隐藏的窗口”找回。这项记录只留在内存里，程序重启后找不回，只能靠任务管理器。日常建议用默认的 `minimize`。
+2. The `hide` mode hides the window completely, so no button remains on the taskbar; use "Restore
+   last hidden window" in the tray menu to get it back. That record lives only in memory and is lost
+   after a restart, leaving only Task Manager. Prefer the default `minimize` for everyday use.
 
-三、低级键盘钩子属于全局钩子，个别反作弊严格的游戏可能对全局钩子敏感。若热键无需抢键（正常注册成功），程序不会安装钩子。
+3. A low level keyboard hook is a global hook, and a few games with strict anti-cheat may be
+   sensitive to global hooks. If the hotkey does not need to grab keys (normal registration
+   succeeds), the program installs no hook.
 
-四、用键盘钩子接管被 Windows 占用的组合（例如 `Win+S`）后，系统原本的功能不再响应，例如搜索面板不再弹出。
+4. After a keyboard hook takes over a combination Windows occupies (for example `Win+S`), the
+   original system function no longer responds, for example the search panel no longer pops up.

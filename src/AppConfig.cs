@@ -4,46 +4,40 @@ using System.Text;
 namespace WindowMinimize;
 
 /// <summary>
-/// 运行配置。优先级：命令行参数 &gt; hotkey.ini &gt; 内置默认值。
+/// Runtime configuration. Precedence: command line, then hotkey.ini, then the built-in defaults.
 /// </summary>
-internal sealed class AppConfig
-{
+internal sealed class AppConfig {
     internal const string DefaultHotkey = "Win+S";
 
-    /// <summary>热键写法，例如 Win+Alt+M。</summary>
+    /// <summary>Hotkey text, for example Win+Alt+M.</summary>
     internal string Hotkey { get; set; } = DefaultHotkey;
 
-    /// <summary>minimize = 最小化到任务栏；hide = 直接隐藏窗口。</summary>
+    /// <summary>minimize = minimize to the taskbar, hide = hide the window outright.</summary>
     internal string Mode { get; set; } = "minimize";
 
     /// <summary>
-    /// 跟随 Windows 启动。null 表示配置文件里没写这一项，此时不动注册表，
-    /// 避免覆盖用户手动在任务管理器里做的改动。
+    /// Start with Windows. null means the config file does not mention it, in which case the
+    /// registry is left alone, so a change the user made by hand is never overwritten.
     /// </summary>
     internal bool? AutoStart { get; set; }
 
-    /// <summary>写日志到 hotkey.log。</summary>
+    /// <summary>Write the debug log to hotkey.log.</summary>
     internal bool Debug { get; set; }
 
-    /// <summary>配置文件路径（由 ConfigStore 填）。</summary>
+    /// <summary>Config file path, filled in by ConfigStore.</summary>
     internal string ConfigPath { get; set; } = string.Empty;
 
-    /// <summary>配置文件是否存在。</summary>
+    /// <summary>Whether the config file exists.</summary>
     internal bool ConfigFileExists { get; set; }
 
-    /// <summary>解析过程中的问题，用于提示用户。</summary>
+    /// <summary>Problems found while parsing, shown to the user.</summary>
     internal List<string> Warnings { get; } = [];
 
-    internal void AddWarning(string message)
-    {
-        if (!Warnings.Contains(message))
-        {
-            Warnings.Add(message);
-        }
+    internal void AddWarning(string message) {
+        if (!Warnings.Contains(message)) Warnings.Add(message);
     }
 
-    internal sealed class CliResult
-    {
+    internal sealed class CliResult {
         internal bool ShowHelp { get; set; }
 
         internal bool NoTray { get; set; }
@@ -52,25 +46,23 @@ internal sealed class AppConfig
 
         internal string? ExplicitConfigPath { get; set; }
 
-        /// <summary>命令行里显式给了 --hotkey。</summary>
+        /// <summary>--hotkey was given on the command line.</summary>
         internal bool HasHotkey { get; set; }
 
-        /// <summary>命令行里显式给了 --mode。</summary>
+        /// <summary>--mode was given on the command line.</summary>
         internal bool HasMode { get; set; }
     }
 
     /// <summary>
-    /// 解析命令行覆盖项。只处理已知开关，其余一律报错，避免用户写错了还以为生效了。
+    /// Parse the command line overrides. Only known switches are handled and everything else is an
+    /// error, so a typo cannot silently look like it worked.
     /// </summary>
-    internal static CliResult ApplyCommandLine(AppConfig config, string[] args)
-    {
+    internal static CliResult ApplyCommandLine(AppConfig config, string[] args) {
         var result = new CliResult();
 
-        for (int i = 0; i < args.Length; i++)
-        {
+        for (int i = 0; i < args.Length; i++) {
             string arg = args[i];
-            switch (arg.ToLowerInvariant())
-            {
+            switch (arg.ToLowerInvariant()) {
                 case "-h":
                 case "-?":
                 case "/?":
@@ -80,8 +72,7 @@ internal sealed class AppConfig
 
                 case "--hotkey":
                 case "-hotkey":
-                    if (!TryTakeValue(args, ref i, arg, out string hotkey, out string error))
-                    {
+                    if (!TryTakeValue(args, ref i, arg, out string hotkey, out string error)) {
                         result.Error = error;
                         return result;
                     }
@@ -92,8 +83,7 @@ internal sealed class AppConfig
 
                 case "--mode":
                 case "-mode":
-                    if (!TryTakeValue(args, ref i, arg, out string mode, out string modeError))
-                    {
+                    if (!TryTakeValue(args, ref i, arg, out string mode, out string modeError)) {
                         result.Error = modeError;
                         return result;
                     }
@@ -104,8 +94,7 @@ internal sealed class AppConfig
 
                 case "--config":
                 case "-config":
-                    if (!TryTakeValue(args, ref i, arg, out string path, out string pathError))
-                    {
+                    if (!TryTakeValue(args, ref i, arg, out string path, out string pathError)) {
                         result.Error = pathError;
                         return result;
                     }
@@ -125,23 +114,16 @@ internal sealed class AppConfig
                     break;
 
                 default:
-                    if (arg.StartsWith("--hotkey=", StringComparison.OrdinalIgnoreCase))
-                    {
+                    if (arg.StartsWith("--hotkey=", StringComparison.OrdinalIgnoreCase)) {
                         config.Hotkey = arg["--hotkey=".Length..];
                         result.HasHotkey = true;
-                    }
-                    else if (arg.StartsWith("--mode=", StringComparison.OrdinalIgnoreCase))
-                    {
+                    } else if (arg.StartsWith("--mode=", StringComparison.OrdinalIgnoreCase)) {
                         config.Mode = arg["--mode=".Length..];
                         result.HasMode = true;
-                    }
-                    else if (arg.StartsWith("--config=", StringComparison.OrdinalIgnoreCase))
-                    {
+                    } else if (arg.StartsWith("--config=", StringComparison.OrdinalIgnoreCase)) {
                         result.ExplicitConfigPath = arg["--config=".Length..];
-                    }
-                    else
-                    {
-                        result.Error = $"无法识别的参数 “{arg}”";
+                    } else {
+                        result.Error = $"unknown argument {arg}";
                         return result;
                     }
 
@@ -152,14 +134,14 @@ internal sealed class AppConfig
         return result;
     }
 
-    private static bool TryTakeValue(string[] args, ref int index, string name, out string value, out string error)
-    {
+    private static bool TryTakeValue(
+        string[] args, ref int index, string name, out string value, out string error
+    ) {
         value = string.Empty;
         error = string.Empty;
 
-        if (index + 1 >= args.Length)
-        {
-            error = $"参数 {name} 后面缺少取值";
+        if (index + 1 >= args.Length) {
+            error = $"argument {name} needs a value";
             return false;
         }
 
@@ -170,30 +152,32 @@ internal sealed class AppConfig
 
     internal static string Usage() =>
         """
-        WindowMinimize - 按热键最小化当前窗口
+        WindowMinimize - minimize the current window with a hotkey
 
-        用法:
-          WindowMinimize.exe [选项]
+        usage:
+          WindowMinimize.exe [options]
 
-        选项:
-          --hotkey <组合>   指定热键，例如 --hotkey Ctrl+Alt+M
-                            写法: 修饰键(Ctrl/Alt/Shift/Win) + 主键(A-Z、0-9、F1-F24、
-                            Space、Esc、Enter 等)，用 + 连接；不带修饰键时只能用功能键。
-          --mode <方式>     minimize（默认，最小化到任务栏）或 hide（直接隐藏窗口）
-          --config <路径>   指定配置文件，默认读 exe 同目录的 hotkey.ini
-          --debug           写调试日志到 exe 同目录的 hotkey.log
-          --no-tray         不显示托盘图标
-          --help            显示本帮助
+        options:
+          --hotkey <combination>  the hotkey to use, for example --hotkey Ctrl+Alt+M
+                                  syntax: a modifier (Ctrl/Alt/Shift/Win) plus one main key
+                                  (A-Z, 0-9, F1-F24, Space, Esc, Enter and so on) joined with +;
+                                  without a modifier only function keys are allowed
+          --mode <mode>           minimize (default, to the taskbar) or hide (hide the window)
+          --config <path>         use this config file, defaults to hotkey.ini next to the exe
+          --debug                 write a debug log to hotkey.log next to the exe
+          --no-tray               do not show the tray icon
+          --help                  show this help
 
-        配置文件 hotkey.ini 示例:
+        hotkey.ini example:
           [general]
           Hotkey=Win+S
           Mode=minimize
           AutoStart=true
           Debug=false
 
-        说明:
-          双击运行后会常驻托盘，按热键最小化当时的前台窗口；托盘菜单可最小化一次、
-          暂停热键、打开配置、开机自启、退出。修改 hotkey.ini 后自动生效。
+        notes:
+          Started by double click the tool stays in the tray and the hotkey minimizes whatever
+          window is in front. The tray menu minimizes once, suspends the hotkey, opens the config,
+          toggles the auto start and exits. Saving hotkey.ini takes effect right away.
         """;
 }
