@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 namespace WindowMinimize;
 
 /// <summary>
-/// 托盘图标。优先用 exe 里嵌的图标，取不到时按同一构图现画一个。
+/// 托盘图标。按系统小图标尺寸直接画（从 exe 里的 32×32 缩到 16 会发虚），画不出来时退回 exe 内嵌图标。
 /// </summary>
 internal static class IconFactory
 {
@@ -18,6 +18,16 @@ internal static class IconFactory
             return (Icon)_cached.Clone();
         }
 
+        try
+        {
+            _cached = Draw(SystemInformation.SmallIconSize.Width);
+            return (Icon)_cached.Clone();
+        }
+        catch
+        {
+            // 现画失败就退回 exe 内嵌图标
+        }
+
         Icon? fromExe = LoadFromExecutable();
         if (fromExe is not null)
         {
@@ -25,7 +35,7 @@ internal static class IconFactory
             return (Icon)fromExe.Clone();
         }
 
-        _cached = Draw();
+        _cached = Draw(32);
         return (Icon)_cached.Clone();
     }
 
@@ -45,7 +55,7 @@ internal static class IconFactory
                 return null;
             }
 
-            // 托盘图标要小尺寸，转成 32x32 再取最佳匹配
+            // 退回路径：拿到的内嵌图标是 32×32，再由系统缩到托盘尺寸
             using var bmp = icon.ToBitmap();
             using var scaled = new Bitmap(32, 32);
             using (var g = Graphics.FromImage(scaled))
@@ -72,25 +82,30 @@ internal static class IconFactory
     }
 
     /// <summary>
-    /// 画一个“最小化”图标：居中的短横线，两侧各一条更低更短的线，示意收起到任务栏。
+    /// 画一个“最小化”图标：两条向下的折线箭头收到底部一条横线上，示意把窗口收起到任务栏。
+    /// 几何与 build\make-icon.ps1 保持一致（都是 32 单位坐标系），改一边要同步改另一边。
     /// </summary>
-    private static Icon Draw()
+    private static Icon Draw(int size)
     {
-        using var bmp = new Bitmap(32, 32);
+        using var bmp = new Bitmap(size, size);
         using (Graphics g = Graphics.FromImage(bmp))
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.Clear(Color.Transparent);
 
-            using var pen = new Pen(Color.FromArgb(28, 28, 28), 2.4f)
+            float scale = size / 32f;
+            PointF P(float x, float y) => new(x * scale, y * scale);
+
+            using var pen = new Pen(Color.FromArgb(46, 124, 246), 3f * scale)
             {
                 StartCap = LineCap.Round,
                 EndCap = LineCap.Round,
+                LineJoin = LineJoin.Round,
             };
 
-            g.DrawLine(pen, 6f, 23f, 26f, 23f);
-            g.DrawLine(pen, 11f, 17f, 21f, 17f);
-            g.DrawLine(pen, 15f, 11f, 17f, 11f);
+            g.DrawLines(pen, new[] { P(10.5f, 6.6f), P(16f, 12f), P(21.5f, 6.6f) });
+            g.DrawLines(pen, new[] { P(10.5f, 13.4f), P(16f, 18.8f), P(21.5f, 13.4f) });
+            g.DrawLine(pen, P(7.5f, 24.6f), P(24.5f, 24.6f));
         }
 
         IntPtr handle = bmp.GetHicon();
