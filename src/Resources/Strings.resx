@@ -38,7 +38,7 @@
     <value>Reload config</value>
   </data>
   <data name="MenuAutoStart" xml:space="preserve">
-    <value>Start with Windows</value>
+    <value>Start with Windows (&amp;A)</value>
   </data>
   <data name="MenuExit" xml:space="preserve">
     <value>Exit</value>
@@ -65,7 +65,7 @@
     <value>WindowMinimize settings</value>
   </data>
   <data name="DialogHotkey" xml:space="preserve">
-    <value>Hotkey</value>
+    <value>Hotkey (&amp;K)</value>
   </data>
   <data name="DialogSyntaxHint" xml:space="preserve">
     <value>Ctrl, Alt, Shift and Win plus one main key&#10;joined with +, for example Win+Alt+M</value>
@@ -80,22 +80,22 @@
     <value>Log</value>
   </data>
   <data name="DialogDebug" xml:space="preserve">
-    <value>Write debug log</value>
+    <value>Write debug log (&amp;D)</value>
   </data>
   <data name="DialogMode" xml:space="preserve">
     <value>Mode</value>
   </data>
   <data name="DialogMinimize" xml:space="preserve">
-    <value>Minimize to taskbar</value>
+    <value>Minimize to taskbar (&amp;M)</value>
   </data>
   <data name="DialogHide" xml:space="preserve">
-    <value>Hide window</value>
+    <value>Hide window (&amp;H)</value>
   </data>
   <data name="DialogSave" xml:space="preserve">
-    <value>Save</value>
+    <value>Save (&amp;S)</value>
   </data>
   <data name="DialogCancel" xml:space="preserve">
-    <value>Cancel</value>
+    <value>Cancel (&amp;C)</value>
   </data>
   <data name="BalloonStarted" xml:space="preserve">
     <value>started, hotkey {0}, press it once to minimize the current window</value>
@@ -200,7 +200,7 @@ notes:
     <value>Settings...</value>
   </data>
   <data name="MenuAutoStartAdmin" xml:space="preserve">
-    <value>Start with Windows as administrator</value>
+    <value>Start with Windows as administrator (&amp;E)</value>
   </data>
   <data name="BalloonElevatedAutoStartFailed" xml:space="preserve">
     <value>Could not change the administrator autostart: {0}</value>
@@ -209,7 +209,7 @@ notes:
     <value>Elevated autostart installed. It takes effect at the next logon; use Restart as administrator to switch this session now.</value>
   </data>
   <data name="MenuRestartAdmin" xml:space="preserve">
-    <value>Restart as administrator</value>
+    <value>Restart as administrator (&amp;R)</value>
   </data>
   <data name="MsgRestartAdmin" xml:space="preserve">
     <value>WindowMinimize will close and restart as administrator. Confirm the UAC prompt to continue.</value>

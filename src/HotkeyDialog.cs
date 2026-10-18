@@ -15,6 +15,7 @@ internal sealed class HotkeyDialog : Form {
     private readonly CheckBox _autoStartAdminBox;
     private readonly CheckBox _debugBox;
     private readonly Label _hint;
+    private readonly Button? _restartButton = null;
 
     internal string HotkeyText => _hotkeyBox.Text.Trim();
 
@@ -170,18 +171,18 @@ internal sealed class HotkeyDialog : Form {
             };
             buttonRow.Controls.Add(adminLabel, 0, 0);
         } else {
-            var restart = new Button {
+            _restartButton = new Button {
                 Text = Strings.MenuRestartAdmin,
                 AutoSize = true,
                 MinimumSize = new Size(0, 28),
                 Margin = new Padding(0, 0, 12, 0),
             };
-            restart.Click += (_, _) => {
+            _restartButton.Click += (_, _) => {
                 RestartRequested = true;
                 DialogResult = DialogResult.OK;
                 Close();
             };
-            buttonRow.Controls.Add(restart, 0, 0);
+            buttonRow.Controls.Add(_restartButton, 0, 0);
         }
 
         var rightButtons = new FlowLayoutPanel {
@@ -237,6 +238,61 @@ internal sealed class HotkeyDialog : Form {
         Anchor = AnchorStyles.Top | AnchorStyles.Left,
         Margin = new Padding(3, 6, 12, 3),
     };
+
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
+        if (keyData == (Keys.Alt | Keys.K)) {
+            _hotkeyBox.Focus();
+            return true;
+        }
+
+        if (keyData == (Keys.Alt | Keys.M)) {
+            _minimizeRadio.Checked = true;
+            _minimizeRadio.Focus();
+            return true;
+        }
+
+        if (keyData == (Keys.Alt | Keys.H)) {
+            _hideRadio.Checked = true;
+            _hideRadio.Focus();
+            return true;
+        }
+
+        if (keyData == (Keys.Alt | Keys.A)) {
+            _autoStartBox.Checked = !_autoStartBox.Checked;
+            _autoStartBox.Focus();
+            return true;
+        }
+
+        if (keyData == (Keys.Alt | Keys.E) && _autoStartAdminBox.Enabled) {
+            _autoStartAdminBox.Checked = !_autoStartAdminBox.Checked;
+            _autoStartAdminBox.Focus();
+            return true;
+        }
+
+        if (keyData == (Keys.Alt | Keys.D)) {
+            _debugBox.Checked = !_debugBox.Checked;
+            _debugBox.Focus();
+            return true;
+        }
+
+        if (keyData == (Keys.Alt | Keys.S)) {
+            OnSaveClicked(this, EventArgs.Empty);
+            return true;
+        }
+
+        if (keyData == (Keys.Alt | Keys.C)) {
+            DialogResult = DialogResult.Cancel;
+            Close();
+            return true;
+        }
+
+        if (keyData == (Keys.Alt | Keys.R) && _restartButton is not null) {
+            _restartButton.PerformClick();
+            return true;
+        }
+
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
 
     private void OnSaveClicked(object? sender, EventArgs e) {
         if (!HotkeySpec.TryParse(_hotkeyBox.Text, out HotkeySpec? spec, out string error)) {

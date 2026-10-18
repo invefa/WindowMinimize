@@ -37,7 +37,7 @@
     <value>重新载入配置</value>
   </data>
   <data name="MenuAutoStart" xml:space="preserve">
-    <value>开机自动启动</value>
+    <value>开机自动启动(&amp;A)</value>
   </data>
   <data name="MenuExit" xml:space="preserve">
     <value>退出</value>
@@ -64,7 +64,7 @@
     <value>WindowMinimize 设置</value>
   </data>
   <data name="DialogHotkey" xml:space="preserve">
-    <value>热键</value>
+    <value>热键(&amp;K)</value>
   </data>
   <data name="DialogSyntaxHint" xml:space="preserve">
     <value>修饰键 Ctrl、Alt、Shift、Win 加一个主键&#10;用 + 连接，例如 Win+Alt+M</value>
@@ -79,22 +79,22 @@
     <value>日志</value>
   </data>
   <data name="DialogDebug" xml:space="preserve">
-    <value>写入调试日志</value>
+    <value>写入调试日志(&amp;D)</value>
   </data>
   <data name="DialogMode" xml:space="preserve">
     <value>方式</value>
   </data>
   <data name="DialogMinimize" xml:space="preserve">
-    <value>最小化到任务栏</value>
+    <value>最小化到任务栏(&amp;M)</value>
   </data>
   <data name="DialogHide" xml:space="preserve">
-    <value>直接隐藏窗口</value>
+    <value>直接隐藏窗口(&amp;H)</value>
   </data>
   <data name="DialogSave" xml:space="preserve">
-    <value>保存</value>
+    <value>保存(&amp;S)</value>
   </data>
   <data name="DialogCancel" xml:space="preserve">
-    <value>取消</value>
+    <value>取消(&amp;C)</value>
   </data>
   <data name="BalloonStarted" xml:space="preserve">
     <value>已启动，热键 {0}，按一次即可最小化当前窗口</value>
@@ -198,7 +198,7 @@ hotkey.ini 示例:
     <value>设置...</value>
   </data>
   <data name="MenuAutoStartAdmin" xml:space="preserve">
-    <value>以管理员身份开机自启</value>
+    <value>以管理员身份开机自启(&amp;E)</value>
   </data>
   <data name="BalloonElevatedAutoStartFailed" xml:space="preserve">
     <value>无法修改管理员自启：{0}</value>
@@ -207,7 +207,7 @@ hotkey.ini 示例:
     <value>管理员自启已设置，下次登录时生效。要立即切换当前会话，请使用“以管理员身份重启”。</value>
   </data>
   <data name="MenuRestartAdmin" xml:space="preserve">
-    <value>以管理员身份重启</value>
+    <value>以管理员身份重启(&amp;R)</value>
   </data>
   <data name="MsgRestartAdmin" xml:space="preserve">
     <value>WindowMinimize将关闭并以管理员身份重启，请在UAC提示中确认。</value>
