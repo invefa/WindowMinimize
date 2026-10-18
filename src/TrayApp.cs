@@ -85,6 +85,8 @@ internal sealed class TrayApp : ApplicationContext {
         var startupMenu = new ToolStripMenuItem(Strings.MenuStartup);
         startupMenu.DropDownItems.Add(_autoStartItem);
         startupMenu.DropDownItems.Add(_autoStartAdminItem);
+        startupMenu.DropDownItems.Add(new ToolStripSeparator());
+        startupMenu.DropDownItems.Add(restartAdminItem);
 
         var exitItem = new ToolStripMenuItem(Strings.MenuExit, null, (_, _) => {
             Log.Info("exit requested");
@@ -108,7 +110,6 @@ internal sealed class TrayApp : ApplicationContext {
         menu.Items.Add(configMenu);
         menu.Items.Add(startupMenu);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(restartAdminItem);
         menu.Items.Add(exitItem);
 
         _icon = new NotifyIcon {

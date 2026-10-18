@@ -88,7 +88,7 @@ example when unpacked to `C:\Program Files`), it falls back to
 | Config > Reload config | Reads it again manually; not needed normally |
 | Startup > Start with Windows | When ticked, writes the registry `HKCU\...\Run` entry; only touches the registry, not the config file |
 | Startup > Start with Windows as administrator | Registers a Task Scheduler logon task with the highest run level, so the program starts elevated without a UAC prompt. Asks for administrator permission once and removes the normal Run entry; the normal entry above is disabled while the task exists |
-| Restart as administrator | Closes the program and starts it again through the UAC prompt, so it can also handle windows that run elevated; not clickable when already elevated |
+| Startup > Restart as administrator | Closes the program and starts it again through the UAC prompt, so it can also handle windows that run elevated; not clickable when already elevated |
 | Exit | Ends the program |
 
 Double-clicking the tray icon opens the settings dialog.
