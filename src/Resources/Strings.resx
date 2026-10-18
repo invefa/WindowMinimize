@@ -167,7 +167,7 @@ usage:
   WindowMinimize.exe [options]
 
 options:
-  --hotkey &lt;combination&gt;  the hotkey to use, for example --hotkey Ctrl+Alt+M
+  --hotkey &lt;combination&gt;  the hotkey to use, for example --hotkey Win+S
                           syntax: a modifier (Ctrl/Alt/Shift/Win) plus one main key
                           (A-Z, 0-9, F1-F24, Space, Esc, Enter and so on) joined with +;
                           without a modifier only function keys are allowed

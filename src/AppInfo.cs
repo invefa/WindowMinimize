@@ -7,7 +7,7 @@ namespace WindowMinimize;
 /// released tag cannot drift apart.
 /// </summary>
 internal static class AppInfo {
-    /// <summary>The version as the project file writes it, for example 1.0.1.</summary>
+    /// <summary>The version as the project file writes it, for example 1.1.0.</summary>
     internal static string Version { get; } = ReadVersion();
 
     private static string ReadVersion() {

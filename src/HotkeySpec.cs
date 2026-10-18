@@ -19,7 +19,7 @@ internal sealed class HotkeySpec : IEquatable<HotkeySpec> {
     /// <summary>Virtual key code.</summary>
     internal uint VirtualKey { get; }
 
-    /// <summary>Canonical readable form, for example Ctrl+Alt+M.</summary>
+    /// <summary>Canonical readable form, for example Win+S.</summary>
     internal string Text { get; }
 
     public bool Equals(HotkeySpec? other) =>

@@ -17,8 +17,8 @@ moment.
 
 For windows that run as administrator, start the program with `start-admin.bat` or use "Restart as
 administrator" in the tray menu; Windows does not deliver the hotkey to a normal-privilege program
-while such a window is in front. Tick "Start with Windows as administrator" to start it elevated at
-every logon without a UAC prompt.
+while such a window is in front. Turn on "Start with Windows", then tick "Start with Windows as
+administrator" to start it elevated at every logon without a UAC prompt.
 
 The first run creates `hotkey.ini` next to the exe. Save your changes and they take effect
 immediately, with no restart. Left-clicking the tray icon opens the settings dialog, where the
@@ -183,9 +183,9 @@ Add `-Lite` to get `dist\lite\WindowMinimize-lite.exe` instead, the framework de
 that needs the .NET 8 Desktop Runtime on the machine it runs on. It lives in a folder of its own
 because a single file publish clears its output folder before writing.
 
-Pushing a tag such as `v1.0.0`, matching `<Version>` in `src\WindowMinimize.csproj`, makes
-`.github\workflows\release.yml` run the unit tests, build both exe files and attach them to the
-release.
+Pushing a tag such as `v1.1.0`, matching `<Version>` in `src\WindowMinimize.csproj`, makes
+`.github\workflows\release.yml` run the unit tests, build both exe files, extract the matching
+section of `CHANGELOG.md` and attach the exe files to the release.
 
 Unit tests:
 
@@ -211,8 +211,9 @@ WindowMinimize
 1. Windows blocks a normal-privilege program from capturing the hotkey while an elevated window is
    in front, and from minimizing that window. Run this program as administrator to handle such
    windows: use "Restart as administrator" in the tray menu or `start-admin.bat`. For a silent
-   elevated start at every logon, tick "Start with Windows as administrator"; it registers a Task
-   Scheduler task with the highest run level and removes the normal Run entry.
+   elevated start at every logon, turn on "Start with Windows", then tick "Start with Windows as
+   administrator"; it registers a Task Scheduler task with the highest run level and removes the
+   normal Run entry.
 
 2. The `hide` mode hides the window completely, so no button remains on the taskbar; use "Restore
    last hidden window" in the tray menu to get it back. That record lives only in memory and is lost
