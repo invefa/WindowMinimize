@@ -73,6 +73,9 @@
   <data name="DialogStartup" xml:space="preserve">
     <value>Startup</value>
   </data>
+  <data name="DialogAlreadyElevated" xml:space="preserve">
+    <value>Running as administrator</value>
+  </data>
   <data name="DialogLog" xml:space="preserve">
     <value>Log</value>
   </data>

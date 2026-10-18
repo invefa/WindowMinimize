@@ -160,13 +160,29 @@ internal sealed class HotkeyDialog : Form {
         buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-        var restart = new Button {
-            Text = Strings.MenuRestartAdmin,
-            AutoSize = true,
-            MinimumSize = new Size(0, 28),
-            Enabled = !alreadyElevated,
-            Margin = new Padding(0, 0, 12, 0),
-        };
+        if (alreadyElevated) {
+            var adminLabel = new Label {
+                Text = Strings.DialogAlreadyElevated,
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                ForeColor = Color.FromArgb(96, 96, 96),
+                Margin = new Padding(0, 6, 12, 0),
+            };
+            buttonRow.Controls.Add(adminLabel, 0, 0);
+        } else {
+            var restart = new Button {
+                Text = Strings.MenuRestartAdmin,
+                AutoSize = true,
+                MinimumSize = new Size(0, 28),
+                Margin = new Padding(0, 0, 12, 0),
+            };
+            restart.Click += (_, _) => {
+                RestartRequested = true;
+                DialogResult = DialogResult.OK;
+                Close();
+            };
+            buttonRow.Controls.Add(restart, 0, 0);
+        }
 
         var rightButtons = new FlowLayoutPanel {
             AutoSize = true,
@@ -193,15 +209,8 @@ internal sealed class HotkeyDialog : Form {
         };
 
         save.Click += OnSaveClicked;
-        restart.Click += (_, _) => {
-            RestartRequested = true;
-            DialogResult = DialogResult.OK;
-            Close();
-        };
-
         rightButtons.Controls.Add(cancel);
         rightButtons.Controls.Add(save);
-        buttonRow.Controls.Add(restart, 0, 0);
         buttonRow.Controls.Add(rightButtons, 1, 0);
 
         layout.Controls.Add(hotkeyLabel, 0, 0);
@@ -226,7 +235,7 @@ internal sealed class HotkeyDialog : Form {
         Text = text,
         AutoSize = true,
         Anchor = AnchorStyles.Top | AnchorStyles.Left,
-        Margin = new Padding(3, 9, 12, 3),
+        Margin = new Padding(3, 6, 12, 3),
     };
 
     private void OnSaveClicked(object? sender, EventArgs e) {

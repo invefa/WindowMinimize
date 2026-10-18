@@ -60,6 +60,7 @@ internal static class Strings {
     internal static string DialogStartup    => Get(nameof(DialogStartup));
     internal static string DialogDebug      => Get(nameof(DialogDebug));
     internal static string DialogLog        => Get(nameof(DialogLog));
+    internal static string DialogAlreadyElevated => Get(nameof(DialogAlreadyElevated));
     internal static string DialogMinimize   => Get(nameof(DialogMinimize));
     internal static string DialogHide       => Get(nameof(DialogHide));
     internal static string DialogSave       => Get(nameof(DialogSave));
