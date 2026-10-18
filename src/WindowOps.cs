@@ -22,6 +22,7 @@ internal static class WindowOps {
         "Shell_TrayWnd",
         "Shell_SecondaryTrayWnd",
         "NotifyIconOverflowWindow",
+        "TopLevelWindowForOverflowXamlIsland",
         "Progman",
         "WorkerW",
         "TaskListThumbnailWnd",
