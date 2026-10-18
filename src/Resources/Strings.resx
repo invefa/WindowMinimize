@@ -178,6 +178,12 @@ notes:
   window is in front. The tray menu minimizes once, suspends the hotkey, opens the config,
   toggles the auto start and exits. Saving hotkey.ini takes effect right away.</value>
   </data>
+  <data name="PrivilegeAdmin" xml:space="preserve">
+    <value>Running as administrator</value>
+  </data>
+  <data name="PrivilegeUser" xml:space="preserve">
+    <value>Running as standard user</value>
+  </data>
   <data name="MenuConfig" xml:space="preserve">
     <value>Config</value>
   </data>

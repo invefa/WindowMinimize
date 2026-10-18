@@ -79,6 +79,7 @@ example when unpacked to `C:\Program Files`), it falls back to
 | Menu item | Action |
 | --- | --- |
 | Version | Not clickable heading at the top, shows the version of the exe that is running |
+| Privilege | Not clickable heading below the version, shows whether this copy runs as administrator or as a standard user |
 | Minimize current window | Same as pressing the hotkey once |
 | Restore last hidden window | Brings the last window hidden with `hide` back to the foreground; not clickable when no window has been hidden |
 | Hotkey: xxx | Shows only the hotkey currently in effect |

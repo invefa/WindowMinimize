@@ -97,8 +97,14 @@ internal sealed class TrayApp : ApplicationContext {
         var versionItem = new ToolStripMenuItem(Strings.MenuVersion(AppInfo.Version)) {
             Enabled = false,
         };
+        var privilegeItem = new ToolStripMenuItem(
+            IsRunningAsAdministrator() ? Strings.PrivilegeAdmin : Strings.PrivilegeUser
+        ) {
+            Enabled = false,
+        };
 
         menu.Items.Add(versionItem);
+        menu.Items.Add(privilegeItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(minimizeItem);
         menu.Items.Add(_restoreItem);
