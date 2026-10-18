@@ -29,6 +29,7 @@ internal static class Strings {
     internal static string MenuResume         => Get(nameof(MenuResume));
     internal static string MenuOpenConfig     => Get(nameof(MenuOpenConfig));
     internal static string MenuReload         => Get(nameof(MenuReload));
+    internal static string MenuSettings       => Get(nameof(MenuSettings));
     internal static string MenuAutoStart      => Get(nameof(MenuAutoStart));
     internal static string MenuAutoStartAdmin => Get(nameof(MenuAutoStartAdmin));
     internal static string MenuRestartAdmin   => Get(nameof(MenuRestartAdmin));

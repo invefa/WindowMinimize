@@ -176,6 +176,9 @@ hotkey.ini 示例:
   双击启动后程序驻留托盘，按一次热键即可最小化最前面的窗口。托盘菜单可以最小化一次、
   暂停热键、打开配置文件、切换开机自启或退出。保存 hotkey.ini 立即生效。</value>
   </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>设置</value>
+  </data>
   <data name="MenuAutoStartAdmin" xml:space="preserve">
     <value>以管理员身份开机自启</value>
   </data>

@@ -178,6 +178,9 @@ notes:
   window is in front. The tray menu minimizes once, suspends the hotkey, opens the config,
   toggles the auto start and exits. Saving hotkey.ini takes effect right away.</value>
   </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
   <data name="MenuAutoStartAdmin" xml:space="preserve">
     <value>Start with Windows as administrator</value>
   </data>

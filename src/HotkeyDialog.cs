@@ -20,7 +20,7 @@ internal sealed class HotkeyDialog : Form {
 
     internal bool AutoStart => _autoStartBox.Checked;
 
-    internal HotkeyDialog(AppConfig config) {
+    internal HotkeyDialog(AppConfig config, bool autoStart, bool autoStartLocked) {
         Text = Strings.DialogTitle;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -72,10 +72,11 @@ internal sealed class HotkeyDialog : Form {
         };
 
         _autoStartBox = new CheckBox {
-            Text = Strings.MenuAutoStart,
+            Text = autoStartLocked ? Strings.MenuAutoStartAdmin : Strings.MenuAutoStart,
             Location = new Point(84, 122),
             AutoSize = true,
-            Checked = ConfigStore.IsAutoStartEnabled(),
+            Checked = autoStart,
+            Enabled = !autoStartLocked,
         };
 
         _hint = new Label {

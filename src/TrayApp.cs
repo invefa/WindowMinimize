@@ -63,6 +63,9 @@ internal sealed class TrayApp : ApplicationContext {
         var reloadItem = new ToolStripMenuItem(
             Strings.MenuReload, null, (_, _) => Reload(interactive: true)
         );
+        var settingsItem = new ToolStripMenuItem(
+            Strings.MenuSettings, null, (_, _) => ShowSettingsDialog()
+        );
 
         var autoStartClick = new EventHandler((_, _) =>
             SetAutoStart(!ConfigStore.IsAutoStartEnabled()));
@@ -95,6 +98,7 @@ internal sealed class TrayApp : ApplicationContext {
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(openItem);
         menu.Items.Add(reloadItem);
+        menu.Items.Add(settingsItem);
         menu.Items.Add(_autoStartItem);
         menu.Items.Add(_autoStartAdminItem);
         menu.Items.Add(new ToolStripSeparator());
@@ -432,17 +436,23 @@ internal sealed class TrayApp : ApplicationContext {
 
     /// <summary>Show the settings dialog.</summary>
     internal void ShowSettingsDialog() {
-        using var dialog = new HotkeyDialog(Config);
+        bool elevatedAutoStart = ConfigStore.IsElevatedAutoStartInstalled();
+        bool autoStart = ConfigStore.IsAutoStartEnabled() || elevatedAutoStart;
+
+        using var dialog = new HotkeyDialog(Config, autoStart, elevatedAutoStart);
         if (dialog.ShowDialog() != DialogResult.OK) return;
 
         Config.Hotkey = dialog.HotkeyText;
         Config.Mode = dialog.Mode;
         Apply(Config);
 
-        try {
-            ConfigStore.SetAutoStart(dialog.AutoStart);
-        } catch (Exception ex) {
-            Log.Error($"could not set auto start: {ex.Message}");
+        if (elevatedAutoStart) {
+            // the logon task owns auto start, so the Run entry stays off
+            Config.AutoStart = false;
+            SetAutoStart(false);
+        } else {
+            Config.AutoStart = dialog.AutoStart;
+            SetAutoStart(dialog.AutoStart);
         }
 
         SaveToFile();
@@ -461,6 +471,11 @@ internal sealed class TrayApp : ApplicationContext {
 
             text = SetIniValue(text, "Hotkey", Config.Hotkey);
             text = SetIniValue(text, "Mode", Config.Mode);
+
+            if (Config.AutoStart is bool autoStart) {
+                text = SetIniValue(text, "AutoStart", autoStart ? "true" : "false");
+            }
+
             File.WriteAllText(path, text);
             Log.Info($"settings written to {path}");
         } catch (Exception ex) {
