@@ -29,6 +29,26 @@ internal static class ConfigStore {
     /// </summary>
     internal static AppConfig Load(string? explicitPath) {
         var config = new AppConfig();
+        string path = ResolvePath(explicitPath);
+
+        config.ConfigPath = path;
+        config.ConfigFileExists = File.Exists(path);
+
+        if (!config.ConfigFileExists)
+            TryWriteDefault(path, config);
+        else
+            ParseIni(path, config);
+
+        Normalize(config);
+        return config;
+    }
+
+    /// <summary>
+    /// Work out where the config and the log live, without reading or writing the config file. The
+    /// help and the bad argument paths use it so they can point the log somewhere without leaving a
+    /// default hotkey.ini behind.
+    /// </summary>
+    internal static string ResolvePath(string? explicitPath) {
         string path;
 
         if (!string.IsNullOrWhiteSpace(explicitPath)) {
@@ -50,16 +70,7 @@ internal static class ConfigStore {
             path = Path.Combine(Directory, ConfigFileName);
         }
 
-        config.ConfigPath = path;
-        config.ConfigFileExists = File.Exists(path);
-
-        if (!config.ConfigFileExists)
-            TryWriteDefault(path, config);
-        else
-            ParseIni(path, config);
-
-        Normalize(config);
-        return config;
+        return path;
     }
 
     private static bool IsWritable(string dir) {

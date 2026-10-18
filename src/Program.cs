@@ -17,22 +17,23 @@ internal static class Program {
         // before anything can be shown, the interface language has to be known
         Strings.Init(cli.Language);
 
-        AppConfig config = ConfigStore.Load(cli.ExplicitConfigPath);
-
-        // even with broken arguments the log has to be set up, so startup problems stay traceable
+        // help and bad arguments take the log location but leave no config file behind
         if (cli.Error is not null) {
+            ConfigStore.ResolvePath(cli.ExplicitConfigPath);
             Log.Init(ConfigStore.LogPath, true);
             Log.Error("bad arguments: " + cli.Error);
             string text = Strings.MsgBadArguments(cli.Error) + Environment.NewLine
-                + Environment.NewLine + Strings.Usage;
+                + Environment.NewLine + UsageText();
             WriteError(text);
             return 2;
         }
 
         if (cli.ShowHelp) {
-            WriteUsage(Strings.Usage);
+            WriteUsage(UsageText());
             return 0;
         }
+
+        AppConfig config = ConfigStore.Load(cli.ExplicitConfigPath);
 
         if (cli.HasHotkey) config.Hotkey = overrides.Hotkey;
         if (cli.HasMode) config.Mode = overrides.Mode;
@@ -86,6 +87,15 @@ internal static class Program {
         Application.Run(app);
         Log.Info("WindowMinimize exiting");
         return 0;
+    }
+
+    /// <summary>
+    /// The usage text names the executable that was actually started, so the framework dependent
+    /// build does not tell the user to run a file that is not there.
+    /// </summary>
+    private static string UsageText() {
+        string exeName = Path.GetFileName(Environment.ProcessPath ?? "WindowMinimize.exe");
+        return Strings.Usage.Replace("WindowMinimize.exe", exeName, StringComparison.Ordinal);
     }
 
     /// <summary>
