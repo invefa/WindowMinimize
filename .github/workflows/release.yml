@@ -57,11 +57,25 @@ jobs:
                   if (-not $notes) { throw "CHANGELOG.md has no section for $version" }
                   Set-Content release-notes.md $notes.Trim() -Encoding utf8
 
+            - name: Name the release assets
+              id: assets
+              shell: pwsh
+              run: |
+                  $project = [xml](Get-Content -Raw src\WindowMinimize.csproj)
+                  $version = $project.Project.PropertyGroup.Version |
+                      Where-Object { $_ } | Select-Object -First 1
+                  $full = "dist\WindowMinimize-$version-win-x64.exe"
+                  $lite = "dist\WindowMinimize-$version-win-x64-lite.exe"
+                  Copy-Item dist\WindowMinimize.exe $full
+                  Copy-Item dist\lite\WindowMinimize-lite.exe $lite
+                  "full=$($full -replace '\\','/')" >> $env:GITHUB_OUTPUT
+                  "lite=$($lite -replace '\\','/')" >> $env:GITHUB_OUTPUT
+
             - name: Publish the release
               uses: softprops/action-gh-release@v2
               with:
                   name: ${{ github.ref_name }}
                   body_path: release-notes.md
                   files: |
-                      dist/WindowMinimize.exe
-                      dist/lite/WindowMinimize-lite.exe
+                      ${{ steps.assets.outputs.full }}
+                      ${{ steps.assets.outputs.lite }}
