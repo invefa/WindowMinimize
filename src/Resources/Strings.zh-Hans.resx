@@ -31,7 +31,7 @@
     <value>恢复热键</value>
   </data>
   <data name="MenuOpenConfig" xml:space="preserve">
-    <value>打开配置文件…</value>
+    <value>打开配置文件...</value>
   </data>
   <data name="MenuReload" xml:space="preserve">
     <value>重新载入配置</value>
@@ -189,7 +189,7 @@ hotkey.ini 示例:
     <value>启动</value>
   </data>
   <data name="MenuSettings" xml:space="preserve">
-    <value>设置</value>
+    <value>设置...</value>
   </data>
   <data name="MenuAutoStartAdmin" xml:space="preserve">
     <value>以管理员身份开机自启</value>

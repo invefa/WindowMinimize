@@ -191,7 +191,7 @@ notes:
     <value>Startup</value>
   </data>
   <data name="MenuSettings" xml:space="preserve">
-    <value>Settings</value>
+    <value>Settings...</value>
   </data>
   <data name="MenuAutoStartAdmin" xml:space="preserve">
     <value>Start with Windows as administrator</value>
