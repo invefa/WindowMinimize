@@ -4,14 +4,16 @@ using System.Windows.Forms;
 namespace WindowMinimize;
 
 /// <summary>
-/// Settings dialog: change the hotkey, pick the mode, toggle auto start. The hotkey that is in
-/// effect keeps working while the dialog is open.
+/// Settings dialog: hotkey, mode, auto start and the debug log. The hotkey that is in effect keeps
+/// working while the dialog is open.
 /// </summary>
 internal sealed class HotkeyDialog : Form {
     private readonly TextBox _hotkeyBox;
     private readonly RadioButton _minimizeRadio;
     private readonly RadioButton _hideRadio;
     private readonly CheckBox _autoStartBox;
+    private readonly CheckBox _autoStartAdminBox;
+    private readonly CheckBox _debugBox;
     private readonly Label _hint;
 
     internal string HotkeyText => _hotkeyBox.Text.Trim();
@@ -20,7 +22,11 @@ internal sealed class HotkeyDialog : Form {
 
     internal bool AutoStart => _autoStartBox.Checked;
 
-    internal HotkeyDialog(AppConfig config, bool autoStart, bool autoStartLocked) {
+    internal bool AutoStartAdmin => _autoStartAdminBox.Checked;
+
+    internal bool Debug => _debugBox.Checked;
+
+    internal HotkeyDialog(AppConfig config, bool autoStart, bool autoStartAdmin, bool debug) {
         Text = Strings.DialogTitle;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -56,8 +62,6 @@ internal sealed class HotkeyDialog : Form {
             Text = config.Hotkey,
         };
 
-        // AutoSize with a maximum width wraps the hint and grows the row to the needed height, so
-        // a longer translation is never clipped.
         var syntaxHint = new Label {
             Text = Strings.DialogSyntaxHint,
             AutoSize = true,
@@ -97,11 +101,49 @@ internal sealed class HotkeyDialog : Form {
         modes.Controls.Add(_minimizeRadio);
         modes.Controls.Add(_hideRadio);
 
+        var startupLabel = new Label {
+            Text = Strings.DialogStartup,
+            AutoSize = true,
+            Anchor = AnchorStyles.Left,
+            Margin = new Padding(3, 6, 12, 3),
+        };
+
+        var startupBoxes = new FlowLayoutPanel {
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            Margin = new Padding(0, 3, 0, 3),
+        };
+
         _autoStartBox = new CheckBox {
-            Text = autoStartLocked ? Strings.MenuAutoStartAdmin : Strings.MenuAutoStart,
+            Text = Strings.MenuAutoStart,
             AutoSize = true,
             Checked = autoStart,
-            Enabled = !autoStartLocked,
+            Margin = new Padding(0, 3, 0, 3),
+        };
+
+        _autoStartAdminBox = new CheckBox {
+            Text = Strings.MenuAutoStartAdmin,
+            AutoSize = true,
+            Checked = autoStartAdmin,
+            Margin = new Padding(0, 3, 0, 3),
+        };
+
+        _autoStartBox.CheckedChanged += (_, _) => {
+            if (_autoStartBox.Checked) _autoStartAdminBox.Checked = false;
+        };
+        _autoStartAdminBox.CheckedChanged += (_, _) => {
+            if (_autoStartAdminBox.Checked) _autoStartBox.Checked = false;
+        };
+
+        startupBoxes.Controls.Add(_autoStartBox);
+        startupBoxes.Controls.Add(_autoStartAdminBox);
+
+        _debugBox = new CheckBox {
+            Text = Strings.DialogDebug,
+            AutoSize = true,
+            Checked = debug,
             Margin = new Padding(0, 6, 0, 6),
         };
 
@@ -147,9 +189,11 @@ internal sealed class HotkeyDialog : Form {
         layout.Controls.Add(syntaxHint, 1, 1);
         layout.Controls.Add(modeLabel, 0, 2);
         layout.Controls.Add(modes, 1, 2);
-        layout.Controls.Add(_autoStartBox, 1, 3);
-        layout.Controls.Add(_hint, 1, 4);
-        layout.Controls.Add(buttons, 1, 5);
+        layout.Controls.Add(startupLabel, 0, 3);
+        layout.Controls.Add(startupBoxes, 1, 3);
+        layout.Controls.Add(_debugBox, 1, 4);
+        layout.Controls.Add(_hint, 1, 5);
+        layout.Controls.Add(buttons, 1, 6);
 
         Controls.Add(layout);
         AcceptButton = save;

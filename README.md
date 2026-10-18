@@ -83,7 +83,7 @@ example when unpacked to `C:\Program Files`), it falls back to
 | Restore last hidden window | Brings the last window hidden with `hide` back to the foreground; not clickable when no window has been hidden |
 | Hotkey: xxx | Shows only the hotkey currently in effect |
 | Suspend hotkey / Resume hotkey | Temporarily disables it, handy while gaming or recording; hold Shift and click to suspend for 5 minutes and then resume automatically |
-| Settings... | Opens the dialog for the hotkey, the mode and the normal auto start; the elevated autostart check box is shown but controlled by its own entry |
+| Settings... | Opens the dialog for the hotkey, the mode, the normal or elevated auto start and the debug log |
 | Open config file... | Opens `hotkey.ini` in Notepad |
 | Reload config | Reads it again manually; not needed normally |
 | Start with Windows | When ticked, writes the registry `HKCU\...\Run` entry; only touches the registry, not the config file |

@@ -70,6 +70,12 @@
   <data name="DialogSyntaxHint" xml:space="preserve">
     <value>Ctrl, Alt, Shift and Win plus one main key, joined with +, for example Win+Alt+M</value>
   </data>
+  <data name="DialogStartup" xml:space="preserve">
+    <value>Startup</value>
+  </data>
+  <data name="DialogDebug" xml:space="preserve">
+    <value>Write debug log</value>
+  </data>
   <data name="DialogMode" xml:space="preserve">
     <value>Mode</value>
   </data>

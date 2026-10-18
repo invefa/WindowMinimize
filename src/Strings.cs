@@ -57,6 +57,8 @@ internal static class Strings {
     internal static string DialogHotkey     => Get(nameof(DialogHotkey));
     internal static string DialogSyntaxHint => Get(nameof(DialogSyntaxHint));
     internal static string DialogMode       => Get(nameof(DialogMode));
+    internal static string DialogStartup    => Get(nameof(DialogStartup));
+    internal static string DialogDebug      => Get(nameof(DialogDebug));
     internal static string DialogMinimize   => Get(nameof(DialogMinimize));
     internal static string DialogHide       => Get(nameof(DialogHide));
     internal static string DialogSave       => Get(nameof(DialogSave));

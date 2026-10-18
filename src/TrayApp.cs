@@ -443,27 +443,71 @@ internal sealed class TrayApp : ApplicationContext {
 
     /// <summary>Show the settings dialog.</summary>
     internal void ShowSettingsDialog() {
-        bool elevatedAutoStart = ConfigStore.IsElevatedAutoStartInstalled();
-        bool autoStart = ConfigStore.IsAutoStartEnabled() || elevatedAutoStart;
+        bool adminAutoStart = ConfigStore.IsElevatedAutoStartInstalled();
+        bool normalAutoStart = !adminAutoStart && ConfigStore.IsAutoStartEnabled();
 
-        using var dialog = new HotkeyDialog(Config, autoStart, elevatedAutoStart);
+        using var dialog = new HotkeyDialog(
+            Config, normalAutoStart, adminAutoStart, Config.Debug
+        );
         if (dialog.ShowDialog() != DialogResult.OK) return;
 
         Config.Hotkey = dialog.HotkeyText;
         Config.Mode = dialog.Mode;
         Apply(Config);
 
-        if (elevatedAutoStart) {
-            // the logon task owns auto start, so the Run entry stays off
-            Config.AutoStart = false;
-            SetAutoStart(false);
-        } else {
-            Config.AutoStart = dialog.AutoStart;
-            SetAutoStart(dialog.AutoStart);
+        if (Config.Debug != dialog.Debug) {
+            Config.Debug = dialog.Debug;
+            Log.Init(ConfigStore.LogPath, Config.Debug);
         }
+
+        ApplyAutoStartChoice(dialog.AutoStart, dialog.AutoStartAdmin, adminAutoStart);
 
         SaveToFile();
         RefreshMenu();
+    }
+
+    /// <summary>
+    /// Switch between the two auto starts. The elevated one is a logon task and needs the UAC
+    /// prompt, so a failure leaves the previous state and reports the reason.
+    /// </summary>
+    private void ApplyAutoStartChoice(bool normal, bool admin, bool adminInstalled) {
+        string exe = Environment.ProcessPath ?? Application.ExecutablePath;
+
+        if (admin) {
+            if (!adminInstalled) {
+                bool installed = ConfigStore.TrySetElevatedAutoStart(
+                    true, exe, Config.ConfigPath, out string error
+                );
+                if (!installed) {
+                    ReportElevatedAutoStartError(error);
+                    return;
+                }
+            }
+
+            Config.AutoStart = false;
+            ConfigStore.SetAutoStart(false);
+            return;
+        }
+
+        if (adminInstalled) {
+            bool removed = ConfigStore.TrySetElevatedAutoStart(
+                false, exe, Config.ConfigPath, out string error
+            );
+            if (!removed) {
+                ReportElevatedAutoStartError(error);
+                return;
+            }
+        }
+
+        Config.AutoStart = normal;
+        SetAutoStart(normal);
+    }
+
+    private void ReportElevatedAutoStartError(string error) {
+        if (error.Length == 0) return; // the user declined the UAC prompt
+
+        Log.Error($"could not change the elevated autostart: {error}");
+        Notify(Strings.BalloonElevatedAutoStartFailed(error), ToolTipIcon.Error);
     }
 
     /// <summary>
@@ -482,6 +526,8 @@ internal sealed class TrayApp : ApplicationContext {
             if (Config.AutoStart is bool autoStart) {
                 text = SetIniValue(text, "AutoStart", autoStart ? "true" : "false");
             }
+
+            text = SetIniValue(text, "Debug", Config.Debug ? "true" : "false");
 
             File.WriteAllText(path, text);
             Log.Info($"settings written to {path}");
