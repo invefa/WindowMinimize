@@ -2,6 +2,13 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
+## Unreleased
+
+### Added
+
+- A language selector in the settings dialog: follow Windows, English, or Chinese. Changing it
+  rebuilds the tray menu immediately and is stored as `Language` in `hotkey.ini`.
+
 ## 1.1.0 - 2026-10-18
 
 A feature release centered on the settings dialog, a clearer tray menu and elevated startup.

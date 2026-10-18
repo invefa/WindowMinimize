@@ -14,11 +14,11 @@ internal sealed class TrayApp : ApplicationContext {
     private readonly MessageWindow _window;
     private readonly HotkeySource _source;
     private readonly NotifyIcon _icon;
-    private readonly ToolStripMenuItem _hotkeyItem;
-    private readonly ToolStripMenuItem _restoreItem;
-    private readonly ToolStripMenuItem _suspendItem;
-    private readonly ToolStripMenuItem _autoStartItem;
-    private readonly ToolStripMenuItem _autoStartAdminItem;
+    private ToolStripMenuItem _hotkeyItem = null!;
+    private ToolStripMenuItem _restoreItem = null!;
+    private ToolStripMenuItem _suspendItem = null!;
+    private ToolStripMenuItem _autoStartItem = null!;
+    private ToolStripMenuItem _autoStartAdminItem = null!;
     private readonly System.Windows.Forms.Timer _suspendCountdown;
     private ConfigStore.Watcher? _watcher;
     private HotkeySpec? _spec;
@@ -40,6 +40,40 @@ internal sealed class TrayApp : ApplicationContext {
         _source = new HotkeySource(_window.Handle);
         _source.Triggered += MinimizeForeground;
 
+        _icon = new NotifyIcon {
+            Icon = IconFactory.Create(),
+            Text = Strings.AppName,
+            Visible = !headless,
+        };
+        _icon.MouseClick += (_, e) => {
+            if (e.Button == MouseButtons.Left) ShowSettingsDialog();
+        };
+        _icon.ContextMenuStrip = BuildMenu();
+
+        _suspendCountdown = new System.Windows.Forms.Timer { Interval = 1000 };
+        _suspendCountdown.Tick += (_, _) => {
+            _suspendSecondsLeft--;
+            if (_suspendSecondsLeft > 0) return;
+
+            _suspendCountdown.Stop();
+            SetSuspended(false);
+        };
+
+        Apply(config, initial: true);
+        SyncAutoStart();
+
+        try {
+            _watcher = new ConfigStore.Watcher(config.ConfigPath, () => Reload(interactive: false));
+        } catch (Exception ex) {
+            Log.Error($"cannot watch the config file: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Build the tray menu from the current strings. It is called again after a language change,
+    /// because the existing items would otherwise keep the old text.
+    /// </summary>
+    private ContextMenuStrip BuildMenu() {
         var menu = new ContextMenuStrip();
 
         var minimizeItem = new ToolStripMenuItem(Strings.MenuMinimize);
@@ -115,33 +149,14 @@ internal sealed class TrayApp : ApplicationContext {
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(exitItem);
 
-        _icon = new NotifyIcon {
-            Icon = IconFactory.Create(),
-            Text = Strings.AppName,
-            ContextMenuStrip = menu,
-            Visible = !headless,
-        };
-        _icon.MouseClick += (_, e) => {
-            if (e.Button == MouseButtons.Left) ShowSettingsDialog();
-        };
+        return menu;
+    }
 
-        _suspendCountdown = new System.Windows.Forms.Timer { Interval = 1000 };
-        _suspendCountdown.Tick += (_, _) => {
-            _suspendSecondsLeft--;
-            if (_suspendSecondsLeft > 0) return;
-
-            _suspendCountdown.Stop();
-            SetSuspended(false);
-        };
-
-        Apply(config, initial: true);
-        SyncAutoStart();
-
-        try {
-            _watcher = new ConfigStore.Watcher(config.ConfigPath, () => Reload(interactive: false));
-        } catch (Exception ex) {
-            Log.Error($"cannot watch the config file: {ex.Message}");
-        }
+    private void RebuildMenu() {
+        ContextMenuStrip? old = _icon.ContextMenuStrip;
+        _icon.ContextMenuStrip = BuildMenu();
+        old?.Dispose();
+        RefreshMenu();
     }
 
     internal AppConfig Config { get; private set; }
@@ -230,9 +245,18 @@ internal sealed class TrayApp : ApplicationContext {
 
     /// <summary>Read the config file again and apply it.</summary>
     internal void Reload(bool interactive) {
+        string previousLanguage = Config.Language;
         AppConfig fresh = ConfigStore.Load(Config.ConfigPath);
+        bool languageChanged = !previousLanguage.Equals(
+            fresh.Language, StringComparison.OrdinalIgnoreCase
+        );
         Log.Debug($"config reloaded: hotkey {fresh.Hotkey}, mode {fresh.Mode}");
         bool ok = Apply(fresh);
+
+        if (languageChanged) {
+            Strings.Init(fresh.Language);
+            RebuildMenu();
+        }
 
         if (!ok && interactive) {
             string message = Strings.BalloonHotkeyNotActive(_lastError);
@@ -488,6 +512,12 @@ internal sealed class TrayApp : ApplicationContext {
             );
             if (dialog.ShowDialog() != DialogResult.OK) return;
 
+            if (!Config.Language.Equals(dialog.Language, StringComparison.OrdinalIgnoreCase)) {
+                Config.Language = dialog.Language;
+                Strings.Init(Config.Language);
+                RebuildMenu();
+            }
+
             Config.Hotkey = dialog.HotkeyText;
             Config.Mode = dialog.Mode;
             Apply(Config);
@@ -520,6 +550,7 @@ internal sealed class TrayApp : ApplicationContext {
 
             text = SetIniValue(text, "Hotkey", Config.Hotkey);
             text = SetIniValue(text, "Mode", Config.Mode);
+            text = SetIniValue(text, "Language", Config.Language);
 
             if (Config.AutoStart is bool autoStart) {
                 text = SetIniValue(text, "AutoStart", autoStart ? "true" : "false");

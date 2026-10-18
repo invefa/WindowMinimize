@@ -14,12 +14,19 @@ internal sealed class HotkeyDialog : Form {
     private readonly CheckBox _autoStartBox;
     private readonly CheckBox _autoStartAdminBox;
     private readonly CheckBox _debugBox;
+    private readonly ComboBox _languageBox;
     private readonly Label _hint;
     private readonly Button? _restartButton = null;
 
     internal string HotkeyText => _hotkeyBox.Text.Trim();
 
     internal string Mode => _hideRadio.Checked ? "hide" : "minimize";
+
+    internal string Language => _languageBox.SelectedIndex switch {
+        1 => "en",
+        2 => "zh",
+        _ => "auto",
+    };
 
     internal bool AutoStart => _autoStartBox.Checked;
 
@@ -95,6 +102,22 @@ internal sealed class HotkeyDialog : Form {
 
         modes.Controls.Add(_minimizeRadio);
         modes.Controls.Add(_hideRadio);
+
+        var languageLabel = RowLabel(Strings.DialogLanguage);
+
+        _languageBox = new ComboBox {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Width = 180,
+            Margin = new Padding(0, 3, 0, 3),
+        };
+        _languageBox.Items.AddRange([
+            Strings.LanguageAuto, Strings.LanguageEnglish, Strings.LanguageChinese,
+        ]);
+        _languageBox.SelectedIndex = config.Language.ToLowerInvariant() switch {
+            "en" => 1,
+            "zh" => 2,
+            _ => 0,
+        };
 
         var startupLabel = RowLabel(Strings.DialogStartup);
 
@@ -219,12 +242,14 @@ internal sealed class HotkeyDialog : Form {
         layout.Controls.Add(syntaxHint, 1, 1);
         layout.Controls.Add(modeLabel, 0, 2);
         layout.Controls.Add(modes, 1, 2);
-        layout.Controls.Add(startupLabel, 0, 3);
-        layout.Controls.Add(startupBoxes, 1, 3);
-        layout.Controls.Add(debugLabel, 0, 4);
-        layout.Controls.Add(_debugBox, 1, 4);
-        layout.Controls.Add(_hint, 1, 5);
-        layout.Controls.Add(buttonRow, 0, 6);
+        layout.Controls.Add(languageLabel, 0, 3);
+        layout.Controls.Add(_languageBox, 1, 3);
+        layout.Controls.Add(startupLabel, 0, 4);
+        layout.Controls.Add(startupBoxes, 1, 4);
+        layout.Controls.Add(debugLabel, 0, 5);
+        layout.Controls.Add(_debugBox, 1, 5);
+        layout.Controls.Add(_hint, 1, 6);
+        layout.Controls.Add(buttonRow, 0, 7);
         layout.SetColumnSpan(buttonRow, 2);
 
         Controls.Add(layout);
@@ -272,6 +297,11 @@ internal sealed class HotkeyDialog : Form {
         if (keyData == (Keys.Alt | Keys.D)) {
             _debugBox.Checked = !_debugBox.Checked;
             _debugBox.Focus();
+            return true;
+        }
+
+        if (keyData == (Keys.Alt | Keys.L)) {
+            _languageBox.Focus();
             return true;
         }
 

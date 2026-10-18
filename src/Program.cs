@@ -35,6 +35,9 @@ internal static class Program {
 
         AppConfig config = ConfigStore.Load(cli.ExplicitConfigPath);
 
+        // the config file now supplies the language unless --lang was given
+        if (cli.Language is null) Strings.Init(config.Language);
+
         if (cli.HasHotkey) config.Hotkey = overrides.Hotkey;
         if (cli.HasMode) config.Mode = overrides.Mode;
         if (overrides.Debug) config.Debug = true;

@@ -76,6 +76,18 @@
   <data name="DialogAlreadyElevated" xml:space="preserve">
     <value>Running as administrator</value>
   </data>
+  <data name="DialogLanguage" xml:space="preserve">
+    <value>Language (&amp;L)</value>
+  </data>
+  <data name="LanguageAuto" xml:space="preserve">
+    <value>System default</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageChinese" xml:space="preserve">
+    <value>Chinese</value>
+  </data>
   <data name="DialogLog" xml:space="preserve">
     <value>Log</value>
   </data>

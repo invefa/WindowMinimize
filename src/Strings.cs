@@ -15,7 +15,7 @@ internal static class Strings {
     private static readonly ResourceManager Resources =
         new(ResourceBaseName, Assembly.GetExecutingAssembly());
 
-    /// <summary>Language of the interface, from the system unless --lang overrides it.</summary>
+    /// <summary>Language of the interface, from the system, hotkey.ini or --lang.</summary>
     internal static CultureInfo Culture { get; private set; } = SystemCulture();
 
     /// <summary>Pick the language of this run, empty or unknown keeps the system one.</summary>
@@ -60,6 +60,10 @@ internal static class Strings {
     internal static string DialogStartup    => Get(nameof(DialogStartup));
     internal static string DialogDebug      => Get(nameof(DialogDebug));
     internal static string DialogLog        => Get(nameof(DialogLog));
+    internal static string DialogLanguage   => Get(nameof(DialogLanguage));
+    internal static string LanguageAuto     => Get(nameof(LanguageAuto));
+    internal static string LanguageEnglish  => Get(nameof(LanguageEnglish));
+    internal static string LanguageChinese  => Get(nameof(LanguageChinese));
     internal static string DialogAlreadyElevated => Get(nameof(DialogAlreadyElevated));
     internal static string DialogMinimize   => Get(nameof(DialogMinimize));
     internal static string DialogHide       => Get(nameof(DialogHide));
@@ -151,6 +155,7 @@ internal static class Strings {
         if (string.IsNullOrWhiteSpace(language)) return null;
 
         string name = language.Trim().ToLowerInvariant();
+        if (name is "auto" or "system" or "default") return null;
         if (name is "zh" or "cn" or "chinese") name = "zh-Hans";
         if (name is "en" or "english") name = "en";
 

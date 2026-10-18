@@ -21,6 +21,9 @@ internal sealed class AppConfig {
     /// <summary>Write the debug log to hotkey.log.</summary>
     internal bool Debug { get; set; }
 
+    /// <summary>Interface language: auto follows Windows, en or zh forces one.</summary>
+    internal string Language { get; set; } = "auto";
+
     /// <summary>Config file path, filled in by ConfigStore.</summary>
     internal string ConfigPath { get; set; } = string.Empty;
 

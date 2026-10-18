@@ -113,10 +113,12 @@ internal static class ConfigStore {
         ; AutoStart  start with Windows, true or false to take effect, leave the line out to keep
         ;            the registry untouched
         ; Debug      write the hotkey.log debug log
+        ; Language   interface language: auto follows Windows, en or zh forces one
 
         [general]
         Hotkey={hotkey}
         Mode=minimize
+        Language=auto
         Debug=false
 
         """;
@@ -165,6 +167,11 @@ internal static class ConfigStore {
                     config.Debug = ParseBool(value, config.Debug);
                     break;
 
+                case "language":
+                case "lang":
+                    config.Language = value;
+                    break;
+
                 default:
                     config.AddWarning($"unknown config entry {key}, ignoring it");
                     break;
@@ -186,7 +193,15 @@ internal static class ConfigStore {
         }
 
         config.Mode = config.Mode.ToLowerInvariant();
+        config.Language = NormalizeLanguage(config.Language);
     }
+
+    private static string NormalizeLanguage(string value) =>
+        value.Trim().ToLowerInvariant() switch {
+        "en" or "english" => "en",
+        "zh" or "cn" or "chinese" or "zh-hans" => "zh",
+        _ => "auto",
+    };
 
     internal sealed class Watcher : IDisposable {
         private readonly FileSystemWatcher _watcher;

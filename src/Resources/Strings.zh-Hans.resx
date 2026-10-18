@@ -75,6 +75,18 @@
   <data name="DialogAlreadyElevated" xml:space="preserve">
     <value>当前已是管理员权限</value>
   </data>
+  <data name="DialogLanguage" xml:space="preserve">
+    <value>语言(&amp;L)</value>
+  </data>
+  <data name="LanguageAuto" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>英文</value>
+  </data>
+  <data name="LanguageChinese" xml:space="preserve">
+    <value>中文</value>
+  </data>
   <data name="DialogLog" xml:space="preserve">
     <value>日志</value>
   </data>

@@ -23,7 +23,8 @@ administrator" to start it elevated at every logon without a UAC prompt.
 
 The first run creates `hotkey.ini` next to the exe. Save your changes and they take effect
 immediately, with no restart. Left-clicking the tray icon opens the settings dialog, where the
-hotkey, the mode, the auto start and the debug log can be changed without editing the file.
+hotkey, the mode, the language, the auto start and the debug log can be changed without editing the
+file.
 
 To exit: right-click the tray icon and choose "Exit".
 
@@ -53,6 +54,7 @@ over with a keyboard hook; once taken over, the original system function is no l
 [general]
 Hotkey=Win+S
 Mode=minimize
+Language=auto
 Debug=false
 ```
 
@@ -60,6 +62,7 @@ Debug=false
 | --- | --- | --- |
 | Hotkey | Win+S | Global hotkey; see the previous section for the syntax |
 | Mode | minimize | `minimize` minimizes to the taskbar; `hide` hides the window directly |
+| Language | auto | Interface language: `auto` follows Windows, `en` or `zh` forces one; changing it in the settings dialog updates the tray immediately |
 | AutoStart | not written | When set to `true` or `false`, the startup entry is synced from it at launch; delete the whole line to leave the registry alone and respect the manual setting |
 | Debug | false | Whether to write the `hotkey.log` debug log |
 
@@ -84,7 +87,7 @@ example when unpacked to `C:\Program Files`), it falls back to
 | Restore last hidden window | Brings the last window hidden with `hide` back to the foreground; not clickable when no window has been hidden |
 | Hotkey: xxx | Shows only the hotkey currently in effect |
 | Suspend hotkey / Resume hotkey | Temporarily disables it, handy while gaming or recording; hold Shift and click to suspend for 5 minutes and then resume automatically |
-| Settings... | Opens the dialog for the hotkey, the mode, the normal or elevated auto start and the debug log |
+| Settings... | Opens the dialog for the hotkey, the mode, the language, the normal or elevated auto start and the debug log |
 | Open config file... | Opens `hotkey.ini` in Notepad |
 | Reload config | Reads it again manually; not needed normally |
 | Start with Windows | The master auto start switch. When ticked, the program starts with Windows using the normal Run entry; clear it to turn auto start off |
@@ -111,7 +114,9 @@ WindowMinimize.exe [options]
 ## 6. Language
 
 The interface follows the system language: a Chinese Windows shows the Chinese text, everything
-else shows English. `--lang en` or `--lang zh` overrides that for one run, to get a Chinese
+else shows English. `Language=auto` in `hotkey.ini` follows Windows, while `Language=en` or
+`Language=zh` forces one; the settings dialog writes this value and rebuilds the tray menu
+immediately. `--lang en` or `--lang zh` overrides the config file for one run, to get a Chinese
 interface on an English system for example.
 
 Only what the user sees is translated: the tray menu, the balloons, the settings dialog, the usage
