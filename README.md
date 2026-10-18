@@ -21,8 +21,8 @@ while such a window is in front. Tick "Start with Windows as administrator" to s
 every logon without a UAC prompt.
 
 The first run creates `hotkey.ini` next to the exe. Save your changes and they take effect
-immediately, with no restart. The tray menu entry "Settings" changes the hotkey, the mode and the
-normal auto start without editing the file.
+immediately, with no restart. Left-clicking the tray icon opens the settings dialog, where the
+hotkey, the mode, the auto start and the debug log can be changed without editing the file.
 
 To exit: right-click the tray icon and choose "Exit".
 
@@ -86,12 +86,12 @@ example when unpacked to `C:\Program Files`), it falls back to
 | Settings... | Opens the dialog for the hotkey, the mode, the normal or elevated auto start and the debug log |
 | Open config file... | Opens `hotkey.ini` in Notepad |
 | Reload config | Reads it again manually; not needed normally |
-| Start with Windows | When ticked, writes the registry `HKCU\...\Run` entry; only touches the registry, not the config file |
-| Start with Windows as administrator | Registers a Task Scheduler logon task with the highest run level, so the program starts elevated without a UAC prompt. Asks for administrator permission once and removes the normal Run entry; the normal entry above is disabled while the task exists |
+| Start with Windows | The master auto start switch. When ticked, the program starts with Windows using the normal Run entry; clear it to turn auto start off |
+| Start with Windows as administrator | Enabled while auto start is on. Switches it to the elevated logon task: asks for administrator permission once, registers a Task Scheduler logon task with the highest run level and removes the normal Run entry |
 | Restart as administrator | Closes the program and starts it again through the UAC prompt, so it can also handle windows that run elevated; not clickable when already elevated |
 | Exit | Ends the program |
 
-Double-clicking the tray icon opens the settings dialog.
+Clicking the tray icon with the left button opens the settings dialog.
 
 ## 5. Command-Line Arguments
 

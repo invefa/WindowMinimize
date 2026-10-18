@@ -22,11 +22,15 @@ internal sealed class HotkeyDialog : Form {
 
     internal bool AutoStart => _autoStartBox.Checked;
 
-    internal bool AutoStartAdmin => _autoStartAdminBox.Checked;
+    internal bool AutoStartAdmin => _autoStartBox.Checked && _autoStartAdminBox.Checked;
 
     internal bool Debug => _debugBox.Checked;
 
-    internal HotkeyDialog(AppConfig config, bool autoStart, bool autoStartAdmin, bool debug) {
+    internal bool RestartRequested { get; private set; }
+
+    internal HotkeyDialog(
+        AppConfig config, bool autoStart, bool autoStartAdmin, bool debug, bool alreadyElevated
+    ) {
         Text = Strings.DialogTitle;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -49,12 +53,7 @@ internal sealed class HotkeyDialog : Form {
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 360));
 
-        var hotkeyLabel = new Label {
-            Text = Strings.DialogHotkey,
-            AutoSize = true,
-            Anchor = AnchorStyles.Left,
-            Margin = new Padding(3, 6, 12, 3),
-        };
+        var hotkeyLabel = RowLabel(Strings.DialogHotkey);
 
         _hotkeyBox = new TextBox {
             Dock = DockStyle.Fill,
@@ -70,12 +69,7 @@ internal sealed class HotkeyDialog : Form {
             Margin = new Padding(0, 0, 0, 10),
         };
 
-        var modeLabel = new Label {
-            Text = Strings.DialogMode,
-            AutoSize = true,
-            Anchor = AnchorStyles.Left,
-            Margin = new Padding(3, 6, 12, 3),
-        };
+        var modeLabel = RowLabel(Strings.DialogMode);
 
         var modes = new FlowLayoutPanel {
             AutoSize = true,
@@ -101,12 +95,7 @@ internal sealed class HotkeyDialog : Form {
         modes.Controls.Add(_minimizeRadio);
         modes.Controls.Add(_hideRadio);
 
-        var startupLabel = new Label {
-            Text = Strings.DialogStartup,
-            AutoSize = true,
-            Anchor = AnchorStyles.Left,
-            Margin = new Padding(3, 6, 12, 3),
-        };
+        var startupLabel = RowLabel(Strings.DialogStartup);
 
         var startupBoxes = new FlowLayoutPanel {
             AutoSize = true,
@@ -116,6 +105,7 @@ internal sealed class HotkeyDialog : Form {
             Margin = new Padding(0, 3, 0, 3),
         };
 
+        // the elevated start is a sub option: it only means something when auto start is on
         _autoStartBox = new CheckBox {
             Text = Strings.MenuAutoStart,
             AutoSize = true,
@@ -126,19 +116,23 @@ internal sealed class HotkeyDialog : Form {
         _autoStartAdminBox = new CheckBox {
             Text = Strings.MenuAutoStartAdmin,
             AutoSize = true,
-            Checked = autoStartAdmin,
+            Checked = autoStart && autoStartAdmin,
+            Enabled = autoStart,
             Margin = new Padding(0, 3, 0, 3),
         };
 
         _autoStartBox.CheckedChanged += (_, _) => {
-            if (_autoStartBox.Checked) _autoStartAdminBox.Checked = false;
+            _autoStartAdminBox.Enabled = _autoStartBox.Checked;
+            if (!_autoStartBox.Checked) _autoStartAdminBox.Checked = false;
         };
         _autoStartAdminBox.CheckedChanged += (_, _) => {
-            if (_autoStartAdminBox.Checked) _autoStartBox.Checked = false;
+            if (_autoStartAdminBox.Checked) _autoStartBox.Checked = true;
         };
 
         startupBoxes.Controls.Add(_autoStartBox);
         startupBoxes.Controls.Add(_autoStartAdminBox);
+
+        var debugLabel = RowLabel(Strings.DialogLog);
 
         _debugBox = new CheckBox {
             Text = Strings.DialogDebug,
@@ -156,13 +150,31 @@ internal sealed class HotkeyDialog : Form {
             Margin = new Padding(0, 6, 0, 0),
         };
 
-        var buttons = new FlowLayoutPanel {
+        var buttonRow = new TableLayoutPanel {
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            ColumnCount = 2,
+            Dock = DockStyle.Fill,
+            Margin = new Padding(0, 14, 0, 0),
+        };
+        buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+        var restart = new Button {
+            Text = Strings.MenuRestartAdmin,
+            AutoSize = true,
+            MinimumSize = new Size(0, 28),
+            Enabled = !alreadyElevated,
+            Margin = new Padding(0, 0, 12, 0),
+        };
+
+        var rightButtons = new FlowLayoutPanel {
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
             FlowDirection = FlowDirection.RightToLeft,
             WrapContents = false,
             Dock = DockStyle.Fill,
-            Margin = new Padding(0, 14, 0, 0),
+            Margin = new Padding(0),
         };
 
         var save = new Button {
@@ -181,8 +193,16 @@ internal sealed class HotkeyDialog : Form {
         };
 
         save.Click += OnSaveClicked;
-        buttons.Controls.Add(cancel);
-        buttons.Controls.Add(save);
+        restart.Click += (_, _) => {
+            RestartRequested = true;
+            DialogResult = DialogResult.OK;
+            Close();
+        };
+
+        rightButtons.Controls.Add(cancel);
+        rightButtons.Controls.Add(save);
+        buttonRow.Controls.Add(restart, 0, 0);
+        buttonRow.Controls.Add(rightButtons, 1, 0);
 
         layout.Controls.Add(hotkeyLabel, 0, 0);
         layout.Controls.Add(_hotkeyBox, 1, 0);
@@ -191,14 +211,23 @@ internal sealed class HotkeyDialog : Form {
         layout.Controls.Add(modes, 1, 2);
         layout.Controls.Add(startupLabel, 0, 3);
         layout.Controls.Add(startupBoxes, 1, 3);
+        layout.Controls.Add(debugLabel, 0, 4);
         layout.Controls.Add(_debugBox, 1, 4);
         layout.Controls.Add(_hint, 1, 5);
-        layout.Controls.Add(buttons, 1, 6);
+        layout.Controls.Add(buttonRow, 0, 6);
+        layout.SetColumnSpan(buttonRow, 2);
 
         Controls.Add(layout);
         AcceptButton = save;
         CancelButton = cancel;
     }
+
+    private static Label RowLabel(string text) => new() {
+        Text = text,
+        AutoSize = true,
+        Anchor = AnchorStyles.Top | AnchorStyles.Left,
+        Margin = new Padding(3, 9, 12, 3),
+    };
 
     private void OnSaveClicked(object? sender, EventArgs e) {
         if (!HotkeySpec.TryParse(_hotkeyBox.Text, out HotkeySpec? spec, out string error)) {

@@ -73,6 +73,9 @@
   <data name="DialogStartup" xml:space="preserve">
     <value>Startup</value>
   </data>
+  <data name="DialogLog" xml:space="preserve">
+    <value>Log</value>
+  </data>
   <data name="DialogDebug" xml:space="preserve">
     <value>Write debug log</value>
   </data>
