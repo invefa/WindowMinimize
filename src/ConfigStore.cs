@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 using Microsoft.Win32;
@@ -13,6 +14,7 @@ internal static class ConfigStore {
     private const string LogFileName = "hotkey.log";
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string RunValueName = "WindowMinimize";
+    private const string ElevatedTaskName = "WindowMinimize";
 
     /// <summary>
     /// Directory the config lives in: next to the exe, or %APPDATA%\WindowMinimize when the exe
@@ -280,4 +282,134 @@ internal static class ConfigStore {
             Log.Info("auto start removed");
         }
     }
+
+    /// <summary>
+    /// Whether the logon task that starts the program with the highest run level is registered.
+    /// Querying schtasks is cheap and does not need elevation.
+    /// </summary>
+    internal static bool IsElevatedAutoStartInstalled() {
+        try {
+            var startInfo = new ProcessStartInfo(
+                "schtasks.exe", $"/Query /TN \"{ElevatedTaskName}\""
+            ) {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            using Process? process = Process.Start(startInfo);
+            if (process is null) return false;
+
+            if (!process.WaitForExit(3000)) {
+                try {
+                    process.Kill();
+                } catch {
+                    // the query process may already be gone
+                }
+
+                return false;
+            }
+
+            return process.ExitCode == 0;
+        } catch {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Add or remove the logon task that runs this exe elevated without a UAC prompt. The task is
+    /// registered through an elevated PowerShell helper, so the first change asks for administrator
+    /// permission once. The normal Run entry is not touched here; the caller removes it.
+    /// </summary>
+    internal static bool TrySetElevatedAutoStart(
+        bool enable, string exePath, string configPath, out string error
+    ) {
+        error = string.Empty;
+
+        string script = enable
+            ? BuildInstallTaskScript(exePath, configPath)
+            : BuildRemoveTaskScript();
+        string encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+
+        var startInfo = new ProcessStartInfo(
+            "powershell.exe", $"-NoProfile -WindowStyle Hidden -EncodedCommand {encoded}"
+        ) {
+            UseShellExecute = true,
+            Verb = "runas",
+            WindowStyle = ProcessWindowStyle.Hidden,
+        };
+
+        try {
+            using Process? process = Process.Start(startInfo);
+            if (process is null) {
+                error = "the elevated helper did not start";
+                return false;
+            }
+
+            if (!process.WaitForExit(30000)) {
+                error = "the elevated helper did not finish in time";
+                return false;
+            }
+
+            if (process.ExitCode == 0) return true;
+
+            error = $"the scheduled task command failed with exit code {process.ExitCode}";
+            return false;
+        } catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) {
+            // the user declined the UAC prompt, no change was made
+            return false;
+        } catch (Exception ex) {
+            error = ex.Message;
+            return false;
+        }
+    }
+
+    private static string BuildInstallTaskScript(string exePath, string configPath) {
+        string directory = Path.GetDirectoryName(exePath) ?? string.Empty;
+        string account = string.IsNullOrEmpty(Environment.UserDomainName)
+            ? Environment.UserName
+            : $"{Environment.UserDomainName}\\{Environment.UserName}";
+
+        string script = """
+            $ErrorActionPreference = 'Stop'
+            try {
+                $action = New-ScheduledTaskAction -Execute '__EXE__' -WorkingDirectory '__WORK__' `
+                    -Argument '--config "__CONFIG__"'
+                $trigger = New-ScheduledTaskTrigger -AtLogOn -User '__USER__'
+                $principal = New-ScheduledTaskPrincipal -UserId '__USER__' `
+                    -LogonType Interactive -RunLevel Highest
+                $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries `
+                    -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
+                Register-ScheduledTask -TaskName '__TASK__' -Action $action -Trigger $trigger `
+                    -Principal $principal -Settings $settings -Force | Out-Null
+                exit 0
+            } catch {
+                exit 1
+            }
+            """;
+
+        return script
+            .Replace("__EXE__", PowerShellQuote(exePath))
+            .Replace("__WORK__", PowerShellQuote(directory))
+            .Replace("__CONFIG__", PowerShellQuote(configPath))
+            .Replace("__USER__", PowerShellQuote(account))
+            .Replace("__TASK__", PowerShellQuote(ElevatedTaskName));
+    }
+
+    private static string BuildRemoveTaskScript() {
+        string script = """
+            $ErrorActionPreference = 'Stop'
+            try {
+                $task = Get-ScheduledTask -TaskName '__TASK__' -ErrorAction SilentlyContinue
+                if ($task) {
+                    Unregister-ScheduledTask -TaskName '__TASK__' -Confirm:$false -ErrorAction Stop
+                }
+                exit 0
+            } catch {
+                exit 1
+            }
+            """;
+
+        return script.Replace("__TASK__", PowerShellQuote(ElevatedTaskName));
+    }
+
+    private static string PowerShellQuote(string value) => value.Replace("'", "''");
 }

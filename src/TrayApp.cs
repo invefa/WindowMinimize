@@ -18,6 +18,7 @@ internal sealed class TrayApp : ApplicationContext {
     private readonly ToolStripMenuItem _restoreItem;
     private readonly ToolStripMenuItem _suspendItem;
     private readonly ToolStripMenuItem _autoStartItem;
+    private readonly ToolStripMenuItem _autoStartAdminItem;
     private readonly System.Windows.Forms.Timer _suspendCountdown;
     private ConfigStore.Watcher? _watcher;
     private HotkeySpec? _spec;
@@ -66,6 +67,9 @@ internal sealed class TrayApp : ApplicationContext {
         var autoStartClick = new EventHandler((_, _) =>
             SetAutoStart(!ConfigStore.IsAutoStartEnabled()));
         _autoStartItem = new ToolStripMenuItem(Strings.MenuAutoStart, null, autoStartClick);
+        _autoStartAdminItem = new ToolStripMenuItem(
+            Strings.MenuAutoStartAdmin, null, (_, _) => ToggleElevatedAutoStart()
+        );
 
         var restartAdminItem = new ToolStripMenuItem(
             Strings.MenuRestartAdmin, null, (_, _) => RestartAsAdministrator()
@@ -92,6 +96,7 @@ internal sealed class TrayApp : ApplicationContext {
         menu.Items.Add(openItem);
         menu.Items.Add(reloadItem);
         menu.Items.Add(_autoStartItem);
+        menu.Items.Add(_autoStartAdminItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(restartAdminItem);
         menu.Items.Add(exitItem);
@@ -248,6 +253,15 @@ internal sealed class TrayApp : ApplicationContext {
     /// Sync the auto start registry value with the config, only when it says so explicitly.
     /// </summary>
     private void SyncAutoStart() {
+        try {
+            if (ConfigStore.IsElevatedAutoStartInstalled()) {
+                if (ConfigStore.IsAutoStartEnabled()) ConfigStore.SetAutoStart(false);
+                return;
+            }
+        } catch (Exception ex) {
+            Log.Error($"could not check the elevated autostart: {ex.Message}");
+        }
+
         if (Config.AutoStart is not bool wanted) return;
 
         try {
@@ -258,6 +272,13 @@ internal sealed class TrayApp : ApplicationContext {
     }
 
     private void SetAutoStart(bool enabled) {
+        // the elevated logon task and the Run entry are alternatives, never both
+        if (enabled && ConfigStore.IsElevatedAutoStartInstalled()) {
+            Log.Info("elevated autostart is installed, keeping the Run entry off");
+            RefreshMenu();
+            return;
+        }
+
         try {
             ConfigStore.SetAutoStart(enabled);
         } catch (Exception ex) {
@@ -266,6 +287,34 @@ internal sealed class TrayApp : ApplicationContext {
             _icon.ShowBalloonTip(4000, Strings.AppName, message, ToolTipIcon.Error);
         }
 
+        RefreshMenu();
+    }
+
+    /// <summary>
+    /// Install or remove the logon task that starts this exe with the highest run level. The task
+    /// registers through a UAC prompt once, then starts elevated at every logon without one.
+    /// </summary>
+    private void ToggleElevatedAutoStart() {
+        bool enable = !ConfigStore.IsElevatedAutoStartInstalled();
+        string exe = Environment.ProcessPath ?? Application.ExecutablePath;
+
+        bool changed = ConfigStore.TrySetElevatedAutoStart(
+            enable, exe, Config.ConfigPath, out string error
+        );
+        if (!changed) {
+            if (error.Length > 0) {
+                Log.Error($"could not change the elevated autostart: {error}");
+                Notify(Strings.BalloonElevatedAutoStartFailed(error), ToolTipIcon.Error);
+            }
+
+            return;
+        }
+
+        // the task replaces the normal Run entry; leaving both would start two copies at logon
+        if (enable) ConfigStore.SetAutoStart(false);
+
+        Log.Info(enable ? "elevated autostart installed" : "elevated autostart removed");
+        if (enable) Notify(Strings.BalloonElevatedAutoStartInstalled);
         RefreshMenu();
     }
 
@@ -278,8 +327,11 @@ internal sealed class TrayApp : ApplicationContext {
             _suspendItem.Text = Strings.MenuSuspend;
         }
 
-        _autoStartItem.Checked = ConfigStore.IsAutoStartEnabled();
-        _restoreItem.Enabled   = _lastHidden != IntPtr.Zero && Native.IsWindow(_lastHidden);
+        bool elevatedAutoStart = ConfigStore.IsElevatedAutoStartInstalled();
+        _autoStartItem.Checked      = ConfigStore.IsAutoStartEnabled();
+        _autoStartItem.Enabled      = !elevatedAutoStart;
+        _autoStartAdminItem.Checked = elevatedAutoStart;
+        _restoreItem.Enabled        = _lastHidden != IntPtr.Zero && Native.IsWindow(_lastHidden);
 
         string tip = Strings.TrayTooltip(_spec?.Text ?? Strings.HotkeyNotSet);
         _icon.Text = Truncate(tip, 62);

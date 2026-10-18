@@ -17,7 +17,8 @@ moment.
 
 For windows that run as administrator, start the program with `start-admin.bat` or use "Restart as
 administrator" in the tray menu; Windows does not deliver the hotkey to a normal-privilege program
-while such a window is in front.
+while such a window is in front. Tick "Start with Windows as administrator" to start it elevated at
+every logon without a UAC prompt.
 
 The first run creates `hotkey.ini` next to the exe. Save your changes and they take effect
 immediately, with no restart.
@@ -84,6 +85,7 @@ example when unpacked to `C:\Program Files`), it falls back to
 | Open config file | Opens `hotkey.ini` in Notepad |
 | Reload config | Reads it again manually; not needed normally |
 | Start with Windows | When ticked, writes the registry `HKCU\...\Run` entry; only touches the registry, not the config file |
+| Start with Windows as administrator | Registers a Task Scheduler logon task with the highest run level, so the program starts elevated without a UAC prompt. Asks for administrator permission once and removes the normal Run entry; the entry above is disabled while the task exists |
 | Restart as administrator | Closes the program and starts it again through the UAC prompt, so it can also handle windows that run elevated; not clickable when already elevated |
 | Exit | Ends the program |
 
@@ -155,6 +157,11 @@ An elevated window in front is a separate limit: Windows does not pass its keys 
 of a normal-privilege program. That is why the hotkey does nothing while such a window is focused;
 restarting the program elevated removes the limit.
 
+The elevated autostart entry registers a Task Scheduler task named `WindowMinimize` at logon with the
+highest run level, then removes the normal Run value, so only one copy starts. Removing the entry
+unregisters the task. Both directions run through a hidden, elevated PowerShell helper and ask for
+administrator permission once.
+
 When it gets the foreground window, it skips system UI: the taskbar, the desktop, the Start menu,
 search, and the program's own windows (when the tray menu is clicked, the foreground is usually the
 taskbar or the menu itself). These windows are never treated as minimize targets, so system UI is
@@ -201,9 +208,9 @@ WindowMinimize
 
 1. Windows blocks a normal-privilege program from capturing the hotkey while an elevated window is
    in front, and from minimizing that window. Run this program as administrator to handle such
-   windows: use "Restart as administrator" in the tray menu or `start-admin.bat`. The
-   `HKCU\...\Run` autostart still starts the normal-privilege copy; for a silent elevated autostart,
-   create a Task Scheduler task at logon with the highest run level and remove the Run entry.
+   windows: use "Restart as administrator" in the tray menu or `start-admin.bat`. For a silent
+   elevated start at every logon, tick "Start with Windows as administrator"; it registers a Task
+   Scheduler task with the highest run level and removes the normal Run entry.
 
 2. The `hide` mode hides the window completely, so no button remains on the taskbar; use "Restore
    last hidden window" in the tray menu to get it back. That record lives only in memory and is lost
