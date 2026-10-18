@@ -78,6 +78,14 @@ internal sealed class TrayApp : ApplicationContext {
             Strings.MenuRestartAdmin, null, (_, _) => RestartAsAdministrator()
         ) { Enabled = !IsRunningAsAdministrator() };
 
+        var configMenu = new ToolStripMenuItem(Strings.MenuConfig);
+        configMenu.DropDownItems.Add(openItem);
+        configMenu.DropDownItems.Add(reloadItem);
+
+        var startupMenu = new ToolStripMenuItem(Strings.MenuStartup);
+        startupMenu.DropDownItems.Add(_autoStartItem);
+        startupMenu.DropDownItems.Add(_autoStartAdminItem);
+
         var exitItem = new ToolStripMenuItem(Strings.MenuExit, null, (_, _) => {
             Log.Info("exit requested");
             ExitThread();
@@ -92,15 +100,13 @@ internal sealed class TrayApp : ApplicationContext {
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(minimizeItem);
         menu.Items.Add(_restoreItem);
-        menu.Items.Add(_hotkeyItem);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(_hotkeyItem);
         menu.Items.Add(_suspendItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(openItem);
-        menu.Items.Add(reloadItem);
         menu.Items.Add(settingsItem);
-        menu.Items.Add(_autoStartItem);
-        menu.Items.Add(_autoStartAdminItem);
+        menu.Items.Add(configMenu);
+        menu.Items.Add(startupMenu);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(restartAdminItem);
         menu.Items.Add(exitItem);
@@ -111,7 +117,7 @@ internal sealed class TrayApp : ApplicationContext {
             ContextMenuStrip = menu,
             Visible = !headless,
         };
-        _icon.DoubleClick += (_, _) => MinimizeForeground();
+        _icon.DoubleClick += (_, _) => ShowSettingsDialog();
 
         _suspendCountdown = new System.Windows.Forms.Timer { Interval = 1000 };
         _suspendCountdown.Tick += (_, _) => {
