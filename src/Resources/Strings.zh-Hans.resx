@@ -176,4 +176,16 @@ hotkey.ini 示例:
   双击启动后程序驻留托盘，按一次热键即可最小化最前面的窗口。托盘菜单可以最小化一次、
   暂停热键、打开配置文件、切换开机自启或退出。保存 hotkey.ini 立即生效。</value>
   </data>
+  <data name="MenuRestartAdmin" xml:space="preserve">
+    <value>以管理员身份重启</value>
+  </data>
+  <data name="MsgRestartAdmin" xml:space="preserve">
+    <value>WindowMinimize将关闭并以管理员身份重启，请在UAC提示中确认。</value>
+  </data>
+  <data name="BalloonElevatedTarget" xml:space="preserve">
+    <value>目标窗口以管理员权限运行，普通权限的程序无法最小化它。需要处理这类窗口时，请以管理员身份重启WindowMinimize。</value>
+  </data>
+  <data name="BalloonRestartFailed" xml:space="preserve">
+    <value>无法以管理员身份重启：{0}</value>
+  </data>
 </root>

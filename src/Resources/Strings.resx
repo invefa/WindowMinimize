@@ -178,4 +178,16 @@ notes:
   window is in front. The tray menu minimizes once, suspends the hotkey, opens the config,
   toggles the auto start and exits. Saving hotkey.ini takes effect right away.</value>
   </data>
+  <data name="MenuRestartAdmin" xml:space="preserve">
+    <value>Restart as administrator</value>
+  </data>
+  <data name="MsgRestartAdmin" xml:space="preserve">
+    <value>WindowMinimize will close and restart as administrator. Confirm the UAC prompt to continue.</value>
+  </data>
+  <data name="BalloonElevatedTarget" xml:space="preserve">
+    <value>The target window runs as administrator. A normal-privilege program cannot minimize it; restart WindowMinimize as administrator to handle such windows.</value>
+  </data>
+  <data name="BalloonRestartFailed" xml:space="preserve">
+    <value>Could not restart as administrator: {0}</value>
+  </data>
 </root>

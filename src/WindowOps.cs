@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace WindowMinimize;
 
@@ -6,6 +7,11 @@ namespace WindowMinimize;
 /// Finding the window that should be minimized, and minimizing it.
 /// </summary>
 internal static class WindowOps {
+    private const int ErrorAccessDenied = 5;
+
+    /// <summary>Outcome of one minimize attempt.</summary>
+    internal readonly record struct MinimizeResult(bool Minimized, bool AccessDenied);
+
     /// <summary>
     /// Class names of the Windows shell surfaces. They often hold the foreground when a tray menu
     /// is clicked, but they are never what the user wants to minimize. The start menu and search
@@ -82,26 +88,42 @@ internal static class WindowOps {
     }
 
     /// <summary>
-    /// Minimize one top level window. Ordinary windows go through SW_MINIMIZE, the ones DWM cloaks
-    /// (UWP and friends) get WM_SYSCOMMAND/SC_MINIMIZE plus the foreground fallback.
+    /// Minimize one top level window. Ordinary windows go through SW_MINIMIZE; when that call is
+    /// refused, for example for an elevated window, WM_SYSCOMMAND/SC_MINIMIZE is sent right away
+    /// instead of waiting for the background retry. DWM cloaked windows (UWP and friends) use
+    /// SC_MINIMIZE as well.
     /// </summary>
-    internal static bool Minimize(IntPtr hwnd, string mode) {
-        if (mode.Equals("hide", StringComparison.OrdinalIgnoreCase))
-            return Native.ShowWindowAsync(hwnd, Native.SW_HIDE);
+    internal static MinimizeResult Minimize(IntPtr hwnd, string mode) {
+        if (mode.Equals("hide", StringComparison.OrdinalIgnoreCase)) {
+            if (Native.ShowWindowAsync(hwnd, Native.SW_HIDE)) {
+                return new MinimizeResult(true, false);
+            }
+
+            int hideError = Marshal.GetLastWin32Error();
+            Log.Debug($"hide failed: hwnd=0x{hwnd.ToInt64():X} error={hideError}");
+            return new MinimizeResult(false, hideError == ErrorAccessDenied);
+        }
 
         if (Native.IsCloaked(hwnd)) {
             Log.Debug("target window is cloaked by DWM (suspended UWP window), using SC_MINIMIZE");
             bool posted = SendSystemCommand(hwnd, Native.SC_MINIMIZE);
             Native.ShowWindowAsync(hwnd, Native.SW_SHOWMINIMIZED);
-            return posted;
+            return new MinimizeResult(posted || Native.IsIconic(hwnd), false);
         }
 
-        Native.ShowWindowAsync(hwnd, Native.SW_MINIMIZE);
+        if (Native.ShowWindowAsync(hwnd, Native.SW_MINIMIZE)) {
+            Native.GetWindowThreadProcessId(hwnd, out uint pid);
+            Log.Debug($"minimize sent: hwnd=0x{hwnd.ToInt64():X} pid={pid} "
+                + $"title=\"{Native.GetWindowTitle(hwnd)}\" mode={mode}");
+            return new MinimizeResult(true, false);
+        }
 
-        Native.GetWindowThreadProcessId(hwnd, out uint pid);
-        Log.Debug($"minimize sent: hwnd=0x{hwnd.ToInt64():X} pid={pid} "
-            + $"title=\"{Native.GetWindowTitle(hwnd)}\" mode={mode}");
-        return true;
+        int error = Marshal.GetLastWin32Error();
+        Log.Debug($"ShowWindowAsync(SW_MINIMIZE) failed with {error}");
+        SendSystemCommand(hwnd, Native.SC_MINIMIZE);
+        bool minimized = Native.IsIconic(hwnd);
+        Log.Debug($"SC_MINIMIZE sent directly: hwnd=0x{hwnd.ToInt64():X} minimized={minimized}");
+        return new MinimizeResult(minimized, error == ErrorAccessDenied && !minimized);
     }
 
     /// <summary>
@@ -109,10 +131,10 @@ internal static class WindowOps {
     /// minimize. When they are still not minimized after 300ms, try once more and, if that still
     /// does not work, bring the window forward and force it.
     /// </summary>
-    internal static void MinimizeWithRetry(IntPtr hwnd, string mode) {
-        Minimize(hwnd, mode);
+    internal static MinimizeResult MinimizeWithRetry(IntPtr hwnd, string mode) {
+        MinimizeResult result = Minimize(hwnd, mode);
 
-        if (mode.Equals("hide", StringComparison.OrdinalIgnoreCase)) return;
+        if (mode.Equals("hide", StringComparison.OrdinalIgnoreCase)) return result;
 
         _ = Task.Run(async () => {
             await Task.Delay(350).ConfigureAwait(false);
@@ -130,6 +152,8 @@ internal static class WindowOps {
                 Native.ShowWindowAsync(hwnd, Native.SW_FORCEMINIMIZE);
             }
         });
+
+        return result;
     }
 
     private static bool SendSystemCommand(IntPtr hwnd, int command) {

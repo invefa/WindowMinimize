@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Windows.Forms;
 
 namespace WindowMinimize;
@@ -22,6 +24,7 @@ internal sealed class TrayApp : ApplicationContext {
     private string _lastError = string.Empty;
     private IntPtr _lastHidden;
     private bool _suspended;
+    private bool _elevatedNoticeShown;
     private int _suspendSecondsLeft;
 
     internal TrayApp(AppConfig config, bool headless) {
@@ -64,6 +67,10 @@ internal sealed class TrayApp : ApplicationContext {
             SetAutoStart(!ConfigStore.IsAutoStartEnabled()));
         _autoStartItem = new ToolStripMenuItem(Strings.MenuAutoStart, null, autoStartClick);
 
+        var restartAdminItem = new ToolStripMenuItem(
+            Strings.MenuRestartAdmin, null, (_, _) => RestartAsAdministrator()
+        ) { Enabled = !IsRunningAsAdministrator() };
+
         var exitItem = new ToolStripMenuItem(Strings.MenuExit, null, (_, _) => {
             Log.Info("exit requested");
             ExitThread();
@@ -86,6 +93,7 @@ internal sealed class TrayApp : ApplicationContext {
         menu.Items.Add(reloadItem);
         menu.Items.Add(_autoStartItem);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(restartAdminItem);
         menu.Items.Add(exitItem);
 
         _icon = new NotifyIcon {
@@ -293,11 +301,70 @@ internal sealed class TrayApp : ApplicationContext {
             return;
         }
 
-        WindowOps.MinimizeWithRetry(hwnd, Config.Mode);
+        WindowOps.MinimizeResult result = WindowOps.MinimizeWithRetry(hwnd, Config.Mode);
 
-        if (hiding) {
+        if (result.AccessDenied) {
+            Log.Info("target window refused the minimize, it probably runs as administrator");
+            if (!_elevatedNoticeShown) {
+                _elevatedNoticeShown = true;
+                Notify(Strings.BalloonElevatedTarget, ToolTipIcon.Warning);
+            }
+        } else {
+            _elevatedNoticeShown = false;
+        }
+
+        if (hiding && result.Minimized) {
             _lastHidden = hwnd;
             RefreshMenu();
+        }
+    }
+
+    /// <summary>
+    /// Whether this process already runs with administrator rights, in which case the restart
+    /// entry is pointless.
+    /// </summary>
+    private static bool IsRunningAsAdministrator() {
+        try {
+            using var identity = WindowsIdentity.GetCurrent();
+            return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+        } catch {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Close now and let a short lived launcher start this exe again through the UAC prompt. The
+    /// launcher waits for this process to exit first, so the single instance mutex is free when the
+    /// elevated copy starts.
+    /// </summary>
+    private void RestartAsAdministrator() {
+        if (IsRunningAsAdministrator()) return;
+
+        if (MessageBox.Show(Strings.MsgRestartAdmin, Strings.AppName,
+                MessageBoxButtons.OKCancel, MessageBoxIcon.Information) != DialogResult.OK) {
+            return;
+        }
+
+        string exe = Environment.ProcessPath ?? Application.ExecutablePath;
+        string processName = Path.GetFileNameWithoutExtension(exe).Replace("'", "''");
+        string file = exe.Replace("'", "''");
+        string script = $"$p=Get-Process -Name '{processName}' -ErrorAction SilentlyContinue "
+            + $"| Where-Object {{ $_.Path -eq '{file}' }}; "
+            + "if($p){ $p | ForEach-Object { $_.WaitForExit(8000) } }; "
+            + $"Start-Process -FilePath '{file}' -Verb RunAs";
+
+        try {
+            Process.Start(new ProcessStartInfo {
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -WindowStyle Hidden -Command \"{script}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            });
+            Log.Info("restart as administrator requested");
+            ExitThread();
+        } catch (Exception ex) {
+            Log.Error($"could not restart as administrator: {ex.Message}");
+            Notify(Strings.BalloonRestartFailed(ex.Message), ToolTipIcon.Error);
         }
     }
 

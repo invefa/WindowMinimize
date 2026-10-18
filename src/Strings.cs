@@ -22,17 +22,18 @@ internal static class Strings {
     internal static void Init(string? language) => Culture = Requested(language) ?? SystemCulture();
 
     // the tray icon and its menu
-    internal static string AppName        => Get(nameof(AppName));
-    internal static string MenuMinimize   => Get(nameof(MenuMinimize));
-    internal static string MenuRestore    => Get(nameof(MenuRestore));
-    internal static string MenuSuspend    => Get(nameof(MenuSuspend));
-    internal static string MenuResume     => Get(nameof(MenuResume));
-    internal static string MenuOpenConfig => Get(nameof(MenuOpenConfig));
-    internal static string MenuReload     => Get(nameof(MenuReload));
-    internal static string MenuAutoStart  => Get(nameof(MenuAutoStart));
-    internal static string MenuExit       => Get(nameof(MenuExit));
-    internal static string HotkeyNone     => Get(nameof(HotkeyNone));
-    internal static string HotkeyNotSet   => Get(nameof(HotkeyNotSet));
+    internal static string AppName          => Get(nameof(AppName));
+    internal static string MenuMinimize     => Get(nameof(MenuMinimize));
+    internal static string MenuRestore      => Get(nameof(MenuRestore));
+    internal static string MenuSuspend      => Get(nameof(MenuSuspend));
+    internal static string MenuResume       => Get(nameof(MenuResume));
+    internal static string MenuOpenConfig   => Get(nameof(MenuOpenConfig));
+    internal static string MenuReload       => Get(nameof(MenuReload));
+    internal static string MenuAutoStart    => Get(nameof(MenuAutoStart));
+    internal static string MenuRestartAdmin => Get(nameof(MenuRestartAdmin));
+    internal static string MenuExit         => Get(nameof(MenuExit));
+    internal static string HotkeyNone       => Get(nameof(HotkeyNone));
+    internal static string HotkeyNotSet     => Get(nameof(HotkeyNotSet));
 
     internal static string MenuVersion(string version) =>
         Format(nameof(MenuVersion), version);
@@ -71,8 +72,15 @@ internal static class Strings {
     internal static string BalloonAutoStartFailed(string reason) =>
         Format(nameof(BalloonAutoStartFailed), reason);
 
+    internal static string BalloonElevatedTarget => Get(nameof(BalloonElevatedTarget));
+
+    internal static string BalloonRestartFailed(string reason) =>
+        Format(nameof(BalloonRestartFailed), reason);
+
     // message boxes
     internal static string MsgAlreadyRunning => Get(nameof(MsgAlreadyRunning));
+
+    internal static string MsgRestartAdmin => Get(nameof(MsgRestartAdmin));
 
     internal static string MsgBadArguments(string reason) =>
         Format(nameof(MsgBadArguments), reason);
