@@ -184,12 +184,6 @@ notes:
   <data name="PrivilegeUserSuffix" xml:space="preserve">
     <value>(standard user)</value>
   </data>
-  <data name="MenuConfig" xml:space="preserve">
-    <value>Config</value>
-  </data>
-  <data name="MenuStartup" xml:space="preserve">
-    <value>Startup</value>
-  </data>
   <data name="MenuSettings" xml:space="preserve">
     <value>Settings...</value>
   </data>
