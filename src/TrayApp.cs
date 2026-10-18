@@ -102,12 +102,12 @@ internal sealed class TrayApp : ApplicationContext {
         menu.Items.Add(_suspendItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(settingsItem);
+        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(openItem);
         menu.Items.Add(reloadItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(_autoStartItem);
         menu.Items.Add(_autoStartAdminItem);
-        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(restartAdminItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(exitItem);
