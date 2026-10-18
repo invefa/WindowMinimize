@@ -76,9 +76,6 @@ internal sealed class TrayApp : ApplicationContext {
     private ContextMenuStrip BuildMenu() {
         var menu = new ContextMenuStrip();
 
-        var minimizeItem = new ToolStripMenuItem(Strings.MenuMinimize);
-        minimizeItem.Click += (_, _) => MinimizeForeground();
-
         // a window hidden with the hide mode leaves no taskbar button, this is the way back
         _restoreItem = new ToolStripMenuItem(Strings.MenuRestore) { Enabled = false };
         _restoreItem.Click += (_, _) => RestoreLastHidden();
@@ -132,7 +129,6 @@ internal sealed class TrayApp : ApplicationContext {
 
         menu.Items.Add(versionItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(minimizeItem);
         menu.Items.Add(_restoreItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(_hotkeyItem);

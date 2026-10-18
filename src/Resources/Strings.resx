@@ -19,9 +19,6 @@
   <data name="AppName" xml:space="preserve">
     <value>WindowMinimize</value>
   </data>
-  <data name="MenuMinimize" xml:space="preserve">
-    <value>Minimize current window</value>
-  </data>
   <data name="MenuRestore" xml:space="preserve">
     <value>Restore last hidden window</value>
   </data>

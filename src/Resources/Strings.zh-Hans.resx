@@ -18,9 +18,6 @@
   <data name="AppName" xml:space="preserve">
     <value>WindowMinimize</value>
   </data>
-  <data name="MenuMinimize" xml:space="preserve">
-    <value>最小化当前窗口</value>
-  </data>
   <data name="MenuRestore" xml:space="preserve">
     <value>还原上次隐藏的窗口</value>
   </data>
