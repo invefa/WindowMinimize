@@ -42,9 +42,9 @@ internal static class Strings {
     internal static string MenuVersion(string version) =>
         Format(nameof(MenuVersion), version);
 
-    internal static string PrivilegeAdmin => Get(nameof(PrivilegeAdmin));
+    internal static string PrivilegeAdminSuffix => Get(nameof(PrivilegeAdminSuffix));
 
-    internal static string PrivilegeUser => Get(nameof(PrivilegeUser));
+    internal static string PrivilegeUserSuffix => Get(nameof(PrivilegeUserSuffix));
 
     internal static string HotkeyMenuItem(string hotkey) =>
         Format(nameof(HotkeyMenuItem), hotkey);

@@ -93,18 +93,17 @@ internal sealed class TrayApp : ApplicationContext {
             ExitThread();
         });
 
-        // the version of the exe that is running, as a heading above the actions
-        var versionItem = new ToolStripMenuItem(Strings.MenuVersion(AppInfo.Version)) {
-            Enabled = false,
-        };
-        var privilegeItem = new ToolStripMenuItem(
-            IsRunningAsAdministrator() ? Strings.PrivilegeAdmin : Strings.PrivilegeUser
+        // the version of the exe and its privilege level, as a heading above the actions
+        string privilege = IsRunningAsAdministrator()
+            ? Strings.PrivilegeAdminSuffix
+            : Strings.PrivilegeUserSuffix;
+        var versionItem = new ToolStripMenuItem(
+            $"{Strings.MenuVersion(AppInfo.Version)} {privilege}"
         ) {
             Enabled = false,
         };
 
         menu.Items.Add(versionItem);
-        menu.Items.Add(privilegeItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(minimizeItem);
         menu.Items.Add(_restoreItem);
