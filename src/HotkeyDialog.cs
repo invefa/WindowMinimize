@@ -191,14 +191,14 @@ internal sealed class HotkeyDialog : Form {
             Text = Strings.DialogNotifyStartup,
             AutoSize = true,
             Checked = config.NotifyStartup,
-            Margin = new Padding(0, 3, 24, 3),
+            Margin = new Padding(0, 3, 8, 3),
         };
 
         _notifyErrorsBox = new CheckBox {
             Text = Strings.DialogNotifyErrors,
             AutoSize = true,
             Checked = config.NotifyErrors,
-            Margin = new Padding(0, 3, 24, 3),
+            Margin = new Padding(0, 3, 8, 3),
         };
 
         _notifyPermissionsBox = new CheckBox {
