@@ -256,7 +256,7 @@ internal sealed class TrayApp : ApplicationContext {
 
         if (!ok && interactive) {
             string message = Strings.BalloonHotkeyNotActive(_lastError);
-            _icon.ShowBalloonTip(4000, Strings.AppName, message, ToolTipIcon.Warning);
+            Notify(message, ToolTipIcon.Warning);
         }
     }
 
@@ -516,6 +516,7 @@ internal sealed class TrayApp : ApplicationContext {
 
             Config.Hotkey = dialog.HotkeyText;
             Config.Mode = dialog.Mode;
+            Config.Notifications = dialog.Notifications;
             Apply(Config);
 
             if (Config.Debug != dialog.Debug) {
@@ -547,6 +548,9 @@ internal sealed class TrayApp : ApplicationContext {
             text = SetIniValue(text, "Hotkey", Config.Hotkey);
             text = SetIniValue(text, "Mode", Config.Mode);
             text = SetIniValue(text, "Language", Config.Language);
+            text = SetIniValue(
+                text, "Notifications", Config.Notifications ? "true" : "false"
+            );
 
             if (Config.AutoStart is bool autoStart) {
                 text = SetIniValue(text, "AutoStart", autoStart ? "true" : "false");
@@ -586,7 +590,7 @@ internal sealed class TrayApp : ApplicationContext {
 
     /// <summary>Show one tray balloon.</summary>
     internal void Notify(string message, ToolTipIcon icon = ToolTipIcon.Info) {
-        if (Headless) {
+        if (Headless || !Config.Notifications) {
             Log.Info($"{Strings.AppName}: {message}");
             return;
         }

@@ -72,6 +72,12 @@
   <data name="DialogAlreadyElevated" xml:space="preserve">
     <value>当前已是管理员权限</value>
   </data>
+  <data name="DialogNotifications" xml:space="preserve">
+    <value>通知(&amp;N)</value>
+  </data>
+  <data name="DialogShowNotifications" xml:space="preserve">
+    <value>显示系统通知</value>
+  </data>
   <data name="DialogLanguage" xml:space="preserve">
     <value>语言(&amp;L)</value>
   </data>

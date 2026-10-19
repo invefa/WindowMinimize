@@ -24,6 +24,9 @@ internal sealed class AppConfig {
     /// <summary>Interface language: auto follows Windows, en or zh forces one.</summary>
     internal string Language { get; set; } = "auto";
 
+    /// <summary>Show tray balloon notifications for startup, errors and elevated targets.</summary>
+    internal bool Notifications { get; set; } = true;
+
     /// <summary>Config file path, filled in by ConfigStore.</summary>
     internal string ConfigPath { get; set; } = string.Empty;
 

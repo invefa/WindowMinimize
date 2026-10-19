@@ -114,11 +114,13 @@ internal static class ConfigStore {
         ;            the registry untouched
         ; Debug      write the hotkey.log debug log
         ; Language   interface language: auto follows Windows, en or zh forces one
+        ; Notifications  show tray balloon notifications, true or false
 
         [general]
         Hotkey={hotkey}
         Mode=minimize
         Language=auto
+        Notifications=true
         Debug=false
 
         """;
@@ -170,6 +172,11 @@ internal static class ConfigStore {
                 case "language":
                 case "lang":
                     config.Language = value;
+                    break;
+
+                case "notifications":
+                case "notify":
+                    config.Notifications = ParseBool(value, config.Notifications);
                     break;
 
                 default:

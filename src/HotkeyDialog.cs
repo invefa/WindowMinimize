@@ -14,6 +14,7 @@ internal sealed class HotkeyDialog : Form {
     private readonly CheckBox _autoStartBox;
     private readonly CheckBox _autoStartAdminBox;
     private readonly CheckBox _debugBox;
+    private readonly CheckBox _notificationsBox;
     private readonly ComboBox _languageBox;
     private readonly Label _hint;
     private readonly Button? _restartButton = null;
@@ -33,6 +34,8 @@ internal sealed class HotkeyDialog : Form {
     internal bool AutoStartAdmin => _autoStartBox.Checked && _autoStartAdminBox.Checked;
 
     internal bool Debug => _debugBox.Checked;
+
+    internal bool Notifications => _notificationsBox.Checked;
 
     internal bool RestartRequested { get; private set; }
 
@@ -165,6 +168,15 @@ internal sealed class HotkeyDialog : Form {
             Margin = new Padding(0, 6, 0, 6),
         };
 
+        var notificationsLabel = RowLabel(Strings.DialogNotifications);
+
+        _notificationsBox = new CheckBox {
+            Text = Strings.DialogShowNotifications,
+            AutoSize = true,
+            Checked = config.Notifications,
+            Margin = new Padding(0, 6, 0, 6),
+        };
+
         _hint = new Label {
             Text = string.Empty,
             AutoSize = true,
@@ -248,8 +260,10 @@ internal sealed class HotkeyDialog : Form {
         layout.Controls.Add(startupBoxes, 1, 4);
         layout.Controls.Add(debugLabel, 0, 5);
         layout.Controls.Add(_debugBox, 1, 5);
-        layout.Controls.Add(_hint, 1, 6);
-        layout.Controls.Add(buttonRow, 0, 7);
+        layout.Controls.Add(notificationsLabel, 0, 6);
+        layout.Controls.Add(_notificationsBox, 1, 6);
+        layout.Controls.Add(_hint, 1, 7);
+        layout.Controls.Add(buttonRow, 0, 8);
         layout.SetColumnSpan(buttonRow, 2);
 
         Controls.Add(layout);
@@ -297,6 +311,12 @@ internal sealed class HotkeyDialog : Form {
         if (keyData == (Keys.Alt | Keys.D)) {
             _debugBox.Checked = !_debugBox.Checked;
             _debugBox.Focus();
+            return true;
+        }
+
+        if (keyData == (Keys.Alt | Keys.N)) {
+            _notificationsBox.Checked = !_notificationsBox.Checked;
+            _notificationsBox.Focus();
             return true;
         }
 

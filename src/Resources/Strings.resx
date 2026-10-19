@@ -73,6 +73,12 @@
   <data name="DialogAlreadyElevated" xml:space="preserve">
     <value>Running as administrator</value>
   </data>
+  <data name="DialogNotifications" xml:space="preserve">
+    <value>Notifications (&amp;N)</value>
+  </data>
+  <data name="DialogShowNotifications" xml:space="preserve">
+    <value>Show system notifications</value>
+  </data>
   <data name="DialogLanguage" xml:space="preserve">
     <value>Language (&amp;L)</value>
   </data>

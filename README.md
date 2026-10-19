@@ -1,5 +1,7 @@
 # WindowMinimize
 
+[English](README.md) | [简体中文](README.zh-Hans.md)
+
 A small Windows tool that minimizes the current foreground window with a custom global hotkey. It
 lives in the tray, its default hotkey is `Win+S`, it is a single-file exe, and it depends on neither
 the .NET runtime nor any third-party component.
@@ -7,7 +9,7 @@ the .NET runtime nor any third-party component.
 Download the full build (`WindowMinimize-<version>-win-x64.exe`) from the
 [releases page](https://github.com/invefa/WindowMinimize/releases/latest) and run it, no
 installation needed. The `WindowMinimize-<version>-win-x64-lite.exe` on the same page is about
-255 KB, but it needs the .NET 8 Desktop Runtime on the machine. Both can be built from source too
+240 KB, but it needs the .NET 8 Desktop Runtime on the machine. Both can be built from source too
 (section 8).
 
 ## 1. Usage
@@ -23,8 +25,8 @@ administrator" to start it elevated at every logon without a UAC prompt.
 
 The first run creates `hotkey.ini` next to the exe. Save your changes and they take effect
 immediately, with no restart. Left-clicking the tray icon opens the settings dialog, where the
-hotkey, the mode, the language, the auto start and the debug log can be changed without editing the
-file.
+hotkey, the mode, the language, notifications, the auto start and the debug log can be changed
+without editing the file.
 
 To exit: right-click the tray icon and choose "Exit".
 
@@ -55,6 +57,7 @@ over with a keyboard hook; once taken over, the original system function is no l
 Hotkey=Win+S
 Mode=minimize
 Language=auto
+Notifications=true
 Debug=false
 ```
 
@@ -63,6 +66,7 @@ Debug=false
 | Hotkey | Win+S | Global hotkey; see the previous section for the syntax |
 | Mode | minimize | `minimize` minimizes to the taskbar; `hide` hides the window directly |
 | Language | auto | Interface language: `auto` follows Windows, `en` or `zh` forces one; changing it in the settings dialog updates the tray immediately |
+| Notifications | true | Show tray balloon notifications for startup, errors and elevated targets; turn it off to keep the tray quiet |
 | AutoStart | not written | When set to `true` or `false`, the startup entry is synced from it at launch; delete the whole line to leave the registry alone and respect the manual setting |
 | Debug | false | Whether to write the `hotkey.log` debug log |
 
@@ -86,7 +90,7 @@ example when unpacked to `C:\Program Files`), it falls back to
 | Restore last hidden window | Brings the last window hidden with `hide` back to the foreground; not clickable when no window has been hidden |
 | Hotkey: xxx | Shows only the hotkey currently in effect |
 | Suspend hotkey / Resume hotkey | Temporarily disables it, handy while gaming or recording; hold Shift and click to suspend for 5 minutes and then resume automatically |
-| Settings... | Opens the dialog for the hotkey, the mode, the language, the normal or elevated auto start and the debug log |
+| Settings... | Opens the dialog for the hotkey, the mode, the language, notifications, the normal or elevated auto start and the debug log |
 | Open config file... | Opens `hotkey.ini` in Notepad |
 | Reload config | Reads it again manually; not needed normally |
 | Start with Windows | The master auto start switch. When ticked, the program starts with Windows using the normal Run entry; clear it to turn auto start off |
