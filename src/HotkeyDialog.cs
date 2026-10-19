@@ -176,19 +176,23 @@ internal sealed class HotkeyDialog : Form {
 
         var notificationsLabel = RowLabel(Strings.DialogNotifications);
 
-        var notificationBoxes = new FlowLayoutPanel {
+        var notificationBoxes = new TableLayoutPanel {
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            FlowDirection = FlowDirection.TopDown,
-            WrapContents = false,
+            ColumnCount = 2,
+            RowCount = 2,
             Margin = new Padding(0, 3, 0, 3),
         };
+        notificationBoxes.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        notificationBoxes.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        notificationBoxes.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        notificationBoxes.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         _notifyStartupBox = new CheckBox {
             Text = Strings.DialogNotifyStartup,
             AutoSize = true,
             Checked = config.NotifyStartup,
-            Margin = new Padding(0, 3, 0, 3),
+            Margin = new Padding(0, 3, 24, 3),
         };
 
         _notifyErrorsBox = new CheckBox {
@@ -205,9 +209,10 @@ internal sealed class HotkeyDialog : Form {
             Margin = new Padding(0, 3, 0, 3),
         };
 
-        notificationBoxes.Controls.Add(_notifyStartupBox);
-        notificationBoxes.Controls.Add(_notifyErrorsBox);
-        notificationBoxes.Controls.Add(_notifyPermissionsBox);
+        notificationBoxes.Controls.Add(_notifyStartupBox, 0, 0);
+        notificationBoxes.Controls.Add(_notifyErrorsBox, 1, 0);
+        notificationBoxes.Controls.Add(_notifyPermissionsBox, 0, 1);
+        notificationBoxes.SetColumnSpan(_notifyPermissionsBox, 2);
 
         _hint = new Label {
             Text = string.Empty,
