@@ -2,9 +2,11 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
-## Unreleased
+## 1.2.2 - 2026-10-19
 
-### Added
+A fix release for hidden-window tracking.
+
+### Fixed
 
 - The `hide` mode now tracks every hidden window and lists them in a "Hidden windows" tray
   submenu. Each entry restores one window, and "Restore all hidden windows" restores the list.
