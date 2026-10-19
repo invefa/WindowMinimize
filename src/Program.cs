@@ -75,11 +75,11 @@ internal static class Program {
                 message = Strings.BalloonStarted(app.ActiveSpecText);
             }
 
-            app.Notify(message);
+            app.Notify(message, NoticeKind.Startup);
         } else {
             string message = Strings.BalloonHotkeyNotActive(app.LastError);
             Log.Error(message);
-            app.Notify(message, ToolTipIcon.Warning);
+            app.Notify(message, NoticeKind.Error, ToolTipIcon.Warning);
 
             // only bother the user when even the fallback to the default hotkey failed, so a broken
             // config does not pop a window at every boot; --no-tray is the headless mode used by

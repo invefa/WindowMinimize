@@ -14,7 +14,9 @@ internal sealed class HotkeyDialog : Form {
     private readonly CheckBox _autoStartBox;
     private readonly CheckBox _autoStartAdminBox;
     private readonly CheckBox _debugBox;
-    private readonly CheckBox _notificationsBox;
+    private readonly CheckBox _notifyStartupBox;
+    private readonly CheckBox _notifyErrorsBox;
+    private readonly CheckBox _notifyPermissionsBox;
     private readonly ComboBox _languageBox;
     private readonly Label _hint;
     private readonly Button? _restartButton = null;
@@ -35,7 +37,11 @@ internal sealed class HotkeyDialog : Form {
 
     internal bool Debug => _debugBox.Checked;
 
-    internal bool Notifications => _notificationsBox.Checked;
+    internal bool NotifyStartup => _notifyStartupBox.Checked;
+
+    internal bool NotifyErrors => _notifyErrorsBox.Checked;
+
+    internal bool NotifyPermissions => _notifyPermissionsBox.Checked;
 
     internal bool RestartRequested { get; private set; }
 
@@ -170,12 +176,38 @@ internal sealed class HotkeyDialog : Form {
 
         var notificationsLabel = RowLabel(Strings.DialogNotifications);
 
-        _notificationsBox = new CheckBox {
-            Text = Strings.DialogShowNotifications,
+        var notificationBoxes = new FlowLayoutPanel {
             AutoSize = true,
-            Checked = config.Notifications,
-            Margin = new Padding(0, 6, 0, 6),
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            Margin = new Padding(0, 3, 0, 3),
         };
+
+        _notifyStartupBox = new CheckBox {
+            Text = Strings.DialogNotifyStartup,
+            AutoSize = true,
+            Checked = config.NotifyStartup,
+            Margin = new Padding(0, 3, 0, 3),
+        };
+
+        _notifyErrorsBox = new CheckBox {
+            Text = Strings.DialogNotifyErrors,
+            AutoSize = true,
+            Checked = config.NotifyErrors,
+            Margin = new Padding(0, 3, 0, 3),
+        };
+
+        _notifyPermissionsBox = new CheckBox {
+            Text = Strings.DialogNotifyPermissions,
+            AutoSize = true,
+            Checked = config.NotifyPermissions,
+            Margin = new Padding(0, 3, 0, 3),
+        };
+
+        notificationBoxes.Controls.Add(_notifyStartupBox);
+        notificationBoxes.Controls.Add(_notifyErrorsBox);
+        notificationBoxes.Controls.Add(_notifyPermissionsBox);
 
         _hint = new Label {
             Text = string.Empty,
@@ -261,7 +293,7 @@ internal sealed class HotkeyDialog : Form {
         layout.Controls.Add(debugLabel, 0, 5);
         layout.Controls.Add(_debugBox, 1, 5);
         layout.Controls.Add(notificationsLabel, 0, 6);
-        layout.Controls.Add(_notificationsBox, 1, 6);
+        layout.Controls.Add(notificationBoxes, 1, 6);
         layout.Controls.Add(_hint, 1, 7);
         layout.Controls.Add(buttonRow, 0, 8);
         layout.SetColumnSpan(buttonRow, 2);
@@ -315,8 +347,7 @@ internal sealed class HotkeyDialog : Form {
         }
 
         if (keyData == (Keys.Alt | Keys.N)) {
-            _notificationsBox.Checked = !_notificationsBox.Checked;
-            _notificationsBox.Focus();
+            _notifyStartupBox.Focus();
             return true;
         }
 

@@ -8,8 +8,9 @@ All notable changes to WindowMinimize. Versions follow SemVer.
 
 - A language selector in the settings dialog: follow Windows, English, or Chinese. Changing it
   rebuilds the tray menu immediately and is stored as `Language` in `hotkey.ini`.
-- A "Show system notifications" switch in the settings dialog, stored as `Notifications` in
-  `hotkey.ini`; turning it off suppresses the tray balloons while keeping the log messages.
+- Three independent notification switches in the settings dialog: startup, errors and permissions,
+  stored as `NotifyStartup`, `NotifyErrors` and `NotifyPermissions` in `hotkey.ini`; turning one off
+  suppresses only that kind of tray balloon while keeping the log messages.
 - A Chinese README, `README.zh-Hans.md`, linked from the English one.
 
 ### Changed

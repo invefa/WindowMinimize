@@ -114,13 +114,17 @@ internal static class ConfigStore {
         ;            the registry untouched
         ; Debug      write the hotkey.log debug log
         ; Language   interface language: auto follows Windows, en or zh forces one
-        ; Notifications  show tray balloon notifications, true or false
+        ; NotifyStartup      show the startup balloon
+        ; NotifyErrors       show failure balloons
+        ; NotifyPermissions  show elevation-related balloons
 
         [general]
         Hotkey={hotkey}
         Mode=minimize
         Language=auto
-        Notifications=true
+        NotifyStartup=true
+        NotifyErrors=true
+        NotifyPermissions=true
         Debug=false
 
         """;
@@ -176,7 +180,22 @@ internal static class ConfigStore {
 
                 case "notifications":
                 case "notify":
-                    config.Notifications = ParseBool(value, config.Notifications);
+                    bool all = ParseBool(value, true);
+                    config.NotifyStartup = all;
+                    config.NotifyErrors = all;
+                    config.NotifyPermissions = all;
+                    break;
+
+                case "notifystartup":
+                    config.NotifyStartup = ParseBool(value, config.NotifyStartup);
+                    break;
+
+                case "notifyerrors":
+                    config.NotifyErrors = ParseBool(value, config.NotifyErrors);
+                    break;
+
+                case "notifypermissions":
+                    config.NotifyPermissions = ParseBool(value, config.NotifyPermissions);
                     break;
 
                 default:

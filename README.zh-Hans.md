@@ -15,7 +15,7 @@
 遇到以管理员权限运行的窗口时，用`start-admin.bat`启动程序，或使用托盘菜单中的
 `以管理员身份重启`。当前台是这类窗口时，Windows不会把热键传给普通权限程序。要每次登录都以管理员权限静默启动，先开启`开机自动启动`，再勾选`以管理员身份开机自启`。
 
-首次运行会在exe旁创建`hotkey.ini`。保存修改后立即生效，不需要重启。左键单击托盘图标会打开设置界面，可以直接修改热键、方式、语言、通知、自启和调试日志，不必编辑文件。
+首次运行会在exe旁创建`hotkey.ini`。保存修改后立即生效，不需要重启。左键单击托盘图标会打开设置界面，可以直接修改热键、方式、语言、通知分类、自启和调试日志，不必编辑文件。
 
 退出：右击托盘图标，选择`退出`。
 
@@ -43,7 +43,9 @@ Windows自身占用的组合不会被拒绝，例如用`Win+S`打开搜索，或
 Hotkey=Win+S
 Mode=minimize
 Language=auto
-Notifications=true
+NotifyStartup=true
+NotifyErrors=true
+NotifyPermissions=true
 Debug=false
 ```
 
@@ -52,7 +54,9 @@ Debug=false
 | Hotkey | Win+S | 全局热键，语法见上一节 |
 | Mode | minimize | `minimize`最小化到任务栏；`hide`直接隐藏窗口 |
 | Language | auto | 界面语言：`auto`跟随Windows，`en`或`zh`强制指定；在设置界面修改后立即更新托盘 |
-| Notifications | true | 是否显示启动、错误和提权目标相关的托盘气泡通知；关闭后托盘保持安静 |
+| NotifyStartup | true | 是否显示启动时的热键确认气泡 |
+| NotifyErrors | true | 是否显示失败气泡，例如热键未能注册 |
+| NotifyPermissions | true | 是否显示权限相关气泡，例如提权目标或计划任务变更 |
 | AutoStart | 不写入 | 设为`true`或`false`时，启动时按该值同步自启项；删除整行则不碰注册表，保留手动设置 |
 | Debug | false | 是否写入`hotkey.log`调试日志 |
 
@@ -72,7 +76,7 @@ Debug=false
 | 恢复上次隐藏的窗口 | 把上一次用`hide`方式隐藏的窗口恢复到前台；没有隐藏记录时不可点击 |
 | 热键：xxx | 只显示当前生效的热键 |
 | 暂停热键 / 恢复热键 | 临时禁用热键，适合游戏或录制时使用；按住Shift点击可暂停5分钟，之后自动恢复 |
-| 设置 | 打开设置界面，可修改热键、方式、语言、通知、普通或管理员自启和调试日志 |
+| 设置 | 打开设置界面，可修改热键、方式、语言、通知分类、普通或管理员自启和调试日志 |
 | 打开配置文件 | 用记事本打开`hotkey.ini` |
 | 重新载入配置 | 手动重新读取配置；通常不需要 |
 | 开机自动启动 | 自启总开关。勾选后用普通Run项随Windows启动；取消后关闭自启 |

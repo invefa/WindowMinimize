@@ -61,7 +61,9 @@ internal static class Strings {
     internal static string DialogLog        => Get(nameof(DialogLog));
     internal static string DialogLanguage   => Get(nameof(DialogLanguage));
     internal static string DialogNotifications => Get(nameof(DialogNotifications));
-    internal static string DialogShowNotifications => Get(nameof(DialogShowNotifications));
+    internal static string DialogNotifyStartup => Get(nameof(DialogNotifyStartup));
+    internal static string DialogNotifyErrors => Get(nameof(DialogNotifyErrors));
+    internal static string DialogNotifyPermissions => Get(nameof(DialogNotifyPermissions));
     internal static string LanguageAuto     => Get(nameof(LanguageAuto));
     internal static string LanguageEnglish  => Get(nameof(LanguageEnglish));
     internal static string LanguageChinese  => Get(nameof(LanguageChinese));

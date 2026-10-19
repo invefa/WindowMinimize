@@ -24,8 +24,14 @@ internal sealed class AppConfig {
     /// <summary>Interface language: auto follows Windows, en or zh forces one.</summary>
     internal string Language { get; set; } = "auto";
 
-    /// <summary>Show tray balloon notifications for startup, errors and elevated targets.</summary>
-    internal bool Notifications { get; set; } = true;
+    /// <summary>Show the startup balloon.</summary>
+    internal bool NotifyStartup { get; set; } = true;
+
+    /// <summary>Show failure balloons, such as a hotkey that did not register.</summary>
+    internal bool NotifyErrors { get; set; } = true;
+
+    /// <summary>Show elevation-related balloons, such as an elevated target or task.</summary>
+    internal bool NotifyPermissions { get; set; } = true;
 
     /// <summary>Config file path, filled in by ConfigStore.</summary>
     internal string ConfigPath { get; set; } = string.Empty;

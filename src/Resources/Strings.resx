@@ -76,8 +76,14 @@
   <data name="DialogNotifications" xml:space="preserve">
     <value>Notifications (&amp;N)</value>
   </data>
-  <data name="DialogShowNotifications" xml:space="preserve">
-    <value>Show system notifications</value>
+  <data name="DialogNotifyStartup" xml:space="preserve">
+    <value>Startup notifications</value>
+  </data>
+  <data name="DialogNotifyErrors" xml:space="preserve">
+    <value>Error notifications</value>
+  </data>
+  <data name="DialogNotifyPermissions" xml:space="preserve">
+    <value>Permission notifications</value>
   </data>
   <data name="DialogLanguage" xml:space="preserve">
     <value>Language (&amp;L)</value>

@@ -75,8 +75,14 @@
   <data name="DialogNotifications" xml:space="preserve">
     <value>通知(&amp;N)</value>
   </data>
-  <data name="DialogShowNotifications" xml:space="preserve">
-    <value>显示系统通知</value>
+  <data name="DialogNotifyStartup" xml:space="preserve">
+    <value>启动提示</value>
+  </data>
+  <data name="DialogNotifyErrors" xml:space="preserve">
+    <value>错误提示</value>
+  </data>
+  <data name="DialogNotifyPermissions" xml:space="preserve">
+    <value>权限提示</value>
   </data>
   <data name="DialogLanguage" xml:space="preserve">
     <value>语言(&amp;L)</value>

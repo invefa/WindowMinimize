@@ -6,6 +6,12 @@ using System.Windows.Forms;
 
 namespace WindowMinimize;
 
+internal enum NoticeKind {
+    Startup,
+    Error,
+    Permission,
+}
+
 /// <summary>
 /// The tray application: a hidden message window receives the hotkey, the tray menu holds the
 /// switches and the way into the settings.
@@ -256,7 +262,7 @@ internal sealed class TrayApp : ApplicationContext {
 
         if (!ok && interactive) {
             string message = Strings.BalloonHotkeyNotActive(_lastError);
-            Notify(message, ToolTipIcon.Warning);
+            Notify(message, NoticeKind.Error, ToolTipIcon.Warning);
         }
     }
 
@@ -354,7 +360,7 @@ internal sealed class TrayApp : ApplicationContext {
 
         _elevatedAutoStart = true;
         Log.Info("elevated autostart installed");
-        Notify(Strings.BalloonElevatedAutoStartInstalled);
+        Notify(Strings.BalloonElevatedAutoStartInstalled, NoticeKind.Permission);
         return true;
     }
 
@@ -378,7 +384,7 @@ internal sealed class TrayApp : ApplicationContext {
         if (error.Length == 0) return; // the user declined the UAC prompt
 
         Log.Error($"could not change the elevated autostart: {error}");
-        Notify(Strings.BalloonElevatedAutoStartFailed(error), ToolTipIcon.Error);
+        Notify(Strings.BalloonElevatedAutoStartFailed(error), NoticeKind.Error, ToolTipIcon.Error);
     }
 
     private void RefreshMenu() {
@@ -423,7 +429,7 @@ internal sealed class TrayApp : ApplicationContext {
             Log.Info("target window refused the minimize, it probably runs as administrator");
             if (!_elevatedNoticeShown) {
                 _elevatedNoticeShown = true;
-                Notify(Strings.BalloonElevatedTarget, ToolTipIcon.Warning);
+                Notify(Strings.BalloonElevatedTarget, NoticeKind.Permission, ToolTipIcon.Warning);
             }
         } else {
             _elevatedNoticeShown = false;
@@ -480,7 +486,7 @@ internal sealed class TrayApp : ApplicationContext {
             ExitThread();
         } catch (Exception ex) {
             Log.Error($"could not restart as administrator: {ex.Message}");
-            Notify(Strings.BalloonRestartFailed(ex.Message), ToolTipIcon.Error);
+            Notify(Strings.BalloonRestartFailed(ex.Message), NoticeKind.Error, ToolTipIcon.Error);
         }
     }
 
@@ -516,7 +522,9 @@ internal sealed class TrayApp : ApplicationContext {
 
             Config.Hotkey = dialog.HotkeyText;
             Config.Mode = dialog.Mode;
-            Config.Notifications = dialog.Notifications;
+            Config.NotifyStartup = dialog.NotifyStartup;
+            Config.NotifyErrors = dialog.NotifyErrors;
+            Config.NotifyPermissions = dialog.NotifyPermissions;
             Apply(Config);
 
             if (Config.Debug != dialog.Debug) {
@@ -549,7 +557,13 @@ internal sealed class TrayApp : ApplicationContext {
             text = SetIniValue(text, "Mode", Config.Mode);
             text = SetIniValue(text, "Language", Config.Language);
             text = SetIniValue(
-                text, "Notifications", Config.Notifications ? "true" : "false"
+                text, "NotifyStartup", Config.NotifyStartup ? "true" : "false"
+            );
+            text = SetIniValue(
+                text, "NotifyErrors", Config.NotifyErrors ? "true" : "false"
+            );
+            text = SetIniValue(
+                text, "NotifyPermissions", Config.NotifyPermissions ? "true" : "false"
             );
 
             if (Config.AutoStart is bool autoStart) {
@@ -588,15 +602,24 @@ internal sealed class TrayApp : ApplicationContext {
         return string.Join(Environment.NewLine, lines);
     }
 
-    /// <summary>Show one tray balloon.</summary>
-    internal void Notify(string message, ToolTipIcon icon = ToolTipIcon.Info) {
-        if (Headless || !Config.Notifications) {
+    /// <summary>Show one tray balloon if the user enabled this kind of notification.</summary>
+    internal void Notify(
+        string message, NoticeKind kind, ToolTipIcon icon = ToolTipIcon.Info
+    ) {
+        if (Headless || !IsNoticeEnabled(kind)) {
             Log.Info($"{Strings.AppName}: {message}");
             return;
         }
 
         _icon.ShowBalloonTip(5000, Strings.AppName, message, icon);
     }
+
+    private bool IsNoticeEnabled(NoticeKind kind) => kind switch {
+        NoticeKind.Startup => Config.NotifyStartup,
+        NoticeKind.Error => Config.NotifyErrors,
+        NoticeKind.Permission => Config.NotifyPermissions,
+        _ => true,
+    };
 
     protected override void Dispose(bool disposing) {
         if (disposing) {
