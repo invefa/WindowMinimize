@@ -2,7 +2,9 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
-## Unreleased
+## 1.2.0 - 2026-10-19
+
+A focused update for localization, notification control and tray menu cleanup.
 
 ### Added
 
@@ -17,6 +19,8 @@ All notable changes to WindowMinimize. Versions follow SemVer.
 
 - Removed the "Minimize current window" tray entry. Clicking the tray moves the foreground to the
   shell, so the entry could not know which window to minimize; the hotkey remains the trigger.
+- Notification balloons now use a short first line and a detail line. The parenthetical takeover
+  notes are gone, and the three notification toggles share one compact row.
 
 ## 1.1.0 - 2026-10-18
 

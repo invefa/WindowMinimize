@@ -150,7 +150,7 @@ pwsh -NoProfile -File build\build.ps1
 加`-Lite`会生成`dist\lite\WindowMinimize-lite.exe`，这是依赖框架的单文件版本，运行机器需要.NET8 Desktop Runtime。
 它放在单独目录，因为单文件发布会先清空输出目录。
 
-推送与`src\WindowMinimize.csproj`中`<Version>`一致的标签，例如`v1.1.0`，会触发
+推送与`src\WindowMinimize.csproj`中`<Version>`一致的标签，例如`v1.2.0`，会触发
 `.github\workflows\release.yml`运行单元测试、构建两个exe、提取`CHANGELOG.md`中对应版本的段落，并把exe附加到Release。
 
 单元测试：
