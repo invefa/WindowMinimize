@@ -2,6 +2,17 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
+## 1.2.1 - 2026-10-19
+
+A small UI fix release for the 1.2.0 language and notification settings.
+
+### Fixed
+
+- English builds clipped the third notification toggle. The labels are now Startup, Errors and
+  Permissions, and all three fit on one row.
+- The language list always shows English and 简体中文 in their own names, regardless of the
+  current interface language.
+
 ## 1.2.0 - 2026-10-19
 
 A focused update for localization, notification control and tray menu cleanup.
