@@ -611,7 +611,8 @@ internal sealed class TrayApp : ApplicationContext {
             return;
         }
 
-        _icon.ShowBalloonTip(5000, Strings.AppName, message, icon);
+        string text = message.Replace("\r\n", "\n").Replace("\n", "\r\n");
+        _icon.ShowBalloonTip(5000, Strings.AppName, text, icon);
     }
 
     private bool IsNoticeEnabled(NoticeKind kind) => kind switch {

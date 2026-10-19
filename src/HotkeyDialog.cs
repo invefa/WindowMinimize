@@ -179,14 +179,13 @@ internal sealed class HotkeyDialog : Form {
         var notificationBoxes = new TableLayoutPanel {
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            ColumnCount = 2,
-            RowCount = 2,
+            ColumnCount = 3,
+            RowCount = 1,
             Margin = new Padding(0, 3, 0, 3),
         };
         notificationBoxes.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         notificationBoxes.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        notificationBoxes.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        notificationBoxes.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        notificationBoxes.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
         _notifyStartupBox = new CheckBox {
             Text = Strings.DialogNotifyStartup,
@@ -199,7 +198,7 @@ internal sealed class HotkeyDialog : Form {
             Text = Strings.DialogNotifyErrors,
             AutoSize = true,
             Checked = config.NotifyErrors,
-            Margin = new Padding(0, 3, 0, 3),
+            Margin = new Padding(0, 3, 24, 3),
         };
 
         _notifyPermissionsBox = new CheckBox {
@@ -211,8 +210,7 @@ internal sealed class HotkeyDialog : Form {
 
         notificationBoxes.Controls.Add(_notifyStartupBox, 0, 0);
         notificationBoxes.Controls.Add(_notifyErrorsBox, 1, 0);
-        notificationBoxes.Controls.Add(_notifyPermissionsBox, 0, 1);
-        notificationBoxes.SetColumnSpan(_notifyPermissionsBox, 2);
+        notificationBoxes.Controls.Add(_notifyPermissionsBox, 2, 0);
 
         _hint = new Label {
             Text = string.Empty,

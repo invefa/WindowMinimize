@@ -119,19 +119,19 @@
     <value>Cancel (&amp;C)</value>
   </data>
   <data name="BalloonStarted" xml:space="preserve">
-    <value>started, hotkey {0}, press it once to minimize the current window</value>
+    <value>started, hotkey {0}&#10;press it once to minimize the current window</value>
   </data>
   <data name="BalloonStartedWindowsOwned" xml:space="preserve">
-    <value>started, hotkey {0} (Windows owns that combination, this program took it over and the system feature no longer works)</value>
+    <value>started, hotkey {0}&#10;Windows owns that combination, this program took it over and the system feature no longer works</value>
   </data>
   <data name="BalloonStartedHook" xml:space="preserve">
-    <value>started, hotkey {0} (another program owns it, taken over with the key hook)</value>
+    <value>started, hotkey {0}&#10;another program owns it, taken over with the key hook</value>
   </data>
   <data name="BalloonHotkeyNotActive" xml:space="preserve">
-    <value>hotkey is not active: {0}</value>
+    <value>hotkey is not active:&#10;{0}</value>
   </data>
   <data name="BalloonAutoStartFailed" xml:space="preserve">
-    <value>could not set auto start: {0}</value>
+    <value>could not set auto start:&#10;{0}</value>
   </data>
   <data name="MsgAlreadyRunning" xml:space="preserve">
     <value>WindowMinimize is already running, check the notification area of the taskbar.</value>
@@ -224,10 +224,10 @@ notes:
     <value>Start with Windows as administrator (&amp;E)</value>
   </data>
   <data name="BalloonElevatedAutoStartFailed" xml:space="preserve">
-    <value>Could not change the administrator autostart: {0}</value>
+    <value>Could not change the administrator autostart:&#10;{0}</value>
   </data>
   <data name="BalloonElevatedAutoStartInstalled" xml:space="preserve">
-    <value>Elevated autostart installed. It takes effect at the next logon; use Restart as administrator to switch this session now.</value>
+    <value>Elevated autostart installed.&#10;It takes effect at the next logon; use Restart as administrator to switch this session now.</value>
   </data>
   <data name="MenuRestartAdmin" xml:space="preserve">
     <value>Restart as administrator (&amp;R)</value>
@@ -236,9 +236,9 @@ notes:
     <value>WindowMinimize will close and restart as administrator. Confirm the UAC prompt to continue.</value>
   </data>
   <data name="BalloonElevatedTarget" xml:space="preserve">
-    <value>The target window runs as administrator. A normal-privilege program cannot minimize it; restart WindowMinimize as administrator to handle such windows.</value>
+    <value>The target window runs as administrator.&#10;A normal-privilege program cannot minimize it; restart WindowMinimize as administrator to handle such windows.</value>
   </data>
   <data name="BalloonRestartFailed" xml:space="preserve">
-    <value>Could not restart as administrator: {0}</value>
+    <value>Could not restart as administrator:&#10;{0}</value>
   </data>
 </root>
