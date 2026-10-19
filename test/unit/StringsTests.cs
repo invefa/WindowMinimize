@@ -47,8 +47,13 @@ public class StringsTests {
             Assert.False(string.IsNullOrWhiteSpace(english), $"{key} has no English text");
             Assert.False(string.IsNullOrWhiteSpace(chinese), $"{key} has no Chinese text");
 
-            // the product name is the same in both languages, everything else has to differ
-            if (key == nameof(Strings.AppName)) continue;
+            // the product name and native language names stay the same in both languages
+            if (key is nameof(Strings.AppName)
+                or nameof(Strings.LanguageEnglish)
+                or nameof(Strings.LanguageChinese)) {
+                continue;
+            }
+
             Assert.NotEqual(english, chinese);
         }
     }

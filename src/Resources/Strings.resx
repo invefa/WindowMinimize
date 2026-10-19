@@ -77,13 +77,13 @@
     <value>Notifications (&amp;N)</value>
   </data>
   <data name="DialogNotifyStartup" xml:space="preserve">
-    <value>Startup notifications</value>
+    <value>Startup</value>
   </data>
   <data name="DialogNotifyErrors" xml:space="preserve">
-    <value>Error notifications</value>
+    <value>Errors</value>
   </data>
   <data name="DialogNotifyPermissions" xml:space="preserve">
-    <value>Permission notifications</value>
+    <value>Permissions</value>
   </data>
   <data name="DialogLanguage" xml:space="preserve">
     <value>Language (&amp;L)</value>
@@ -95,7 +95,7 @@
     <value>English</value>
   </data>
   <data name="LanguageChinese" xml:space="preserve">
-    <value>Chinese</value>
+    <value>简体中文</value>
   </data>
   <data name="DialogLog" xml:space="preserve">
     <value>Log</value>
