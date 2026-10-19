@@ -91,7 +91,7 @@ example when unpacked to `C:\Program Files`), it falls back to
 | Menu item | Action |
 | --- | --- |
 | Version | Not clickable heading at the top, shows the version and whether this copy runs as administrator or as a standard user |
-| Restore last hidden window | Brings the last window hidden with `hide` back to the foreground; not clickable when no window has been hidden |
+| Hidden windows | A submenu listing every window hidden with `hide`; selecting one restores it, and "Restore all hidden windows" restores the whole list. The entries live only in memory and are lost when the program exits |
 | Hotkey: xxx | Shows only the hotkey currently in effect |
 | Suspend hotkey / Resume hotkey | Temporarily disables it, handy while gaming or recording; hold Shift and click to suspend for 5 minutes and then resume automatically |
 | Settings... | Opens the dialog for the hotkey, the mode, the language and notification categories, the normal or elevated auto start and the debug log |
@@ -228,9 +228,9 @@ WindowMinimize
    administrator"; it registers a Task Scheduler task with the highest run level and removes the
    normal Run entry.
 
-2. The `hide` mode hides the window completely, so no button remains on the taskbar; use "Restore
-   last hidden window" in the tray menu to get it back. That record lives only in memory and is lost
-   after a restart, leaving only Task Manager. Prefer the default `minimize` for everyday use.
+2. The `hide` mode hides the window completely, so no button remains on the taskbar; use the
+   "Hidden windows" submenu in the tray menu to get it back. The list lives only in memory and is
+   lost after a restart, leaving only Task Manager. Prefer the default `minimize` for everyday use.
 
 3. A low level keyboard hook is a global hook, and a few games with strict anti-cheat may be
    sensitive to global hooks. If the hotkey does not need to grab keys (normal registration

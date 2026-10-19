@@ -18,8 +18,17 @@
   <data name="AppName" xml:space="preserve">
     <value>WindowMinimize</value>
   </data>
-  <data name="MenuRestore" xml:space="preserve">
-    <value>还原上次隐藏的窗口</value>
+  <data name="MenuHiddenWindows" xml:space="preserve">
+    <value>隐藏的窗口</value>
+  </data>
+  <data name="HiddenNone" xml:space="preserve">
+    <value>没有隐藏窗口</value>
+  </data>
+  <data name="HiddenRestoreAll" xml:space="preserve">
+    <value>恢复所有隐藏窗口</value>
+  </data>
+  <data name="HiddenUntitled" xml:space="preserve">
+    <value>无标题窗口</value>
   </data>
   <data name="MenuSuspend" xml:space="preserve">
     <value>暂停热键</value>

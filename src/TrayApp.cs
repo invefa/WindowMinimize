@@ -21,20 +21,22 @@ internal sealed class TrayApp : ApplicationContext {
     private readonly HotkeySource _source;
     private readonly NotifyIcon _icon;
     private ToolStripMenuItem _hotkeyItem = null!;
-    private ToolStripMenuItem _restoreItem = null!;
+    private ToolStripMenuItem _hiddenWindowsItem = null!;
     private ToolStripMenuItem _suspendItem = null!;
     private ToolStripMenuItem _autoStartItem = null!;
     private ToolStripMenuItem _autoStartAdminItem = null!;
     private readonly System.Windows.Forms.Timer _suspendCountdown;
+    private readonly List<HiddenWindow> _hiddenWindows = [];
     private ConfigStore.Watcher? _watcher;
     private HotkeySpec? _spec;
     private string _lastError = string.Empty;
-    private IntPtr _lastHidden;
     private bool _suspended;
     private bool _elevatedNoticeShown;
     private bool _elevatedAutoStart;
     private bool _settingsOpen;
     private int _suspendSecondsLeft;
+
+    private sealed record HiddenWindow(IntPtr Handle, uint ProcessId);
 
     internal TrayApp(AppConfig config, bool headless) {
         Config = config;
@@ -83,8 +85,8 @@ internal sealed class TrayApp : ApplicationContext {
         var menu = new ContextMenuStrip();
 
         // a window hidden with the hide mode leaves no taskbar button, this is the way back
-        _restoreItem = new ToolStripMenuItem(Strings.MenuRestore) { Enabled = false };
-        _restoreItem.Click += (_, _) => RestoreLastHidden();
+        _hiddenWindowsItem = new ToolStripMenuItem(Strings.MenuHiddenWindows) { Enabled = false };
+        _hiddenWindowsItem.DropDownOpening += (_, _) => RefreshHiddenWindowsMenu();
 
         _hotkeyItem = new ToolStripMenuItem { Enabled = false };
         _suspendItem = new ToolStripMenuItem(Strings.MenuSuspend, null, (_, _) => {
@@ -135,7 +137,7 @@ internal sealed class TrayApp : ApplicationContext {
 
         menu.Items.Add(versionItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(_restoreItem);
+        menu.Items.Add(_hiddenWindowsItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(_hotkeyItem);
         menu.Items.Add(_suspendItem);
@@ -401,7 +403,7 @@ internal sealed class TrayApp : ApplicationContext {
         _autoStartItem.Enabled      = true;
         _autoStartAdminItem.Checked = _elevatedAutoStart;
         _autoStartAdminItem.Enabled = autoStart;
-        _restoreItem.Enabled        = _lastHidden != IntPtr.Zero && Native.IsWindow(_lastHidden);
+        RefreshHiddenWindowsMenu();
 
         string tip = Strings.TrayTooltip(_spec?.Text ?? Strings.HotkeyNotSet);
         _icon.Text = Truncate(tip, 62);
@@ -436,7 +438,7 @@ internal sealed class TrayApp : ApplicationContext {
         }
 
         if (hiding && result.Minimized) {
-            _lastHidden = hwnd;
+            RememberHidden(hwnd);
             RefreshMenu();
         }
     }
@@ -490,14 +492,86 @@ internal sealed class TrayApp : ApplicationContext {
         }
     }
 
-    /// <summary>Bring back the window that the last hide action put away.</summary>
-    private void RestoreLastHidden() {
-        if (_lastHidden != IntPtr.Zero && !WindowOps.Restore(_lastHidden)) {
-            Log.Debug("the window hidden last time is gone, cannot restore it");
+    private void RememberHidden(IntPtr hwnd) {
+        Native.GetWindowThreadProcessId(hwnd, out uint processId);
+        _hiddenWindows.RemoveAll(entry => entry.Handle == hwnd);
+        _hiddenWindows.Insert(0, new HiddenWindow(hwnd, processId));
+        Log.Debug($"hidden window tracked: hwnd=0x{hwnd.ToInt64():X} pid={processId}");
+    }
+
+    private void RestoreHidden(HiddenWindow hidden) {
+        if (!WindowOps.Restore(hidden.Handle)) {
+            Log.Debug("the hidden window is gone, cannot restore it");
         }
 
-        _lastHidden = IntPtr.Zero;
+        _hiddenWindows.Remove(hidden);
         RefreshMenu();
+    }
+
+    private void RestoreAllHidden() {
+        foreach (HiddenWindow hidden in _hiddenWindows.ToArray()) {
+            if (!WindowOps.Restore(hidden.Handle)) {
+                Log.Debug("the hidden window is gone, cannot restore it");
+            }
+        }
+
+        _hiddenWindows.Clear();
+        RefreshMenu();
+    }
+
+    /// <summary>Rebuild the submenu from the windows that are still alive.</summary>
+    private void RefreshHiddenWindowsMenu() {
+        PruneHiddenWindows();
+
+        while (_hiddenWindowsItem.DropDownItems.Count > 0) {
+            ToolStripItem item = _hiddenWindowsItem.DropDownItems[0];
+            _hiddenWindowsItem.DropDownItems.RemoveAt(0);
+            item.Dispose();
+        }
+
+        if (_hiddenWindows.Count == 0) {
+            _hiddenWindowsItem.Enabled = false;
+            _hiddenWindowsItem.DropDownItems.Add(new ToolStripMenuItem(Strings.HiddenNone) {
+                Enabled = false,
+            });
+            return;
+        }
+
+        _hiddenWindowsItem.Enabled = true;
+
+        foreach (HiddenWindow hidden in _hiddenWindows) {
+            HiddenWindow entry = hidden;
+            string title = Native.GetWindowTitle(entry.Handle).Trim();
+            string process = Native.GetProcessName(entry.Handle).Trim();
+            string label = title.Length > 0 ? title : process;
+            if (label.Length == 0) label = Strings.HiddenUntitled;
+            if (label.Length > 72) label = label[..72];
+
+            string tooltip = label;
+            if (process.Length > 0) tooltip += Environment.NewLine + process;
+
+            var item = new ToolStripMenuItem(label.Replace("&", "&&")) {
+                ToolTipText = tooltip,
+            };
+            item.Click += (_, _) => RestoreHidden(entry);
+            _hiddenWindowsItem.DropDownItems.Add(item);
+        }
+
+        if (_hiddenWindows.Count > 1) {
+            _hiddenWindowsItem.DropDownItems.Add(new ToolStripSeparator());
+            var restoreAll = new ToolStripMenuItem(Strings.HiddenRestoreAll);
+            restoreAll.Click += (_, _) => RestoreAllHidden();
+            _hiddenWindowsItem.DropDownItems.Add(restoreAll);
+        }
+    }
+
+    private void PruneHiddenWindows() {
+        _hiddenWindows.RemoveAll(hidden => {
+            if (!Native.IsWindow(hidden.Handle)) return true;
+
+            Native.GetWindowThreadProcessId(hidden.Handle, out uint processId);
+            return processId != hidden.ProcessId;
+        });
     }
 
     /// <summary>Show the settings dialog.</summary>

@@ -19,8 +19,17 @@
   <data name="AppName" xml:space="preserve">
     <value>WindowMinimize</value>
   </data>
-  <data name="MenuRestore" xml:space="preserve">
-    <value>Restore last hidden window</value>
+  <data name="MenuHiddenWindows" xml:space="preserve">
+    <value>Hidden windows</value>
+  </data>
+  <data name="HiddenNone" xml:space="preserve">
+    <value>No hidden windows</value>
+  </data>
+  <data name="HiddenRestoreAll" xml:space="preserve">
+    <value>Restore all hidden windows</value>
+  </data>
+  <data name="HiddenUntitled" xml:space="preserve">
+    <value>Untitled window</value>
   </data>
   <data name="MenuSuspend" xml:space="preserve">
     <value>Suspend hotkey</value>

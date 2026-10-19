@@ -23,7 +23,10 @@ internal static class Strings {
 
     // the tray icon and its menu
     internal static string AppName            => Get(nameof(AppName));
-    internal static string MenuRestore        => Get(nameof(MenuRestore));
+    internal static string MenuHiddenWindows => Get(nameof(MenuHiddenWindows));
+    internal static string HiddenNone        => Get(nameof(HiddenNone));
+    internal static string HiddenRestoreAll  => Get(nameof(HiddenRestoreAll));
+    internal static string HiddenUntitled    => Get(nameof(HiddenUntitled));
     internal static string MenuSuspend        => Get(nameof(MenuSuspend));
     internal static string MenuResume         => Get(nameof(MenuResume));
     internal static string MenuOpenConfig     => Get(nameof(MenuOpenConfig));
