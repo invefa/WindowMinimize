@@ -566,11 +566,6 @@ internal sealed class TrayApp : ApplicationContext {
         }
 
         Screen target = ResolveMoveTarget(Screen.FromHandle(hwnd));
-        if (Config.RestoreAnimation.Equals("native", StringComparison.OrdinalIgnoreCase)) {
-            _minimizeRects[hwnd] = target.WorkingArea;
-        } else {
-            _minimizeRects.TryRemove(hwnd, out _);
-        }
         WindowOps.MinimizeResult result = WindowOps.MinimizeWithRetry(hwnd, "minimize");
 
         if (result.AccessDenied) {
@@ -589,18 +584,21 @@ internal sealed class TrayApp : ApplicationContext {
         }
 
         PushMinimized(hwnd, moved: true);
+        bool native = Config.RestoreAnimation.Equals(
+            "native", StringComparison.OrdinalIgnoreCase
+        );
         bool setMinPosition = !Config.RestoreAnimation.Equals(
             "default", StringComparison.OrdinalIgnoreCase
         );
-        await MoveToScreenAfterMinimize(hwnd, target, setMinPosition);
+        await MoveToScreenAfterMinimize(hwnd, target, setMinPosition, native);
     }
 
     /// <summary>
     /// The minimize call is asynchronous and can overwrite the restore position for a short while.
     /// Wait for it to settle, then move the window so a later restore lands on the target screen.
     /// </summary>
-    private static async Task MoveToScreenAfterMinimize(
-        IntPtr hwnd, Screen target, bool setMinPosition
+    private async Task MoveToScreenAfterMinimize(
+        IntPtr hwnd, Screen target, bool setMinPosition, bool refreshTaskbar
     ) {
         for (int i = 0; i < 20; i++) {
             if (!Native.IsWindow(hwnd)) return;
@@ -617,6 +615,13 @@ internal sealed class TrayApp : ApplicationContext {
                     $"move after minimize: hwnd=0x{hwnd.ToInt64():X} "
                     + $"target={target.DeviceName} moved={moved}"
                 );
+                if (refreshTaskbar) {
+                    // The shell has already animated the minimize on the source screen. Recreate
+                    // the taskbar button only now, so the restore animation is based on the
+                    // target screen instead.
+                    WindowOps.RefreshTaskbarButton(hwnd);
+                    _minimizeRects[hwnd] = target.WorkingArea;
+                }
                 return;
             }
 
@@ -666,8 +671,8 @@ internal sealed class TrayApp : ApplicationContext {
             if (processId != entry.ProcessId) continue;
 
             string mode = entry.Moved ? Config.RestoreAnimation : "native";
-            _minimizeRects.TryRemove(entry.Handle, out _);
             if (WindowOps.Restore(entry.Handle, mode)) {
+                _minimizeRects.TryRemove(entry.Handle, out _);
                 Log.Debug($"restored minimized window: hwnd=0x{entry.Handle.ToInt64():X}");
                 // let one restore animation finish before the next queued hotkey restores another
                 await Task.Delay(220).ConfigureAwait(true);

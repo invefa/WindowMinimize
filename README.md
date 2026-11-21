@@ -205,13 +205,13 @@ Each of the three hotkeys has its own `HotkeySource`, so a combination that Wind
 program already owns can fall back to the keyboard hook independently. Changing one hotkey does not
 unregister the other two, and a failed registration restores that hotkey's previous value.
 
-The screen move resolves the configured device names through `Screen.AllScreens`. The window keeps
-its size when it fits, is centered in the target work area, and receives the new restore position
-after the asynchronous minimize has settled. The minimized position is moved with the
-`WPF_SETMINPOSITION` flag. In native mode the program also handles `HSHELL_GETMINRECT` through
-`RegisterShellHookWindow`, so the shell animation target is the target screen instead of the old
-taskbar button. The settings dialog also offers a target fade, a transition-free restore, or the
-untouched system behavior; normal windows keep the native animation.
+The screen move resolves the configured device names through `Screen.AllScreens`. The window is
+minimized first, so the minimize animation stays on the source screen. Only after the minimize has
+settled does the program write the target restore position, move `ptMinPosition` with
+`WPF_SETMINPOSITION`, and recreate the taskbar button on the target screen. The restore animation
+therefore starts on the target screen while the minimize animation never crosses screens. The
+settings dialog also offers a target fade, a transition-free restore, or the untouched system
+behavior; normal windows keep the native animation.
 
 The restore hotkey uses a stack of minimized windows. A newly minimized window is pushed on top,
 old entries are pruned when their window or process is gone, and `Win+W` pops the newest live entry.

@@ -136,8 +136,36 @@ internal static class WindowOps {
     /// Move the restore position of a window into the target work area. The size is kept when it
     /// fits, and a minimized window is not shown by this call.
     /// </summary>
-    internal static bool MoveToWorkArea(IntPtr hwnd, Rectangle work, bool setMinPosition) {
-        if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
+    /// <summary>
+    /// Recreate the taskbar button after a minimized window moved to another screen. The shell
+    /// assigns the recreated button to the monitor that now contains the window, which also
+    /// retargets the native restore animation.
+    /// </summary>
+    internal static bool RefreshTaskbarButton(IntPtr hwnd) {
+        object? com = null;
+        try {
+            var list = (ITaskbarList)new TaskbarListCoClass();
+            com = list;
+            if (list.HrInit() != 0) return false;
+            list.DeleteTab(hwnd);
+            list.AddTab(hwnd);
+            Log.Debug($"taskbar button recreated: hwnd=0x{hwnd.ToInt64():X}");
+            return true;
+        } catch (Exception ex) {
+            Log.Debug($"taskbar button recreation failed: {ex.Message}");
+            return false;
+        } finally {
+            if (com is not null) {
+                try {
+                    Marshal.FinalReleaseComObject(com);
+                } catch {
+                    // the shell may already have released it
+                }
+            }
+        }
+    }
+
+    internal static bool MoveToWorkArea(IntPtr hwnd, Rectangle work, bool setMinPosition) {        if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
 
         var placement = new Native.WINDOWPLACEMENT {
             Length = Marshal.SizeOf<Native.WINDOWPLACEMENT>(),
