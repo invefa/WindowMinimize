@@ -10,8 +10,8 @@ All notable changes to WindowMinimize. Versions follow SemVer.
   (`Win+S`), and restore the most recently minimized window (`Win+W`).
 - Screen A and Screen B selection for the move action, with a swap behavior between the pair.
 - A minimized-window stack backing the restore hotkey; closed windows are pruned on pop.
-- Moved windows also move their minimized position and suppress the DWM restore transition, so a
-  restore does not fly in from the original screen.
+- Moved windows also move their minimized position, so the normal restore animation starts from the
+  target screen instead of flying in from the original one.
 
 ### Changed
 

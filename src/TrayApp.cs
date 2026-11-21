@@ -47,7 +47,7 @@ internal sealed class TrayApp : ApplicationContext {
 
     private sealed record HiddenWindow(IntPtr Handle, uint ProcessId);
 
-    private sealed record MinimizedWindow(IntPtr Handle, uint ProcessId, bool Moved);
+    private sealed record MinimizedWindow(IntPtr Handle, uint ProcessId);
 
     internal TrayApp(AppConfig config, bool headless) {
         Config = config;
@@ -504,7 +504,7 @@ internal sealed class TrayApp : ApplicationContext {
             return;
         }
 
-        PushMinimized(hwnd, moved: false);
+        PushMinimized(hwnd);
     }
 
     /// <summary>
@@ -532,7 +532,7 @@ internal sealed class TrayApp : ApplicationContext {
 
         if (!result.Minimized) return;
 
-        PushMinimized(hwnd, moved: true);
+        PushMinimized(hwnd);
         MoveToScreenAfterMinimize(hwnd, target);
     }
 
@@ -587,10 +587,10 @@ internal sealed class TrayApp : ApplicationContext {
     private static bool SameScreen(Screen left, Screen right) =>
         left.DeviceName.Equals(right.DeviceName, StringComparison.OrdinalIgnoreCase);
 
-    private void PushMinimized(IntPtr hwnd, bool moved) {
+    private void PushMinimized(IntPtr hwnd) {
         Native.GetWindowThreadProcessId(hwnd, out uint processId);
         _minimizedStack.RemoveAll(entry => entry.Handle == hwnd);
-        _minimizedStack.Insert(0, new MinimizedWindow(hwnd, processId, moved));
+        _minimizedStack.Insert(0, new MinimizedWindow(hwnd, processId));
         Log.Debug($"minimized window pushed: hwnd=0x{hwnd.ToInt64():X} pid={processId}");
     }
 
@@ -604,7 +604,7 @@ internal sealed class TrayApp : ApplicationContext {
             Native.GetWindowThreadProcessId(entry.Handle, out uint processId);
             if (processId != entry.ProcessId) continue;
 
-            if (WindowOps.Restore(entry.Handle, disableTransitions: entry.Moved)) {
+            if (WindowOps.Restore(entry.Handle)) {
                 Log.Debug($"restored minimized window: hwnd=0x{entry.Handle.ToInt64():X}");
                 return;
             }

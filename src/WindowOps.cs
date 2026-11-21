@@ -80,32 +80,13 @@ internal static class WindowOps {
     }
 
     /// <summary>Bring back a window that was hidden with the hide mode.</summary>
-    internal static bool Restore(IntPtr hwnd, bool disableTransitions = false) {
+    internal static bool Restore(IntPtr hwnd) {
         if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
 
-        if (disableTransitions) SetTransitions(hwnd, true);
         Native.ShowWindowAsync(hwnd, Native.SW_RESTORE);
         Native.SetForegroundWindow(hwnd);
         Log.Debug($"window restored: hwnd=0x{hwnd.ToInt64():X}");
-        if (disableTransitions) {
-            _ = Task.Run(async () => {
-                await Task.Delay(250).ConfigureAwait(false);
-                if (Native.IsWindow(hwnd)) SetTransitions(hwnd, false);
-            });
-        }
-
         return true;
-    }
-
-    private static void SetTransitions(IntPtr hwnd, bool disabled) {
-        int value = disabled ? 1 : 0;
-        try {
-            Native.DwmSetWindowAttribute(
-                hwnd, Native.DWMWA_TRANSITIONS_FORCEDISABLED, ref value, sizeof(int)
-            );
-        } catch {
-            // DWM is optional, a missing animation attribute is not fatal
-        }
     }
 
     /// <summary>

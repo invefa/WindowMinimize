@@ -205,8 +205,8 @@ unregister the other two, and a failed registration restores that hotkey's previ
 
 The screen move resolves the configured device names through `Screen.AllScreens`. The window keeps
 its size when it fits, is centered in the target work area, and receives the new restore position
-after the asynchronous minimize has settled. The minimized position is also moved, and the DWM
-transition is disabled for that restore, so the window does not fly in from the original screen.
+after the asynchronous minimize has settled. The minimized position is also moved, so the normal
+restore animation starts from the target screen instead of flying in from the old one.
 
 The restore hotkey uses a stack of minimized windows. A newly minimized window is pushed on top,
 old entries are pruned when their window or process is gone, and `Win+W` pops the newest live entry.

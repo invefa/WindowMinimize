@@ -25,7 +25,6 @@ internal static class Native {
     internal const int SW_FORCEMINIMIZE = 11;
 
     internal const int DWMWA_CLOAKED = 14;
-    internal const int DWMWA_TRANSITIONS_FORCEDISABLED = 3;
 
     internal const uint GA_ROOT = 2;
 
@@ -145,11 +144,6 @@ internal static class Native {
     [DllImport("dwmapi.dll")]
     internal static extern int DwmGetWindowAttribute(
         IntPtr hWnd, int attribute, out int value, int size
-    );
-
-    [DllImport("dwmapi.dll")]
-    internal static extern int DwmSetWindowAttribute(
-        IntPtr hWnd, int attribute, ref int value, int size
     );
 
     // low level keyboard hook
