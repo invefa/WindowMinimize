@@ -30,6 +30,11 @@ internal static class Native {
     internal const int WPF_SETMINPOSITION = 0x0001;
     internal const int HSHELL_GETMINRECT = 5;
 
+    internal const uint EVENT_SYSTEM_MINIMIZESTART = 0x0016;
+    internal const uint EVENT_SYSTEM_MINIMIZEEND = 0x0017;
+    internal const uint WINEVENT_OUTOFCONTEXT = 0x0000;
+    internal const uint WINEVENT_SKIPOWNPROCESS = 0x0002;
+
     internal const uint AW_ACTIVATE = 0x00020000;
     internal const uint AW_BLEND = 0x00080000;
 
@@ -175,7 +180,26 @@ internal static class Native {
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern bool AnimateWindow(IntPtr hWnd, int time, uint flags);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal delegate void WinEventDelegate(
+        IntPtr hook, uint eventType, IntPtr hwnd, int idObject, int idChild,
+        uint eventThread, uint eventTime
+    );
+
+    internal delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern IntPtr SetWinEventHook(
+        uint eventMin, uint eventMax, IntPtr module, WinEventDelegate callback,
+        uint processId, uint threadId, uint flags
+    );
+
+    [DllImport("user32.dll")]
+    internal static extern bool UnhookWinEvent(IntPtr hook);
+
+    [DllImport("user32.dll")]
+    internal static extern bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
     internal static extern bool RegisterShellHookWindow(IntPtr hWnd);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]

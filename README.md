@@ -74,6 +74,7 @@ RestoreHotkey=Win+W
 MonitorA=
 MonitorB=
 RestoreAnimation=native
+TrackAllMinimized=false
 Mode=minimize
 Language=auto
 NotifyStartup=true
@@ -90,6 +91,7 @@ Debug=false
 | MonitorA | empty | Device name of the first screen in the swap pair; empty chooses the primary screen |
 | MonitorB | empty | Device name of the second screen in the swap pair; empty chooses the first other screen |
 | RestoreAnimation | native | How a moved window is restored: `native` (move the minimized position and keep the native animation), `fade` (fade in at the target), `disable` (restore without a transition), or `default` (leave the native transition and its source position alone) |
+| TrackAllMinimized | false | When true, record minimized windows from every program and let `Win+W` restore them too |
 | Mode | minimize | `minimize` minimizes to the taskbar; `hide` hides the window directly |
 | Language | auto | Interface language: `auto` follows Windows, `en` or `zh` forces one; changing it in the settings dialog updates the tray immediately |
 | NotifyStartup | true | Show the balloon that confirms the hotkey at startup |
@@ -118,7 +120,7 @@ example when unpacked to `C:\Program Files`), it falls back to
 | Hidden windows | A submenu listing every window hidden with `hide`; selecting one restores it, and "Restore all hidden windows" restores the whole list. The entries live only in memory and are lost when the program exits |
 | Hotkey: xxx | Shows only the hotkey currently in effect |
 | Suspend hotkey / Resume hotkey | Temporarily disables it, handy while gaming or recording; hold Shift and click to suspend for 5 minutes and then resume automatically |
-| Settings... | Opens the dialog for the three hotkeys, the screen pair, the restore animation, the mode, the language and notification categories, the normal or elevated auto start and the debug log |
+| Settings... | Opens the dialog for the three hotkeys, the screen pair, the restore animation, all-window minimize tracking, the mode, the language and notification categories, the normal or elevated auto start and the debug log |
 | Open config file... | Opens `hotkey.ini` in Notepad |
 | Reload config | Reads it again manually; not needed normally |
 | Start with Windows | The master auto start switch. When ticked, the program starts with Windows using the normal Run entry; clear it to turn auto start off |
@@ -216,6 +218,10 @@ behavior; normal windows keep the native animation.
 The restore hotkey uses a stack of minimized windows. A newly minimized window is pushed on top,
 old entries are pruned when their window or process is gone, and `Win+W` pops the newest live entry.
 The stack lives in memory and is not persisted across restarts.
+
+With `TrackAllMinimized` enabled, a shell minimize event hook records windows minimized by any
+program, including taskbar clicks and Show Desktop. Already minimized windows are seeded when the
+option is enabled, and the same `Win+W` key pops the newest entry from that broader history.
 
 Hotkey actions are serialized. A screen move holds the queue until its delayed placement is done,
 and a restore holds it until the restore animation has finished, so fast repeated presses cannot

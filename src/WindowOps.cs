@@ -81,6 +81,17 @@ internal static class WindowOps {
         return ShellProcessNames.Contains(Native.GetProcessName(hwnd));
     }
 
+    /// <summary>
+    /// Whether a minimized window should enter the all-program history. Shell surfaces and
+    /// windows without a title are not useful Win+W targets.
+    /// </summary>
+    internal static bool IsTrackableMinimizedWindow(IntPtr hwnd, IntPtr selfHandle) {
+        if (hwnd == IntPtr.Zero || hwnd == selfHandle || !Native.IsWindow(hwnd)) return false;
+        if (Native.IsOwnProcessWindow(hwnd)) return false;
+        if (Native.GetWindowTitle(hwnd).Trim().Length == 0) return false;
+        return !IsShellSurface(hwnd);
+    }
+
     /// <summary>Bring back a window that was hidden with the hide mode.</summary>
     internal static bool Restore(IntPtr hwnd, string mode = "native") {
         if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
@@ -165,7 +176,8 @@ internal static class WindowOps {
         }
     }
 
-    internal static bool MoveToWorkArea(IntPtr hwnd, Rectangle work, bool setMinPosition) {        if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
+    internal static bool MoveToWorkArea(IntPtr hwnd, Rectangle work, bool setMinPosition) {
+        if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
 
         var placement = new Native.WINDOWPLACEMENT {
             Length = Marshal.SizeOf<Native.WINDOWPLACEMENT>(),

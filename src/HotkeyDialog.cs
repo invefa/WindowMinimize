@@ -14,6 +14,7 @@ internal sealed class HotkeyDialog : Form {
     private readonly ComboBox _monitorABox;
     private readonly ComboBox _monitorBBox;
     private readonly ComboBox _restoreAnimationBox;
+    private readonly CheckBox _trackAllMinimizedBox;
     private readonly RadioButton _minimizeRadio;
     private readonly RadioButton _hideRadio;
     private readonly CheckBox _autoStartBox;
@@ -42,6 +43,8 @@ internal sealed class HotkeyDialog : Form {
         3 => "default",
         _ => "native",
     };
+
+    internal bool TrackAllMinimized => _trackAllMinimizedBox.Checked;
 
     internal string Mode => _hideRadio.Checked ? "hide" : "minimize";
 
@@ -190,6 +193,13 @@ internal sealed class HotkeyDialog : Form {
             "disable" => 2,
             "default" => 3,
             _ => 0,
+        };
+
+        _trackAllMinimizedBox = new CheckBox {
+            Text = Strings.DialogTrackAllMinimized,
+            AutoSize = true,
+            Checked = config.TrackAllMinimized,
+            Margin = new Padding(0, 3, 0, 3),
         };
 
         var startupLabel = RowLabel(Strings.DialogStartup);
@@ -365,14 +375,15 @@ internal sealed class HotkeyDialog : Form {
         layout.Controls.Add(_monitorBBox, 1, 7);
         layout.Controls.Add(restoreAnimationLabel, 0, 8);
         layout.Controls.Add(_restoreAnimationBox, 1, 8);
-        layout.Controls.Add(startupLabel, 0, 9);
-        layout.Controls.Add(startupBoxes, 1, 9);
-        layout.Controls.Add(debugLabel, 0, 10);
-        layout.Controls.Add(_debugBox, 1, 10);
-        layout.Controls.Add(notificationsLabel, 0, 11);
-        layout.Controls.Add(notificationBoxes, 1, 11);
-        layout.Controls.Add(_hint, 1, 12);
-        layout.Controls.Add(buttonRow, 0, 13);
+        layout.Controls.Add(_trackAllMinimizedBox, 1, 9);
+        layout.Controls.Add(startupLabel, 0, 10);
+        layout.Controls.Add(startupBoxes, 1, 10);
+        layout.Controls.Add(debugLabel, 0, 11);
+        layout.Controls.Add(_debugBox, 1, 11);
+        layout.Controls.Add(notificationsLabel, 0, 12);
+        layout.Controls.Add(notificationBoxes, 1, 12);
+        layout.Controls.Add(_hint, 1, 13);
+        layout.Controls.Add(buttonRow, 0, 14);
         layout.SetColumnSpan(buttonRow, 2);
 
         Controls.Add(layout);

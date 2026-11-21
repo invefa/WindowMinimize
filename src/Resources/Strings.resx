@@ -100,6 +100,9 @@
   <data name="RestoreAnimationDefault" xml:space="preserve">
     <value>System default</value>
   </data>
+  <data name="DialogTrackAllMinimized" xml:space="preserve">
+    <value>Record minimized windows from all programs</value>
+  </data>
   <data name="MonitorDisplay" xml:space="preserve">
     <value>Display {0}: {1}x{2}</value>
   </data>

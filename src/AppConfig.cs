@@ -26,6 +26,9 @@ internal sealed class AppConfig {
     /// <summary>How a moved window is restored: native, fade, disable or default.</summary>
     internal string RestoreAnimation { get; set; } = "native";
 
+    /// <summary>Track minimized windows from every program, not only this tool's own actions.</summary>
+    internal bool TrackAllMinimized { get; set; }
+
     /// <summary>Whether the config file explicitly contains the move hotkey.</summary>
     internal bool MoveHotkeyConfigured { get; set; }
 

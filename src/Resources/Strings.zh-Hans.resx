@@ -99,6 +99,9 @@
   <data name="RestoreAnimationDefault" xml:space="preserve">
     <value>系统默认</value>
   </data>
+  <data name="DialogTrackAllMinimized" xml:space="preserve">
+    <value>记录所有程序的最小化窗口</value>
+  </data>
   <data name="MonitorDisplay" xml:space="preserve">
     <value>显示器 {0}：{1}x{2}</value>
   </data>

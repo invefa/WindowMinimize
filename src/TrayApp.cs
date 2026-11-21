@@ -32,6 +32,10 @@ internal sealed class TrayApp : ApplicationContext {
     private readonly System.Windows.Forms.Timer _suspendCountdown;
     private readonly List<HiddenWindow> _hiddenWindows = [];
     private readonly List<MinimizedWindow> _minimizedStack = [];
+    private readonly List<MinimizedWindow> _allMinimized = [];
+    private readonly object _allMinimizedLock = new();
+    private readonly Native.WinEventDelegate _minimizeEventProc;
+    private readonly IntPtr _minimizeEventHook;
     private readonly EventWaitHandle _showSettingsEvent;
     private readonly Thread _showSettingsThread;
     private readonly SemaphoreSlim _actionGate = new(1, 1);
@@ -66,6 +70,18 @@ internal sealed class TrayApp : ApplicationContext {
         _shellHookRegistered = Native.RegisterShellHookWindow(_window.Handle);
         if (!_shellHookRegistered) {
             Log.Info("shell hook registration failed, using placement-only animation");
+        }
+
+        _minimizeEventProc = OnMinimizeEvent;
+        _minimizeEventHook = Native.SetWinEventHook(
+            Native.EVENT_SYSTEM_MINIMIZESTART, Native.EVENT_SYSTEM_MINIMIZEEND,
+            IntPtr.Zero, _minimizeEventProc, 0, 0,
+            Native.WINEVENT_OUTOFCONTEXT | Native.WINEVENT_SKIPOWNPROCESS
+        );
+        if (_minimizeEventHook == IntPtr.Zero) {
+            Log.Info("minimize event hook registration failed, external minimizes are not tracked");
+        } else if (Config.TrackAllMinimized) {
+            SeedAllMinimized();
         }
         _source = new HotkeySource(_window.Handle, 0x574D);
         _source.Triggered += () => RunQueued(() => {
@@ -657,22 +673,105 @@ internal sealed class TrayApp : ApplicationContext {
         Native.GetWindowThreadProcessId(hwnd, out uint processId);
         _minimizedStack.RemoveAll(entry => entry.Handle == hwnd);
         _minimizedStack.Insert(0, new MinimizedWindow(hwnd, processId, moved));
+        if (Config.TrackAllMinimized) AddHistory(hwnd, moved);
         Log.Debug($"minimized window pushed: hwnd=0x{hwnd.ToInt64():X} pid={processId}");
+    }
+
+    private void AddHistory(IntPtr hwnd, bool moved) {
+        Native.GetWindowThreadProcessId(hwnd, out uint processId);
+        lock (_allMinimizedLock) {
+            MinimizedWindow? existing = _allMinimized.FirstOrDefault(
+                entry => entry.Handle == hwnd
+            );
+            if (existing is not null) {
+                moved |= existing.Moved;
+                _allMinimized.RemoveAll(entry => entry.Handle == hwnd);
+            }
+
+            _allMinimized.Insert(0, new MinimizedWindow(hwnd, processId, moved));
+        }
+
+        Log.Debug($"minimize history added: hwnd=0x{hwnd.ToInt64():X} pid={processId}");
+    }
+
+    private void RemoveHistory(IntPtr hwnd) {
+        lock (_allMinimizedLock) {
+            _allMinimized.RemoveAll(entry => entry.Handle == hwnd);
+        }
+    }
+
+    private MinimizedWindow? PopHistory() {
+        lock (_allMinimizedLock) {
+            if (_allMinimized.Count == 0) return null;
+            MinimizedWindow entry = _allMinimized[0];
+            _allMinimized.RemoveAt(0);
+            return entry;
+        }
+    }
+
+    private void OnMinimizeEvent(
+        IntPtr hook, uint eventType, IntPtr hwnd, int idObject, int idChild,
+        uint eventThread, uint eventTime
+    ) {
+        if (_disposed || hwnd == IntPtr.Zero) return;
+
+        if (eventType == Native.EVENT_SYSTEM_MINIMIZEEND) {
+            RemoveHistory(hwnd);
+            return;
+        }
+
+        if (eventType != Native.EVENT_SYSTEM_MINIMIZESTART) return;
+        if (!Config.TrackAllMinimized) return;
+        if (!WindowOps.IsTrackableMinimizedWindow(hwnd, _window.Handle)) return;
+        AddHistory(hwnd, moved: false);
+    }
+
+    private void SeedAllMinimized() {
+        var found = new List<IntPtr>();
+        Native.EnumWindowsProc callback = (hwnd, _) => {
+            if (Native.IsIconic(hwnd)
+                && WindowOps.IsTrackableMinimizedWindow(hwnd, _window.Handle)) {
+                found.Add(hwnd);
+            }
+            return true;
+        };
+        Native.EnumWindows(callback, IntPtr.Zero);
+
+        lock (_allMinimizedLock) {
+            foreach (IntPtr hwnd in found) {
+                if (_allMinimized.Any(entry => entry.Handle == hwnd)) continue;
+                Native.GetWindowThreadProcessId(hwnd, out uint processId);
+                _allMinimized.Add(new MinimizedWindow(hwnd, processId, false));
+            }
+        }
+
+        Log.Debug($"minimize history seeded with {found.Count} windows");
     }
 
     /// <summary>Pop the most recent minimized window that is still alive and restore it.</summary>
     internal async Task RestoreLastMinimized() {
-        while (_minimizedStack.Count > 0) {
-            MinimizedWindow entry = _minimizedStack[0];
-            _minimizedStack.RemoveAt(0);
+        while (true) {
+            MinimizedWindow? entry;
+            if (Config.TrackAllMinimized) {
+                entry = PopHistory();
+            } else if (_minimizedStack.Count > 0) {
+                entry = _minimizedStack[0];
+                _minimizedStack.RemoveAt(0);
+            } else {
+                entry = null;
+            }
+
+            if (entry is null) break;
             if (!Native.IsWindow(entry.Handle)) continue;
 
             Native.GetWindowThreadProcessId(entry.Handle, out uint processId);
-            if (processId != entry.ProcessId) continue;
+            if (processId != entry.ProcessId || !Native.IsIconic(entry.Handle)) continue;
 
             string mode = entry.Moved ? Config.RestoreAnimation : "native";
             if (WindowOps.Restore(entry.Handle, mode)) {
                 _minimizeRects.TryRemove(entry.Handle, out _);
+                RemoveHistory(entry.Handle);
+                _minimizedStack.RemoveAll(item => item.Handle == entry.Handle);
                 Log.Debug($"restored minimized window: hwnd=0x{entry.Handle.ToInt64():X}");
                 // let one restore animation finish before the next queued hotkey restores another
                 await Task.Delay(220).ConfigureAwait(true);
@@ -840,6 +939,9 @@ internal sealed class TrayApp : ApplicationContext {
             Config.MonitorA = dialog.MonitorA;
             Config.MonitorB = dialog.MonitorB;
             Config.RestoreAnimation = dialog.RestoreAnimation;
+            bool wasTrackingAll = Config.TrackAllMinimized;
+            Config.TrackAllMinimized = dialog.TrackAllMinimized;
+            if (!wasTrackingAll && Config.TrackAllMinimized) SeedAllMinimized();
             Config.Mode = dialog.Mode;
             Config.NotifyStartup = dialog.NotifyStartup;
             Config.NotifyErrors = dialog.NotifyErrors;
@@ -885,6 +987,9 @@ internal sealed class TrayApp : ApplicationContext {
             text = SetIniValue(text, "MonitorA", Config.MonitorA);
             text = SetIniValue(text, "MonitorB", Config.MonitorB);
             text = SetIniValue(text, "RestoreAnimation", Config.RestoreAnimation);
+            text = SetIniValue(
+                text, "TrackAllMinimized", Config.TrackAllMinimized ? "true" : "false"
+            );
             text = SetIniValue(text, "Mode", Config.Mode);
             text = SetIniValue(text, "Language", Config.Language);
             text = SetIniValue(
@@ -964,6 +1069,7 @@ internal sealed class TrayApp : ApplicationContext {
             _source.Dispose();
             _moveSource.Dispose();
             _restoreSource.Dispose();
+            if (_minimizeEventHook != IntPtr.Zero) Native.UnhookWinEvent(_minimizeEventHook);
             if (_shellHookRegistered) Native.DeregisterShellHookWindow(_window.Handle);
             _icon.Visible = false;
             _icon.Dispose();
