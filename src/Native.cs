@@ -28,6 +28,7 @@ internal static class Native {
     internal const int DWMWA_TRANSITIONS_FORCEDISABLED = 3;
 
     internal const int WPF_SETMINPOSITION = 0x0001;
+    internal const int HSHELL_GETMINRECT = 5;
 
     internal const uint AW_ACTIVATE = 0x00020000;
     internal const uint AW_BLEND = 0x00080000;
@@ -51,6 +52,20 @@ internal static class Native {
     internal struct POINT {
         internal int X;
         internal int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SHELLHOOKRECT {
+        internal short Left;
+        internal short Top;
+        internal short Right;
+        internal short Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SHELLHOOKINFO {
+        internal IntPtr Hwnd;
+        internal SHELLHOOKRECT Rect;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -159,6 +174,15 @@ internal static class Native {
 
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern bool AnimateWindow(IntPtr hWnd, int time, uint flags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern bool RegisterShellHookWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern bool DeregisterShellHookWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern uint RegisterWindowMessage(string message);
 
     // low level keyboard hook
     internal delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);

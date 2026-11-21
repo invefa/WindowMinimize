@@ -11,7 +11,8 @@ All notable changes to WindowMinimize. Versions follow SemVer.
 - Screen A and Screen B selection for the move action, with a swap behavior between the pair.
 - A minimized-window stack backing the restore hotkey; closed windows are pruned on pop.
 - A restore-animation choice for moved windows: native, target fade, transition-free, or untouched
-  system default. The native path moves `ptMinPosition` with `WPF_SETMINPOSITION`.
+  system default. The native path moves `ptMinPosition` with `WPF_SETMINPOSITION` and handles
+  `HSHELL_GETMINRECT`, so the shell animation targets the new screen.
 - The three hotkey actions are serialized, so fast repeated presses cannot interleave a screen
   move with a restore.
 - Moved windows fade in at the target screen instead of using Windows' cross-screen native

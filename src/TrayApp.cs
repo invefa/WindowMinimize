@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -34,6 +35,9 @@ internal sealed class TrayApp : ApplicationContext {
     private readonly EventWaitHandle _showSettingsEvent;
     private readonly Thread _showSettingsThread;
     private readonly SemaphoreSlim _actionGate = new(1, 1);
+    private readonly ConcurrentDictionary<IntPtr, Rectangle> _minimizeRects = new();
+    private readonly uint _shellHookMessage;
+    private bool _shellHookRegistered;
     private ConfigStore.Watcher? _watcher;
     private HotkeySpec? _spec;
     private HotkeySpec? _moveSpec;
@@ -57,6 +61,12 @@ internal sealed class TrayApp : ApplicationContext {
 
         _window = new MessageWindow();
         _window.MessageReceived += HandleHotkeyMessage;
+        _shellHookMessage = Native.RegisterWindowMessage("SHELLHOOK");
+        _window.ShellMessage = HandleShellMessage;
+        _shellHookRegistered = Native.RegisterShellHookWindow(_window.Handle);
+        if (!_shellHookRegistered) {
+            Log.Info("shell hook registration failed, using placement-only animation");
+        }
         _source = new HotkeySource(_window.Handle, 0x574D);
         _source.Triggered += () => RunQueued(() => {
             MinimizeForeground();
@@ -234,6 +244,28 @@ internal sealed class TrayApp : ApplicationContext {
         } finally {
             _actionGate.Release();
         }
+    }
+
+    private bool HandleShellMessage(int msg, IntPtr wParam, IntPtr lParam) {
+        if (msg != _shellHookMessage || lParam == IntPtr.Zero) return false;
+        if ((wParam.ToInt32() & 0x7FFF) != Native.HSHELL_GETMINRECT) return false;
+
+        var info = Marshal.PtrToStructure<Native.SHELLHOOKINFO>(lParam);
+        if (!_minimizeRects.TryGetValue(info.Hwnd, out Rectangle work)) return false;
+
+        // point the shell animation at the target taskbar area instead of the old monitor
+        info.Rect = new Native.SHELLHOOKRECT {
+            Left = (short)work.Left,
+            Top = (short)(work.Bottom - 2),
+            Right = (short)(work.Left + 2),
+            Bottom = (short)work.Bottom,
+        };
+        Marshal.StructureToPtr(info, lParam, false);
+        Log.Debug(
+            $"shell animation target: hwnd=0x{info.Hwnd.ToInt64():X} "
+            + $"rect={work.Left},{work.Bottom}"
+        );
+        return true;
     }
 
     private void WaitForShowSettingsRequest() {
@@ -499,6 +531,7 @@ internal sealed class TrayApp : ApplicationContext {
             return;
         }
 
+        _minimizeRects.TryRemove(hwnd, out _);
         WindowOps.MinimizeResult result = WindowOps.MinimizeWithRetry(hwnd, Config.Mode);
 
         if (result.AccessDenied) {
@@ -533,6 +566,11 @@ internal sealed class TrayApp : ApplicationContext {
         }
 
         Screen target = ResolveMoveTarget(Screen.FromHandle(hwnd));
+        if (Config.RestoreAnimation.Equals("native", StringComparison.OrdinalIgnoreCase)) {
+            _minimizeRects[hwnd] = target.WorkingArea;
+        } else {
+            _minimizeRects.TryRemove(hwnd, out _);
+        }
         WindowOps.MinimizeResult result = WindowOps.MinimizeWithRetry(hwnd, "minimize");
 
         if (result.AccessDenied) {
@@ -545,7 +583,10 @@ internal sealed class TrayApp : ApplicationContext {
             _elevatedNoticeShown = false;
         }
 
-        if (!result.Minimized) return;
+        if (!result.Minimized) {
+            _minimizeRects.TryRemove(hwnd, out _);
+            return;
+        }
 
         PushMinimized(hwnd, moved: true);
         bool setMinPosition = !Config.RestoreAnimation.Equals(
@@ -625,6 +666,7 @@ internal sealed class TrayApp : ApplicationContext {
             if (processId != entry.ProcessId) continue;
 
             string mode = entry.Moved ? Config.RestoreAnimation : "native";
+            _minimizeRects.TryRemove(entry.Handle, out _);
             if (WindowOps.Restore(entry.Handle, mode)) {
                 Log.Debug($"restored minimized window: hwnd=0x{entry.Handle.ToInt64():X}");
                 // let one restore animation finish before the next queued hotkey restores another
@@ -917,6 +959,7 @@ internal sealed class TrayApp : ApplicationContext {
             _source.Dispose();
             _moveSource.Dispose();
             _restoreSource.Dispose();
+            if (_shellHookRegistered) Native.DeregisterShellHookWindow(_window.Handle);
             _icon.Visible = false;
             _icon.Dispose();
             _window.DestroyHandle();
@@ -944,8 +987,14 @@ internal sealed class TrayApp : ApplicationContext {
         }
 
         internal event Action<int, IntPtr>? MessageReceived;
+        internal Func<int, IntPtr, IntPtr, bool>? ShellMessage;
 
         protected override void WndProc(ref Message m) {
+            if (ShellMessage is not null && ShellMessage(m.Msg, m.WParam, m.LParam)) {
+                m.Result = new IntPtr(1);
+                return;
+            }
+
             MessageReceived?.Invoke(m.Msg, m.WParam);
             base.WndProc(ref m);
         }

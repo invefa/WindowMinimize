@@ -208,9 +208,10 @@ unregister the other two, and a failed registration restores that hotkey's previ
 The screen move resolves the configured device names through `Screen.AllScreens`. The window keeps
 its size when it fits, is centered in the target work area, and receives the new restore position
 after the asynchronous minimize has settled. The minimized position is moved with the
-`WPF_SETMINPOSITION` flag, which lets Windows start the native restore animation on the target
-screen. The settings dialog also offers a target fade, a transition-free restore, or the untouched
-system behavior; normal windows keep the native animation.
+`WPF_SETMINPOSITION` flag. In native mode the program also handles `HSHELL_GETMINRECT` through
+`RegisterShellHookWindow`, so the shell animation target is the target screen instead of the old
+taskbar button. The settings dialog also offers a target fade, a transition-free restore, or the
+untouched system behavior; normal windows keep the native animation.
 
 The restore hotkey uses a stack of minimized windows. A newly minimized window is pushed on top,
 old entries are pruned when their window or process is gone, and `Win+W` pops the newest live entry.
