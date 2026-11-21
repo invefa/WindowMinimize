@@ -25,6 +25,10 @@ internal static class Native {
     internal const int SW_FORCEMINIMIZE = 11;
 
     internal const int DWMWA_CLOAKED = 14;
+    internal const int DWMWA_TRANSITIONS_FORCEDISABLED = 3;
+
+    internal const uint AW_ACTIVATE = 0x00020000;
+    internal const uint AW_BLEND = 0x00080000;
 
     internal const uint GA_ROOT = 2;
 
@@ -145,6 +149,14 @@ internal static class Native {
     internal static extern int DwmGetWindowAttribute(
         IntPtr hWnd, int attribute, out int value, int size
     );
+
+    [DllImport("dwmapi.dll")]
+    internal static extern int DwmSetWindowAttribute(
+        IntPtr hWnd, int attribute, ref int value, int size
+    );
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern bool AnimateWindow(IntPtr hWnd, int time, uint flags);
 
     // low level keyboard hook
     internal delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);

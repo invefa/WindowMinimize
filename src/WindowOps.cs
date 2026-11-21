@@ -80,13 +80,48 @@ internal static class WindowOps {
     }
 
     /// <summary>Bring back a window that was hidden with the hide mode.</summary>
-    internal static bool Restore(IntPtr hwnd) {
+    internal static bool Restore(IntPtr hwnd, bool moved = false) {
         if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
 
+        if (!moved) {
+            Native.ShowWindowAsync(hwnd, Native.SW_RESTORE);
+            Native.SetForegroundWindow(hwnd);
+            Log.Debug($"window restored: hwnd=0x{hwnd.ToInt64():X}");
+            return true;
+        }
+
+        // The native restore transition remembers the taskbar button on the old screen, even when
+        // the placement points at the target screen. Disable that transition and fade the window
+        // in at its target position instead.
+        SetTransitions(hwnd, true);
         Native.ShowWindowAsync(hwnd, Native.SW_RESTORE);
+        Native.ShowWindowAsync(hwnd, Native.SW_HIDE);
+        bool animated = Native.AnimateWindow(
+            hwnd, 180, Native.AW_ACTIVATE | Native.AW_BLEND
+        );
+        if (!animated) Native.ShowWindowAsync(hwnd, Native.SW_SHOW);
+
         Native.SetForegroundWindow(hwnd);
-        Log.Debug($"window restored: hwnd=0x{hwnd.ToInt64():X}");
+        Log.Debug(
+            $"window restored on target with animation: hwnd=0x{hwnd.ToInt64():X} "
+            + $"animated={animated}"
+        );
+        _ = Task.Run(async () => {
+            await Task.Delay(300).ConfigureAwait(false);
+            if (Native.IsWindow(hwnd)) SetTransitions(hwnd, false);
+        });
         return true;
+    }
+
+    private static void SetTransitions(IntPtr hwnd, bool disabled) {
+        int value = disabled ? 1 : 0;
+        try {
+            Native.DwmSetWindowAttribute(
+                hwnd, Native.DWMWA_TRANSITIONS_FORCEDISABLED, ref value, sizeof(int)
+            );
+        } catch {
+            // DWM is optional, a missing animation attribute is not fatal
+        }
     }
 
     /// <summary>
