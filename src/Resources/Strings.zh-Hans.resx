@@ -84,6 +84,21 @@
   <data name="DialogMonitorB" xml:space="preserve">
     <value>屏幕 B</value>
   </data>
+  <data name="DialogRestoreAnimation" xml:space="preserve">
+    <value>还原动效</value>
+  </data>
+  <data name="RestoreAnimationNative" xml:space="preserve">
+    <value>原生动画</value>
+  </data>
+  <data name="RestoreAnimationFade" xml:space="preserve">
+    <value>目标屏幕淡入</value>
+  </data>
+  <data name="RestoreAnimationDisable" xml:space="preserve">
+    <value>关闭过渡动画</value>
+  </data>
+  <data name="RestoreAnimationDefault" xml:space="preserve">
+    <value>系统默认</value>
+  </data>
   <data name="MonitorDisplay" xml:space="preserve">
     <value>显示器 {0}：{1}x{2}</value>
   </data>

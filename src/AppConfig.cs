@@ -23,6 +23,9 @@ internal sealed class AppConfig {
     /// <summary>Device name of the second screen in the swap pair; empty chooses the first other screen.</summary>
     internal string MonitorB { get; set; } = string.Empty;
 
+    /// <summary>How a moved window is restored: native, fade, disable or default.</summary>
+    internal string RestoreAnimation { get; set; } = "native";
+
     /// <summary>Whether the config file explicitly contains the move hotkey.</summary>
     internal bool MoveHotkeyConfigured { get; set; }
 

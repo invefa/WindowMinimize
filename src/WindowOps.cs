@@ -80,36 +80,39 @@ internal static class WindowOps {
     }
 
     /// <summary>Bring back a window that was hidden with the hide mode.</summary>
-    internal static bool Restore(IntPtr hwnd, bool moved = false) {
+    internal static bool Restore(IntPtr hwnd, string mode = "native") {
         if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
 
-        if (!moved) {
+        bool fade = mode.Equals("fade", StringComparison.OrdinalIgnoreCase);
+        bool disable = mode.Equals("disable", StringComparison.OrdinalIgnoreCase);
+        if (fade || disable) SetTransitions(hwnd, true);
+
+        if (fade) {
+            // The native transition remembers the taskbar button on the old screen. Restore
+            // without it, then show the window with a short fade at its target position.
             Native.ShowWindowAsync(hwnd, Native.SW_RESTORE);
-            Native.SetForegroundWindow(hwnd);
-            Log.Debug($"window restored: hwnd=0x{hwnd.ToInt64():X}");
-            return true;
+            Native.ShowWindowAsync(hwnd, Native.SW_HIDE);
+            bool animated = Native.AnimateWindow(
+                hwnd, 180, Native.AW_ACTIVATE | Native.AW_BLEND
+            );
+            if (!animated) Native.ShowWindowAsync(hwnd, Native.SW_SHOW);
+            Log.Debug(
+                $"window restored on target with fade: hwnd=0x{hwnd.ToInt64():X} "
+                + $"animated={animated}"
+            );
+        } else {
+            Native.ShowWindowAsync(hwnd, Native.SW_RESTORE);
+            Log.Debug($"window restored: hwnd=0x{hwnd.ToInt64():X} mode={mode}");
         }
 
-        // The native restore transition remembers the taskbar button on the old screen, even when
-        // the placement points at the target screen. Disable that transition and fade the window
-        // in at its target position instead.
-        SetTransitions(hwnd, true);
-        Native.ShowWindowAsync(hwnd, Native.SW_RESTORE);
-        Native.ShowWindowAsync(hwnd, Native.SW_HIDE);
-        bool animated = Native.AnimateWindow(
-            hwnd, 180, Native.AW_ACTIVATE | Native.AW_BLEND
-        );
-        if (!animated) Native.ShowWindowAsync(hwnd, Native.SW_SHOW);
-
         Native.SetForegroundWindow(hwnd);
-        Log.Debug(
-            $"window restored on target with animation: hwnd=0x{hwnd.ToInt64():X} "
-            + $"animated={animated}"
-        );
-        _ = Task.Run(async () => {
-            await Task.Delay(300).ConfigureAwait(false);
-            if (Native.IsWindow(hwnd)) SetTransitions(hwnd, false);
-        });
+        if (fade || disable) {
+            _ = Task.Run(async () => {
+                await Task.Delay(300).ConfigureAwait(false);
+                if (Native.IsWindow(hwnd)) SetTransitions(hwnd, false);
+            });
+        }
+
         return true;
     }
 
@@ -128,7 +131,7 @@ internal static class WindowOps {
     /// Move the restore position of a window into the target work area. The size is kept when it
     /// fits, and a minimized window is not shown by this call.
     /// </summary>
-    internal static bool MoveToWorkArea(IntPtr hwnd, Rectangle work) {
+    internal static bool MoveToWorkArea(IntPtr hwnd, Rectangle work, bool setMinPosition) {
         if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
 
         var placement = new Native.WINDOWPLACEMENT {
@@ -156,11 +159,17 @@ internal static class WindowOps {
             Bottom = top + height,
         };
         // The restore animation starts from the minimized position. Move that point to the target
-        // screen as well, otherwise the window flies in from the old monitor.
-        placement.MinPosition = new Native.POINT {
-            X = work.Left,
-            Y = work.Bottom,
-        };
+        // screen as well, otherwise the window flies in from the old monitor. WPF_SETMINPOSITION
+        // is required or Windows ignores ptMinPosition.
+        if (setMinPosition) {
+            placement.Flags |= Native.WPF_SETMINPOSITION;
+            placement.MinPosition = new Native.POINT {
+                X = work.Left,
+                Y = work.Bottom,
+            };
+        } else {
+            placement.Flags &= ~Native.WPF_SETMINPOSITION;
+        }
 
         bool moved = Native.SetWindowPlacement(hwnd, ref placement);
         if (!Native.IsIconic(hwnd) && !Native.IsZoomed(hwnd)) {

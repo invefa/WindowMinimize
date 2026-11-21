@@ -85,6 +85,21 @@
   <data name="DialogMonitorB" xml:space="preserve">
     <value>Screen B</value>
   </data>
+  <data name="DialogRestoreAnimation" xml:space="preserve">
+    <value>Restore animation</value>
+  </data>
+  <data name="RestoreAnimationNative" xml:space="preserve">
+    <value>Native</value>
+  </data>
+  <data name="RestoreAnimationFade" xml:space="preserve">
+    <value>Fade at target</value>
+  </data>
+  <data name="RestoreAnimationDisable" xml:space="preserve">
+    <value>Disable transition</value>
+  </data>
+  <data name="RestoreAnimationDefault" xml:space="preserve">
+    <value>System default</value>
+  </data>
   <data name="MonitorDisplay" xml:space="preserve">
     <value>Display {0}: {1}x{2}</value>
   </data>

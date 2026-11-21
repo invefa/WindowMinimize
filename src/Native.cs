@@ -27,6 +27,8 @@ internal static class Native {
     internal const int DWMWA_CLOAKED = 14;
     internal const int DWMWA_TRANSITIONS_FORCEDISABLED = 3;
 
+    internal const int WPF_SETMINPOSITION = 0x0001;
+
     internal const uint AW_ACTIVATE = 0x00020000;
     internal const uint AW_BLEND = 0x00080000;
 

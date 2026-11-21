@@ -548,14 +548,19 @@ internal sealed class TrayApp : ApplicationContext {
         if (!result.Minimized) return;
 
         PushMinimized(hwnd, moved: true);
-        await MoveToScreenAfterMinimize(hwnd, target);
+        bool setMinPosition = !Config.RestoreAnimation.Equals(
+            "default", StringComparison.OrdinalIgnoreCase
+        );
+        await MoveToScreenAfterMinimize(hwnd, target, setMinPosition);
     }
 
     /// <summary>
     /// The minimize call is asynchronous and can overwrite the restore position for a short while.
     /// Wait for it to settle, then move the window so a later restore lands on the target screen.
     /// </summary>
-    private static async Task MoveToScreenAfterMinimize(IntPtr hwnd, Screen target) {
+    private static async Task MoveToScreenAfterMinimize(
+        IntPtr hwnd, Screen target, bool setMinPosition
+    ) {
         for (int i = 0; i < 20; i++) {
             if (!Native.IsWindow(hwnd)) return;
             if (Native.IsIconic(hwnd)) {
@@ -564,7 +569,9 @@ internal sealed class TrayApp : ApplicationContext {
                 await Task.Delay(350).ConfigureAwait(false);
                 if (!Native.IsWindow(hwnd) || !Native.IsIconic(hwnd)) return;
 
-                bool moved = WindowOps.MoveToWorkArea(hwnd, target.WorkingArea);
+                bool moved = WindowOps.MoveToWorkArea(
+                    hwnd, target.WorkingArea, setMinPosition
+                );
                 Log.Debug(
                     $"move after minimize: hwnd=0x{hwnd.ToInt64():X} "
                     + $"target={target.DeviceName} moved={moved}"
@@ -617,7 +624,8 @@ internal sealed class TrayApp : ApplicationContext {
             Native.GetWindowThreadProcessId(entry.Handle, out uint processId);
             if (processId != entry.ProcessId) continue;
 
-            if (WindowOps.Restore(entry.Handle, moved: entry.Moved)) {
+            string mode = entry.Moved ? Config.RestoreAnimation : "native";
+            if (WindowOps.Restore(entry.Handle, mode)) {
                 Log.Debug($"restored minimized window: hwnd=0x{entry.Handle.ToInt64():X}");
                 // let one restore animation finish before the next queued hotkey restores another
                 await Task.Delay(220).ConfigureAwait(true);
@@ -784,6 +792,7 @@ internal sealed class TrayApp : ApplicationContext {
             Config.RestoreHotkey = dialog.RestoreHotkeyText;
             Config.MonitorA = dialog.MonitorA;
             Config.MonitorB = dialog.MonitorB;
+            Config.RestoreAnimation = dialog.RestoreAnimation;
             Config.Mode = dialog.Mode;
             Config.NotifyStartup = dialog.NotifyStartup;
             Config.NotifyErrors = dialog.NotifyErrors;
@@ -828,6 +837,7 @@ internal sealed class TrayApp : ApplicationContext {
             text = SetIniValue(text, "RestoreHotkey", Config.RestoreHotkey);
             text = SetIniValue(text, "MonitorA", Config.MonitorA);
             text = SetIniValue(text, "MonitorB", Config.MonitorB);
+            text = SetIniValue(text, "RestoreAnimation", Config.RestoreAnimation);
             text = SetIniValue(text, "Mode", Config.Mode);
             text = SetIniValue(text, "Language", Config.Language);
             text = SetIniValue(

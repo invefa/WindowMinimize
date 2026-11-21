@@ -64,6 +64,11 @@ internal static class Strings {
     internal static string DialogRestoreHotkey => Get(nameof(DialogRestoreHotkey));
     internal static string DialogMonitorA   => Get(nameof(DialogMonitorA));
     internal static string DialogMonitorB   => Get(nameof(DialogMonitorB));
+    internal static string DialogRestoreAnimation => Get(nameof(DialogRestoreAnimation));
+    internal static string RestoreAnimationNative => Get(nameof(RestoreAnimationNative));
+    internal static string RestoreAnimationFade => Get(nameof(RestoreAnimationFade));
+    internal static string RestoreAnimationDisable => Get(nameof(RestoreAnimationDisable));
+    internal static string RestoreAnimationDefault => Get(nameof(RestoreAnimationDefault));
     internal static string MonitorPrimary   => Get(nameof(MonitorPrimary));
     internal static string DialogSyntaxHint => Get(nameof(DialogSyntaxHint));
     internal static string DialogMode       => Get(nameof(DialogMode));

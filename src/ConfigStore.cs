@@ -121,6 +121,7 @@ internal static class ConfigStore {
         ; RestoreHotkey   restore the most recently minimized window
         ; MonitorA        first screen device name for the swap pair, empty chooses the primary
         ; MonitorB        second screen device name for the swap pair, empty chooses the first other
+        ; RestoreAnimation  native, fade, disable or default
         ; Mode       minimize = minimize to the taskbar (default), hide = hide the window
         ; AutoStart  start with Windows, true or false to take effect, leave the line out to keep
         ;            the registry untouched
@@ -136,6 +137,7 @@ internal static class ConfigStore {
         RestoreHotkey=Win+W
         MonitorA=
         MonitorB=
+        RestoreAnimation=native
         Mode=minimize
         Language=auto
         NotifyStartup=true
@@ -202,6 +204,10 @@ internal static class ConfigStore {
                     config.MonitorB = value;
                     break;
 
+                case "restoreanimation":
+                    config.RestoreAnimation = value;
+                    break;
+
                 case "autostart":
                 case "minimizetotray":
                     config.AutoStart = ParseBool(value, config.AutoStart ?? true);
@@ -258,7 +264,16 @@ internal static class ConfigStore {
 
         config.Mode = config.Mode.ToLowerInvariant();
         config.Language = NormalizeLanguage(config.Language);
+        config.RestoreAnimation = NormalizeRestoreAnimation(config.RestoreAnimation);
     }
+
+    private static string NormalizeRestoreAnimation(string value) =>
+        value.Trim().ToLowerInvariant() switch {
+            "fade" => "fade",
+            "disable" or "none" => "disable",
+            "default" => "default",
+            _ => "native",
+        };
 
     private static string NormalizeLanguage(string value) =>
         value.Trim().ToLowerInvariant() switch {

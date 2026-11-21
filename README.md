@@ -73,6 +73,7 @@ MoveHotkey=Win+S
 RestoreHotkey=Win+W
 MonitorA=
 MonitorB=
+RestoreAnimation=native
 Mode=minimize
 Language=auto
 NotifyStartup=true
@@ -88,6 +89,7 @@ Debug=false
 | RestoreHotkey | Win+W | Restores the most recently minimized window |
 | MonitorA | empty | Device name of the first screen in the swap pair; empty chooses the primary screen |
 | MonitorB | empty | Device name of the second screen in the swap pair; empty chooses the first other screen |
+| RestoreAnimation | native | How a moved window is restored: `native` (move the minimized position and keep the native animation), `fade` (fade in at the target), `disable` (restore without a transition), or `default` (leave the native transition and its source position alone) |
 | Mode | minimize | `minimize` minimizes to the taskbar; `hide` hides the window directly |
 | Language | auto | Interface language: `auto` follows Windows, `en` or `zh` forces one; changing it in the settings dialog updates the tray immediately |
 | NotifyStartup | true | Show the balloon that confirms the hotkey at startup |
@@ -116,7 +118,7 @@ example when unpacked to `C:\Program Files`), it falls back to
 | Hidden windows | A submenu listing every window hidden with `hide`; selecting one restores it, and "Restore all hidden windows" restores the whole list. The entries live only in memory and are lost when the program exits |
 | Hotkey: xxx | Shows only the hotkey currently in effect |
 | Suspend hotkey / Resume hotkey | Temporarily disables it, handy while gaming or recording; hold Shift and click to suspend for 5 minutes and then resume automatically |
-| Settings... | Opens the dialog for the three hotkeys, the screen pair, the mode, the language and notification categories, the normal or elevated auto start and the debug log |
+| Settings... | Opens the dialog for the three hotkeys, the screen pair, the restore animation, the mode, the language and notification categories, the normal or elevated auto start and the debug log |
 | Open config file... | Opens `hotkey.ini` in Notepad |
 | Reload config | Reads it again manually; not needed normally |
 | Start with Windows | The master auto start switch. When ticked, the program starts with Windows using the normal Run entry; clear it to turn auto start off |
@@ -205,9 +207,10 @@ unregister the other two, and a failed registration restores that hotkey's previ
 
 The screen move resolves the configured device names through `Screen.AllScreens`. The window keeps
 its size when it fits, is centered in the target work area, and receives the new restore position
-after the asynchronous minimize has settled. The minimized position is also moved. A window moved
-this way fades in at the target screen instead of using Windows' cross-screen native transition;
-windows minimized normally keep the native animation.
+after the asynchronous minimize has settled. The minimized position is moved with the
+`WPF_SETMINPOSITION` flag, which lets Windows start the native restore animation on the target
+screen. The settings dialog also offers a target fade, a transition-free restore, or the untouched
+system behavior; normal windows keep the native animation.
 
 The restore hotkey uses a stack of minimized windows. A newly minimized window is pushed on top,
 old entries are pruned when their window or process is gone, and `Win+W` pops the newest live entry.
