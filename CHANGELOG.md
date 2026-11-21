@@ -24,6 +24,11 @@ All notable changes to WindowMinimize. Versions follow SemVer.
 - Starting a second copy now opens the running instance's settings instead of showing an
   "already running" message.
 
+### Fixed
+
+- The background minimize retry is cancelled when a window is restored, so a fast `Win+Q` followed
+  by `Win+W` no longer minimizes the window again.
+
 ## 1.2.2 - 2026-10-19
 
 A fix release for hidden-window tracking.

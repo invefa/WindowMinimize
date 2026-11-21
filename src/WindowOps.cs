@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -9,6 +10,7 @@ namespace WindowMinimize;
 /// </summary>
 internal static class WindowOps {
     private const int ErrorAccessDenied = 5;
+    private static readonly ConcurrentDictionary<IntPtr, long> RetryTokens = new();
 
     /// <summary>Outcome of one minimize attempt.</summary>
     internal readonly record struct MinimizeResult(bool Minimized, bool AccessDenied);
@@ -82,6 +84,9 @@ internal static class WindowOps {
     /// <summary>Bring back a window that was hidden with the hide mode.</summary>
     internal static bool Restore(IntPtr hwnd, string mode = "native") {
         if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
+
+        // a pending "did the first minimize work?" retry must not fire after a restore
+        CancelMinimizeRetry(hwnd);
 
         bool fade = mode.Equals("fade", StringComparison.OrdinalIgnoreCase);
         bool disable = mode.Equals("disable", StringComparison.OrdinalIgnoreCase);
@@ -235,8 +240,10 @@ internal static class WindowOps {
 
         if (mode.Equals("hide", StringComparison.OrdinalIgnoreCase)) return result;
 
+        long token = NextRetryToken(hwnd);
         _ = Task.Run(async () => {
             await Task.Delay(350).ConfigureAwait(false);
+            if (!IsRetryCurrent(hwnd, token)) return;
             if (!Native.IsWindow(hwnd) || Native.IsIconic(hwnd)) return;
 
             Log.Debug($"first minimize had no effect, retrying: hwnd=0x{hwnd.ToInt64():X}");
@@ -244,15 +251,28 @@ internal static class WindowOps {
             Native.ShowWindowAsync(hwnd, Native.SW_SHOWMINIMIZED);
 
             await Task.Delay(300).ConfigureAwait(false);
+            if (!IsRetryCurrent(hwnd, token)) return;
             if (Native.IsWindow(hwnd) && !Native.IsIconic(hwnd)) {
                 Log.Debug("retry did not minimize it either, forcing the foreground window");
                 Native.SetForegroundWindow(hwnd);
                 await Task.Delay(80).ConfigureAwait(false);
-                Native.ShowWindowAsync(hwnd, Native.SW_FORCEMINIMIZE);
+                if (IsRetryCurrent(hwnd, token)) {
+                    Native.ShowWindowAsync(hwnd, Native.SW_FORCEMINIMIZE);
+                }
             }
         });
 
         return result;
+    }
+
+    private static long NextRetryToken(IntPtr hwnd) =>
+        RetryTokens.AddOrUpdate(hwnd, 1, (_, current) => current + 1);
+
+    private static bool IsRetryCurrent(IntPtr hwnd, long token) =>
+        RetryTokens.TryGetValue(hwnd, out long current) && current == token;
+
+    internal static void CancelMinimizeRetry(IntPtr hwnd) {
+        if (hwnd != IntPtr.Zero) NextRetryToken(hwnd);
     }
 
     private static bool SendSystemCommand(IntPtr hwnd, int command) {

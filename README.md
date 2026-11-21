@@ -218,7 +218,8 @@ The stack lives in memory and is not persisted across restarts.
 
 Hotkey actions are serialized. A screen move holds the queue until its delayed placement is done,
 and a restore holds it until the restore animation has finished, so fast repeated presses cannot
-interleave two operations.
+interleave two operations. Restoring also cancels the background minimize retry for that window, so
+a quick `Win+W` cannot be undone by the delayed retry.
 
 A second launch does not show an error box. It creates or opens a named event that the first
 instance waits on, and the first instance opens its settings dialog. A window-message fallback is
