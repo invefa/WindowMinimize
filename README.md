@@ -213,6 +213,10 @@ The restore hotkey uses a stack of minimized windows. A newly minimized window i
 old entries are pruned when their window or process is gone, and `Win+W` pops the newest live entry.
 The stack lives in memory and is not persisted across restarts.
 
+Hotkey actions are serialized. A screen move holds the queue until its delayed placement is done,
+and a restore holds it until the restore animation has finished, so fast repeated presses cannot
+interleave two operations.
+
 A second launch does not show an error box. It creates or opens a named event that the first
 instance waits on, and the first instance opens its settings dialog. A window-message fallback is
 used when the event cannot be opened.

@@ -33,6 +33,7 @@ internal sealed class TrayApp : ApplicationContext {
     private readonly List<MinimizedWindow> _minimizedStack = [];
     private readonly EventWaitHandle _showSettingsEvent;
     private readonly Thread _showSettingsThread;
+    private readonly SemaphoreSlim _actionGate = new(1, 1);
     private ConfigStore.Watcher? _watcher;
     private HotkeySpec? _spec;
     private HotkeySpec? _moveSpec;
@@ -57,11 +58,14 @@ internal sealed class TrayApp : ApplicationContext {
         _window = new MessageWindow();
         _window.MessageReceived += HandleHotkeyMessage;
         _source = new HotkeySource(_window.Handle, 0x574D);
-        _source.Triggered += MinimizeForeground;
+        _source.Triggered += () => RunQueued(() => {
+            MinimizeForeground();
+            return Task.CompletedTask;
+        });
         _moveSource = new HotkeySource(_window.Handle, 0x574E);
-        _moveSource.Triggered += MoveForeground;
+        _moveSource.Triggered += () => RunQueued(MoveForeground);
         _restoreSource = new HotkeySource(_window.Handle, 0x574F);
-        _restoreSource.Triggered += RestoreLastMinimized;
+        _restoreSource.Triggered += () => RunQueued(RestoreLastMinimized);
 
         _showSettingsEvent = SingleInstance.CreateShowSettingsEvent();
         _showSettingsThread = new Thread(WaitForShowSettingsRequest) { IsBackground = true };
@@ -219,6 +223,17 @@ internal sealed class TrayApp : ApplicationContext {
         if (_source.HandleMessage(msg, wParam)) return;
         if (_moveSource.HandleMessage(msg, wParam)) return;
         _restoreSource.HandleMessage(msg, wParam);
+    }
+
+    private async void RunQueued(Func<Task> action) {
+        await _actionGate.WaitAsync().ConfigureAwait(true);
+        try {
+            await action().ConfigureAwait(true);
+        } catch (Exception ex) {
+            Log.Error($"queued hotkey action failed: {ex.Message}");
+        } finally {
+            _actionGate.Release();
+        }
     }
 
     private void WaitForShowSettingsRequest() {
@@ -510,7 +525,7 @@ internal sealed class TrayApp : ApplicationContext {
     /// <summary>
     /// Move the foreground window to the other screen of the configured pair, then minimize it.
     /// </summary>
-    internal void MoveForeground() {
+    internal async Task MoveForeground() {
         IntPtr hwnd = WindowOps.GetForegroundTarget(_window.Handle);
         if (hwnd == IntPtr.Zero) {
             Log.Debug("no foreground window to move, ignoring this trigger");
@@ -533,36 +548,34 @@ internal sealed class TrayApp : ApplicationContext {
         if (!result.Minimized) return;
 
         PushMinimized(hwnd, moved: true);
-        MoveToScreenAfterMinimize(hwnd, target);
+        await MoveToScreenAfterMinimize(hwnd, target);
     }
 
     /// <summary>
     /// The minimize call is asynchronous and can overwrite the restore position for a short while.
     /// Wait for it to settle, then move the window so a later restore lands on the target screen.
     /// </summary>
-    private static void MoveToScreenAfterMinimize(IntPtr hwnd, Screen target) {
-        _ = Task.Run(async () => {
-            for (int i = 0; i < 20; i++) {
-                if (!Native.IsWindow(hwnd)) return;
-                if (Native.IsIconic(hwnd)) {
-                    // wait for the minimize animation to finish before changing the restore
-                    // position; moving a still visible window would flash across the desktop
-                    await Task.Delay(350).ConfigureAwait(false);
-                    if (!Native.IsWindow(hwnd) || !Native.IsIconic(hwnd)) return;
+    private static async Task MoveToScreenAfterMinimize(IntPtr hwnd, Screen target) {
+        for (int i = 0; i < 20; i++) {
+            if (!Native.IsWindow(hwnd)) return;
+            if (Native.IsIconic(hwnd)) {
+                // wait for the minimize animation to finish before changing the restore
+                // position; moving a still visible window would flash across the desktop
+                await Task.Delay(350).ConfigureAwait(false);
+                if (!Native.IsWindow(hwnd) || !Native.IsIconic(hwnd)) return;
 
-                    bool moved = WindowOps.MoveToWorkArea(hwnd, target.WorkingArea);
-                    Log.Debug(
-                        $"move after minimize: hwnd=0x{hwnd.ToInt64():X} "
-                        + $"target={target.DeviceName} moved={moved}"
-                    );
-                    return;
-                }
-
-                await Task.Delay(50).ConfigureAwait(false);
+                bool moved = WindowOps.MoveToWorkArea(hwnd, target.WorkingArea);
+                Log.Debug(
+                    $"move after minimize: hwnd=0x{hwnd.ToInt64():X} "
+                    + $"target={target.DeviceName} moved={moved}"
+                );
+                return;
             }
 
-            Log.Debug("window did not minimize, skipping the screen move to avoid a flash");
-        });
+            await Task.Delay(50).ConfigureAwait(false);
+        }
+
+        Log.Debug("window did not minimize, skipping the screen move to avoid a flash");
     }
 
     private Screen ResolveMoveTarget(Screen current) {
@@ -595,7 +608,7 @@ internal sealed class TrayApp : ApplicationContext {
     }
 
     /// <summary>Pop the most recent minimized window that is still alive and restore it.</summary>
-    internal void RestoreLastMinimized() {
+    internal async Task RestoreLastMinimized() {
         while (_minimizedStack.Count > 0) {
             MinimizedWindow entry = _minimizedStack[0];
             _minimizedStack.RemoveAt(0);
@@ -606,6 +619,8 @@ internal sealed class TrayApp : ApplicationContext {
 
             if (WindowOps.Restore(entry.Handle, moved: entry.Moved)) {
                 Log.Debug($"restored minimized window: hwnd=0x{entry.Handle.ToInt64():X}");
+                // let one restore animation finish before the next queued hotkey restores another
+                await Task.Delay(220).ConfigureAwait(true);
                 return;
             }
         }
