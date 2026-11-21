@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace WindowMinimize;
@@ -79,13 +80,85 @@ internal static class WindowOps {
     }
 
     /// <summary>Bring back a window that was hidden with the hide mode.</summary>
-    internal static bool Restore(IntPtr hwnd) {
+    internal static bool Restore(IntPtr hwnd, bool disableTransitions = false) {
         if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
 
+        if (disableTransitions) SetTransitions(hwnd, true);
         Native.ShowWindowAsync(hwnd, Native.SW_RESTORE);
         Native.SetForegroundWindow(hwnd);
         Log.Debug($"window restored: hwnd=0x{hwnd.ToInt64():X}");
+        if (disableTransitions) {
+            _ = Task.Run(async () => {
+                await Task.Delay(250).ConfigureAwait(false);
+                if (Native.IsWindow(hwnd)) SetTransitions(hwnd, false);
+            });
+        }
+
         return true;
+    }
+
+    private static void SetTransitions(IntPtr hwnd, bool disabled) {
+        int value = disabled ? 1 : 0;
+        try {
+            Native.DwmSetWindowAttribute(
+                hwnd, Native.DWMWA_TRANSITIONS_FORCEDISABLED, ref value, sizeof(int)
+            );
+        } catch {
+            // DWM is optional, a missing animation attribute is not fatal
+        }
+    }
+
+    /// <summary>
+    /// Move the restore position of a window into the target work area. The size is kept when it
+    /// fits, and a minimized window is not shown by this call.
+    /// </summary>
+    internal static bool MoveToWorkArea(IntPtr hwnd, Rectangle work) {
+        if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
+
+        var placement = new Native.WINDOWPLACEMENT {
+            Length = Marshal.SizeOf<Native.WINDOWPLACEMENT>(),
+        };
+        if (!Native.GetWindowPlacement(hwnd, ref placement)) {
+            Log.Debug($"could not read the window placement: hwnd=0x{hwnd.ToInt64():X}");
+            return false;
+        }
+
+        Native.RECT normal = placement.NormalPosition;
+        int width = normal.Right - normal.Left;
+        int height = normal.Bottom - normal.Top;
+        if (width <= 0) width = work.Width;
+        if (height <= 0) height = work.Height;
+        width = Math.Min(width, work.Width);
+        height = Math.Min(height, work.Height);
+
+        int left = work.Left + (work.Width - width) / 2;
+        int top = work.Top + (work.Height - height) / 2;
+        placement.NormalPosition = new Native.RECT {
+            Left = left,
+            Top = top,
+            Right = left + width,
+            Bottom = top + height,
+        };
+        // The restore animation starts from the minimized position. Move that point to the target
+        // screen as well, otherwise the window flies in from the old monitor.
+        placement.MinPosition = new Native.POINT {
+            X = work.Left,
+            Y = work.Bottom,
+        };
+
+        bool moved = Native.SetWindowPlacement(hwnd, ref placement);
+        if (!Native.IsIconic(hwnd) && !Native.IsZoomed(hwnd)) {
+            moved = Native.SetWindowPos(
+                hwnd, IntPtr.Zero, left, top, width, height,
+                Native.SWP_NOZORDER | Native.SWP_NOACTIVATE
+            ) || moved;
+        }
+
+        Log.Debug(
+            $"window moved to {work.Left},{work.Top} {work.Width}x{work.Height}: "
+            + $"hwnd=0x{hwnd.ToInt64():X} moved={moved}"
+        );
+        return moved;
     }
 
     /// <summary>

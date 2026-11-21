@@ -41,6 +41,14 @@ internal static class ConfigStore {
         else
             ParseIni(path, config);
 
+        // older configs only had Hotkey=Win+S. The new defaults are Win+Q for minimize and Win+S
+        // for the screen move, so migrate that one old default to avoid registering Win+S twice.
+        if (!config.MoveHotkeyConfigured
+            && !config.RestoreHotkeyConfigured
+            && config.Hotkey.Equals("Win+S", StringComparison.OrdinalIgnoreCase)) {
+            config.Hotkey = AppConfig.DefaultHotkey;
+        }
+
         Normalize(config);
         return config;
     }
@@ -106,9 +114,13 @@ internal static class ConfigStore {
         ; Hotkey     modifiers Ctrl, Alt, Shift and Win joined with +, plus one main key:
         ;            A-Z, 0-9, F1-F24, Space, Esc, Enter, Tab, the arrow keys and so on.
         ;            without a modifier only function keys work, F11 for example.
-        ;            examples: Win+S, Ctrl+Shift+Q, Ctrl+Alt+F9, Alt+Space
-        ;            note: Win+S is reserved by Windows (search), this program takes it over and
+        ;            examples: Win+Q, Win+S, Ctrl+Shift+Q, Ctrl+Alt+F9, Alt+Space
+        ;            note: Win+Q is reserved by Windows (search), this program takes it over and
         ;            the search panel stops opening.
+        ; MoveHotkey      move the current window to the other configured screen, then minimize it
+        ; RestoreHotkey   restore the most recently minimized window
+        ; MonitorA        first screen device name for the swap pair, empty chooses the primary
+        ; MonitorB        second screen device name for the swap pair, empty chooses the first other
         ; Mode       minimize = minimize to the taskbar (default), hide = hide the window
         ; AutoStart  start with Windows, true or false to take effect, leave the line out to keep
         ;            the registry untouched
@@ -120,6 +132,10 @@ internal static class ConfigStore {
 
         [general]
         Hotkey={hotkey}
+        MoveHotkey=Win+S
+        RestoreHotkey=Win+W
+        MonitorA=
+        MonitorB=
         Mode=minimize
         Language=auto
         NotifyStartup=true
@@ -162,6 +178,28 @@ internal static class ConfigStore {
 
                 case "mode":
                     config.Mode = value;
+                    break;
+
+                case "movehotkey":
+                    if (value.Length > 0) {
+                        config.MoveHotkey = value;
+                        config.MoveHotkeyConfigured = true;
+                    }
+                    break;
+
+                case "restorehotkey":
+                    if (value.Length > 0) {
+                        config.RestoreHotkey = value;
+                        config.RestoreHotkeyConfigured = true;
+                    }
+                    break;
+
+                case "monitora":
+                    config.MonitorA = value;
+                    break;
+
+                case "monitorb":
+                    config.MonitorB = value;
                     break;
 
                 case "autostart":

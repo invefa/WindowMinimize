@@ -259,7 +259,7 @@ internal sealed class HotkeySpec : IEquatable<HotkeySpec> {
     /// </summary>
     internal static bool IsWindowsOwnedWinCombo(uint modifiers, uint vk) =>
         modifiers == Native.MOD_WIN
-        && vk is 0x41 or 0x44 or 0x45 or 0x49 or 0x4B or 0x53 or 0x56 or 0x58;
+        && vk is 0x41 or 0x44 or 0x45 or 0x49 or 0x4B or 0x51 or 0x53 or 0x56 or 0x57 or 0x58;
 
     private static string Format(uint modifiers, uint vk) {
         var sb = new StringBuilder();

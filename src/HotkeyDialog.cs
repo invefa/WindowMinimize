@@ -9,6 +9,10 @@ namespace WindowMinimize;
 /// </summary>
 internal sealed class HotkeyDialog : Form {
     private readonly TextBox _hotkeyBox;
+    private readonly TextBox _moveHotkeyBox;
+    private readonly TextBox _restoreHotkeyBox;
+    private readonly ComboBox _monitorABox;
+    private readonly ComboBox _monitorBBox;
     private readonly RadioButton _minimizeRadio;
     private readonly RadioButton _hideRadio;
     private readonly CheckBox _autoStartBox;
@@ -22,6 +26,14 @@ internal sealed class HotkeyDialog : Form {
     private readonly Button? _restartButton = null;
 
     internal string HotkeyText => _hotkeyBox.Text.Trim();
+
+    internal string MoveHotkeyText => _moveHotkeyBox.Text.Trim();
+
+    internal string RestoreHotkeyText => _restoreHotkeyBox.Text.Trim();
+
+    internal string MonitorA => (_monitorABox.SelectedItem as MonitorChoice)?.DeviceName ?? "";
+
+    internal string MonitorB => (_monitorBBox.SelectedItem as MonitorChoice)?.DeviceName ?? "";
 
     internal string Mode => _hideRadio.Checked ? "hide" : "minimize";
 
@@ -86,6 +98,22 @@ internal sealed class HotkeyDialog : Form {
             Margin = new Padding(0, 0, 0, 10),
         };
 
+        var moveHotkeyLabel = RowLabel(Strings.DialogMoveHotkey);
+
+        _moveHotkeyBox = new TextBox {
+            Dock = DockStyle.Fill,
+            Margin = new Padding(0, 3, 0, 3),
+            Text = config.MoveHotkey,
+        };
+
+        var restoreHotkeyLabel = RowLabel(Strings.DialogRestoreHotkey);
+
+        _restoreHotkeyBox = new TextBox {
+            Dock = DockStyle.Fill,
+            Margin = new Padding(0, 3, 0, 3),
+            Text = config.RestoreHotkey,
+        };
+
         var modeLabel = RowLabel(Strings.DialogMode);
 
         var modes = new FlowLayoutPanel {
@@ -127,6 +155,15 @@ internal sealed class HotkeyDialog : Form {
             "zh" => 2,
             _ => 0,
         };
+
+        var monitors = BuildMonitorChoices();
+        var monitorALabel = RowLabel(Strings.DialogMonitorA);
+        var monitorADefault = monitors.FirstOrDefault(item => item.Primary) ?? monitors[0];
+        _monitorABox = MonitorComboBox(monitors, config.MonitorA, monitorADefault);
+
+        var monitorBLabel = RowLabel(Strings.DialogMonitorB);
+        var monitorBDefault = monitors.FirstOrDefault(item => !item.Primary) ?? monitors[0];
+        _monitorBBox = MonitorComboBox(monitors, config.MonitorB, monitorBDefault);
 
         var startupLabel = RowLabel(Strings.DialogStartup);
 
@@ -287,18 +324,26 @@ internal sealed class HotkeyDialog : Form {
         layout.Controls.Add(hotkeyLabel, 0, 0);
         layout.Controls.Add(_hotkeyBox, 1, 0);
         layout.Controls.Add(syntaxHint, 1, 1);
-        layout.Controls.Add(modeLabel, 0, 2);
-        layout.Controls.Add(modes, 1, 2);
-        layout.Controls.Add(languageLabel, 0, 3);
-        layout.Controls.Add(_languageBox, 1, 3);
-        layout.Controls.Add(startupLabel, 0, 4);
-        layout.Controls.Add(startupBoxes, 1, 4);
-        layout.Controls.Add(debugLabel, 0, 5);
-        layout.Controls.Add(_debugBox, 1, 5);
-        layout.Controls.Add(notificationsLabel, 0, 6);
-        layout.Controls.Add(notificationBoxes, 1, 6);
-        layout.Controls.Add(_hint, 1, 7);
-        layout.Controls.Add(buttonRow, 0, 8);
+        layout.Controls.Add(moveHotkeyLabel, 0, 2);
+        layout.Controls.Add(_moveHotkeyBox, 1, 2);
+        layout.Controls.Add(restoreHotkeyLabel, 0, 3);
+        layout.Controls.Add(_restoreHotkeyBox, 1, 3);
+        layout.Controls.Add(modeLabel, 0, 4);
+        layout.Controls.Add(modes, 1, 4);
+        layout.Controls.Add(languageLabel, 0, 5);
+        layout.Controls.Add(_languageBox, 1, 5);
+        layout.Controls.Add(monitorALabel, 0, 6);
+        layout.Controls.Add(_monitorABox, 1, 6);
+        layout.Controls.Add(monitorBLabel, 0, 7);
+        layout.Controls.Add(_monitorBBox, 1, 7);
+        layout.Controls.Add(startupLabel, 0, 8);
+        layout.Controls.Add(startupBoxes, 1, 8);
+        layout.Controls.Add(debugLabel, 0, 9);
+        layout.Controls.Add(_debugBox, 1, 9);
+        layout.Controls.Add(notificationsLabel, 0, 10);
+        layout.Controls.Add(notificationBoxes, 1, 10);
+        layout.Controls.Add(_hint, 1, 11);
+        layout.Controls.Add(buttonRow, 0, 12);
         layout.SetColumnSpan(buttonRow, 2);
 
         Controls.Add(layout);
@@ -313,9 +358,58 @@ internal sealed class HotkeyDialog : Form {
         Margin = new Padding(3, 6, 12, 3),
     };
 
+    private static List<MonitorChoice> BuildMonitorChoices() {
+        var choices = new List<MonitorChoice>();
+        Screen[] screens = Screen.AllScreens;
+        for (int i = 0; i < screens.Length; i++) {
+            Screen screen = screens[i];
+            string label = Strings.MonitorDisplay(
+                i + 1, screen.Bounds.Width, screen.Bounds.Height
+            );
+            if (screen.Primary) label += "  " + Strings.MonitorPrimary;
+            choices.Add(new MonitorChoice(screen.DeviceName, label, screen.Primary));
+        }
+
+        if (choices.Count == 0) {
+            choices.Add(new MonitorChoice(string.Empty, Strings.MonitorDisplay(1, 0, 0), true));
+        }
+
+        return choices;
+    }
+
+    private static ComboBox MonitorComboBox(
+        List<MonitorChoice> choices, string selected, MonitorChoice fallback
+    ) {
+        var box = new ComboBox {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Width = 300,
+            Margin = new Padding(0, 3, 0, 3),
+        };
+        foreach (MonitorChoice choice in choices) box.Items.Add(choice);
+
+        box.SelectedItem = choices.FirstOrDefault(
+            choice => choice.DeviceName.Equals(selected, StringComparison.OrdinalIgnoreCase)
+        ) ?? fallback;
+        return box;
+    }
+
+    private sealed record MonitorChoice(string DeviceName, string Label, bool Primary) {
+        public override string ToString() => Label;
+    }
+
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
         if (keyData == (Keys.Alt | Keys.K)) {
             _hotkeyBox.Focus();
+            return true;
+        }
+
+        if (keyData == (Keys.Alt | Keys.V)) {
+            _moveHotkeyBox.Focus();
+            return true;
+        }
+
+        if (keyData == (Keys.Alt | Keys.B)) {
+            _restoreHotkeyBox.Focus();
             return true;
         }
 
@@ -380,14 +474,36 @@ internal sealed class HotkeyDialog : Form {
 
     private void OnSaveClicked(object? sender, EventArgs e) {
         if (!HotkeySpec.TryParse(_hotkeyBox.Text, out HotkeySpec? spec, out string error)) {
-            _hint.Text = error;
-            _hint.Visible = true;
+            ShowHotkeyError(_hotkeyBox, error);
+            return;
+        }
+
+        if (!HotkeySpec.TryParse(
+                _moveHotkeyBox.Text, out HotkeySpec? moveSpec, out string moveError
+            )) {
+            ShowHotkeyError(_moveHotkeyBox, moveError);
+            return;
+        }
+
+        if (!HotkeySpec.TryParse(
+                _restoreHotkeyBox.Text, out HotkeySpec? restoreSpec, out string restoreError
+            )) {
+            ShowHotkeyError(_restoreHotkeyBox, restoreError);
             return;
         }
 
         // write the canonical text back, win+alt+m becomes Win+Alt+M
         _hotkeyBox.Text = spec!.Text;
+        _moveHotkeyBox.Text = moveSpec!.Text;
+        _restoreHotkeyBox.Text = restoreSpec!.Text;
         DialogResult = DialogResult.OK;
         Close();
+    }
+
+    private void ShowHotkeyError(TextBox box, string error) {
+        _hint.Text = error;
+        _hint.Visible = true;
+        box.Focus();
+        box.SelectAll();
     }
 }

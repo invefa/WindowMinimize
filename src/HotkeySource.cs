@@ -10,9 +10,8 @@ namespace WindowMinimize;
 /// anyone else sees it.
 /// </summary>
 internal sealed class HotkeySource : IDisposable {
-    private const int HotkeyId = 0x574D; // 'WM'
-
     private readonly IntPtr _hwnd;
+    private readonly int _hotkeyId;
     private Native.LowLevelKeyboardProc? _proc;
     private IntPtr _hook;
     private HotkeySpec? _spec;
@@ -20,8 +19,9 @@ internal sealed class HotkeySource : IDisposable {
     private bool _useHook;
     private bool _lastDown;
 
-    internal HotkeySource(IntPtr hwnd) {
+    internal HotkeySource(IntPtr hwnd, int hotkeyId) {
         _hwnd = hwnd;
+        _hotkeyId = hotkeyId;
     }
 
     /// <summary>Raised on a successful trigger, the callback runs on the message thread.</summary>
@@ -44,7 +44,7 @@ internal sealed class HotkeySource : IDisposable {
     /// registration.
     /// </summary>
     internal bool HandleMessage(int msg, IntPtr wParam) {
-        if (msg == Native.WM_HOTKEY && wParam.ToInt32() == HotkeyId) {
+        if (msg == Native.WM_HOTKEY && wParam.ToInt32() == _hotkeyId) {
             Log.Debug($"hotkey triggered (RegisterHotKey) {_spec}");
             Triggered?.Invoke();
             return true;
@@ -70,7 +70,7 @@ internal sealed class HotkeySource : IDisposable {
         _spec = null;
 
         bool registered = Native.RegisterHotKey(
-            _hwnd, HotkeyId, spec.Modifiers | Native.MOD_NOREPEAT, spec.VirtualKey
+            _hwnd, _hotkeyId, spec.Modifiers | Native.MOD_NOREPEAT, spec.VirtualKey
         );
         if (registered) {
             _spec              = spec;
@@ -113,7 +113,7 @@ internal sealed class HotkeySource : IDisposable {
     /// </summary>
     private bool RestorePrevious(HotkeySpec previous) {
         bool registered = Native.RegisterHotKey(
-            _hwnd, HotkeyId, previous.Modifiers | Native.MOD_NOREPEAT, previous.VirtualKey
+            _hwnd, _hotkeyId, previous.Modifiers | Native.MOD_NOREPEAT, previous.VirtualKey
         );
         if (registered) {
             _spec              = previous;
@@ -150,7 +150,7 @@ internal sealed class HotkeySource : IDisposable {
             return;
         }
 
-        Native.UnregisterHotKey(_hwnd, HotkeyId);
+        Native.UnregisterHotKey(_hwnd, _hotkeyId);
     }
 
     /// <summary>Clear the current registration completely, used by Suspend hotkey.</summary>

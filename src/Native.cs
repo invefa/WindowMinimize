@@ -8,6 +8,7 @@ namespace WindowMinimize;
 internal static class Native {
     internal const int WM_HOTKEY = 0x0312;
     internal const int WM_SYSCOMMAND = 0x0112;
+    internal const int WM_SHOW_SETTINGS = 0x8001;
     internal const int SC_MINIMIZE = 0xF020;
 
     internal const uint MOD_ALT = 0x0001;
@@ -24,10 +25,67 @@ internal static class Native {
     internal const int SW_FORCEMINIMIZE = 11;
 
     internal const int DWMWA_CLOAKED = 14;
+    internal const int DWMWA_TRANSITIONS_FORCEDISABLED = 3;
 
     internal const uint GA_ROOT = 2;
 
     internal const int SMTO_ABORTIFHUNG = 0x0002;
+
+    internal const uint SWP_NOZORDER = 0x0004;
+    internal const uint SWP_NOACTIVATE = 0x0010;
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RECT {
+        internal int Left;
+        internal int Top;
+        internal int Right;
+        internal int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct POINT {
+        internal int X;
+        internal int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct WINDOWPLACEMENT {
+        internal int Length;
+        internal int Flags;
+        internal int ShowCmd;
+        internal POINT MinPosition;
+        internal POINT MaxPosition;
+        internal RECT NormalPosition;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern bool GetWindowPlacement(
+        IntPtr hWnd, ref WINDOWPLACEMENT placement
+    );
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern bool SetWindowPlacement(
+        IntPtr hWnd, ref WINDOWPLACEMENT placement
+    );
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern bool SetWindowPos(
+        IntPtr hWnd, IntPtr insertAfter, int x, int y, int cx, int cy, uint flags
+    );
+
+    [DllImport("user32.dll")]
+    internal static extern bool IsZoomed(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    internal static extern IntPtr FindWindow(string? className, string? windowName);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern bool PostMessage(
+        IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam
+    );
 
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
@@ -87,6 +145,11 @@ internal static class Native {
     [DllImport("dwmapi.dll")]
     internal static extern int DwmGetWindowAttribute(
         IntPtr hWnd, int attribute, out int value, int size
+    );
+
+    [DllImport("dwmapi.dll")]
+    internal static extern int DwmSetWindowAttribute(
+        IntPtr hWnd, int attribute, ref int value, int size
     );
 
     // low level keyboard hook

@@ -136,7 +136,8 @@ public class HotkeySpecTests {
     [InlineData("Win+D", true)]
     [InlineData("Win+E", true)]
     [InlineData("Win+X", true)]
-    [InlineData("Win+Q", false)]
+    [InlineData("Win+Q", true)]
+    [InlineData("Win+W", true)]
     [InlineData("Ctrl+S", false)]
     [InlineData("Win+Alt+S", false)]
     public void DetectsWindowsOwnedWinCombo(string text, bool expected) {

@@ -71,10 +71,28 @@
     <value>WindowMinimize settings</value>
   </data>
   <data name="DialogHotkey" xml:space="preserve">
-    <value>Hotkey (&amp;K)</value>
+    <value>Minimize (&amp;K)</value>
+  </data>
+  <data name="DialogMoveHotkey" xml:space="preserve">
+    <value>Move screen (&amp;V)</value>
+  </data>
+  <data name="DialogRestoreHotkey" xml:space="preserve">
+    <value>Restore minimized (&amp;B)</value>
+  </data>
+  <data name="DialogMonitorA" xml:space="preserve">
+    <value>Screen A</value>
+  </data>
+  <data name="DialogMonitorB" xml:space="preserve">
+    <value>Screen B</value>
+  </data>
+  <data name="MonitorDisplay" xml:space="preserve">
+    <value>Display {0}: {1}x{2}</value>
+  </data>
+  <data name="MonitorPrimary" xml:space="preserve">
+    <value>Primary</value>
   </data>
   <data name="DialogSyntaxHint" xml:space="preserve">
-    <value>Ctrl, Alt, Shift and Win plus one main key&#10;joined with +, for example Win+Alt+M</value>
+    <value>Ctrl, Alt, Shift and Win plus one main key&#10;joined with +, for example Win+Q</value>
   </data>
   <data name="DialogStartup" xml:space="preserve">
     <value>Startup</value>
@@ -197,7 +215,7 @@ usage:
   WindowMinimize.exe [options]
 
 options:
-  --hotkey &lt;combination&gt;  the hotkey to use, for example --hotkey Win+S
+  --hotkey &lt;combination&gt;  the minimize hotkey to use, for example --hotkey Win+Q
                           syntax: a modifier (Ctrl/Alt/Shift/Win) plus one main key
                           (A-Z, 0-9, F1-F24, Space, Esc, Enter and so on) joined with +;
                           without a modifier only function keys are allowed

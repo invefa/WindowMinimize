@@ -70,10 +70,28 @@
     <value>WindowMinimize 设置</value>
   </data>
   <data name="DialogHotkey" xml:space="preserve">
-    <value>热键(&amp;K)</value>
+    <value>最小化(&amp;K)</value>
+  </data>
+  <data name="DialogMoveHotkey" xml:space="preserve">
+    <value>切换屏幕(&amp;V)</value>
+  </data>
+  <data name="DialogRestoreHotkey" xml:space="preserve">
+    <value>还原最小化(&amp;B)</value>
+  </data>
+  <data name="DialogMonitorA" xml:space="preserve">
+    <value>屏幕 A</value>
+  </data>
+  <data name="DialogMonitorB" xml:space="preserve">
+    <value>屏幕 B</value>
+  </data>
+  <data name="MonitorDisplay" xml:space="preserve">
+    <value>显示器 {0}：{1}x{2}</value>
+  </data>
+  <data name="MonitorPrimary" xml:space="preserve">
+    <value>主屏幕</value>
   </data>
   <data name="DialogSyntaxHint" xml:space="preserve">
-    <value>修饰键 Ctrl、Alt、Shift、Win 加一个主键&#10;用 + 连接，例如 Win+Alt+M</value>
+    <value>修饰键 Ctrl、Alt、Shift、Win 加一个主键&#10;用 + 连接，例如 Win+Q</value>
   </data>
   <data name="DialogStartup" xml:space="preserve">
     <value>启动</value>
@@ -196,7 +214,7 @@
   WindowMinimize.exe [选项]
 
 选项:
-  --hotkey &lt;组合&gt;    本次使用的热键，例如 --hotkey Win+S
+  --hotkey &lt;组合&gt;    本次使用的最小化热键，例如 --hotkey Win+Q
                        写法: 修饰键 Ctrl/Alt/Shift/Win 加一个主键
                        (A-Z、0-9、F1-F24、Space、Esc、Enter 等)，用 + 连接；
                        不带修饰键时只能用功能键

@@ -54,9 +54,17 @@ internal static class Strings {
 
     internal static string TrayTooltip(string hotkey) => Format(nameof(TrayTooltip), hotkey);
 
+    internal static string MonitorDisplay(int index, int width, int height) =>
+        Format(nameof(MonitorDisplay), index, width, height);
+
     // the settings dialog, the auto start check box reuses the menu text
     internal static string DialogTitle      => Get(nameof(DialogTitle));
     internal static string DialogHotkey     => Get(nameof(DialogHotkey));
+    internal static string DialogMoveHotkey => Get(nameof(DialogMoveHotkey));
+    internal static string DialogRestoreHotkey => Get(nameof(DialogRestoreHotkey));
+    internal static string DialogMonitorA   => Get(nameof(DialogMonitorA));
+    internal static string DialogMonitorB   => Get(nameof(DialogMonitorB));
+    internal static string MonitorPrimary   => Get(nameof(MonitorPrimary));
     internal static string DialogSyntaxHint => Get(nameof(DialogSyntaxHint));
     internal static string DialogMode       => Get(nameof(DialogMode));
     internal static string DialogStartup    => Get(nameof(DialogStartup));

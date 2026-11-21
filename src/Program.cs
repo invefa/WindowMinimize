@@ -46,6 +46,11 @@ internal static class Program {
 
         using var mutex = new Mutex(true, MutexName, out bool isFirstInstance);
         if (!isFirstInstance) {
+            if (SingleInstance.RequestShowSettings()) {
+                Log.Info("asked the running instance to show its settings");
+                return 1;
+            }
+
             Log.Info("another WindowMinimize is already running, exiting");
             if (!cli.NoTray) {
                 MessageBox.Show(Strings.MsgAlreadyRunning, Strings.AppName,

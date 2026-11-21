@@ -262,7 +262,7 @@ $form.StartPosition = 'CenterScreen'
 
     $app = Start-Process -FilePath $exe -PassThru -ArgumentList @(
         '--config', (Join-Path $PSScriptRoot $iniName), '--lang', 'en')
-    Start-Sleep -Milliseconds 1500
+    Start-Sleep -Milliseconds 3000
     if ($app.HasExited) { throw "the app exited right after start, exit code $($app.ExitCode)" }
     Say "started WindowMinimize (pid $($app.Id)) with hotkey $hotkeyName"
 

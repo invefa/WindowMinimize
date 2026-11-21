@@ -3,8 +3,8 @@
 [English](README.md) | [简体中文](README.zh-Hans.md)
 
 A small Windows tool that minimizes the current foreground window with a custom global hotkey. It
-lives in the tray, its default hotkey is `Win+S`, it is a single-file exe, and it depends on neither
-the .NET runtime nor any third-party component.
+lives in the tray, its default minimize hotkey is `Win+Q`, it is a single-file exe, and it depends
+on neither the .NET runtime nor any third-party component.
 
 Download the full build (`WindowMinimize-<version>-win-x64.exe`) from the
 [releases page](https://github.com/invefa/WindowMinimize/releases/latest) and run it, no
@@ -15,8 +15,19 @@ installation needed. The `WindowMinimize-<version>-win-x64-lite.exe` on the same
 ## 1. Usage
 
 Double-click `start.bat` or run `dist\WindowMinimize.exe` directly. After startup the program stays
-in the taskbar notification area; press the hotkey once to minimize the foreground window at that
-moment.
+in the taskbar notification area. Press `Win+Q` to minimize the foreground window at that moment.
+
+Three global hotkeys are registered:
+
+| Action | Default |
+| --- | --- |
+| Minimize the foreground window | `Win+Q` |
+| Move the foreground window to the other configured screen, then minimize it | `Win+S` |
+| Restore the most recently minimized window | `Win+W` |
+
+All three can be changed in the settings dialog. The screen move uses the two screens selected as
+Screen A and Screen B: a window on A moves to B, a window on B moves back to A, and a window on a
+third screen moves to B.
 
 For windows that run as administrator, start the program with `start-admin.bat` or use "Restart as
 administrator" in the tray menu; Windows does not deliver the hotkey to a normal-privilege program
@@ -25,8 +36,11 @@ administrator" to start it elevated at every logon without a UAC prompt.
 
 The first run creates `hotkey.ini` next to the exe. Save your changes and they take effect
 immediately, with no restart. Left-clicking the tray icon opens the settings dialog, where the
-hotkey, the mode, the language and notification categories, the auto start and the debug log can be
-changed without editing the file.
+hotkeys, the mode, the language and notification categories, the screen pair, the auto start and
+the debug log can be changed without editing the file.
+
+When the program is already running, starting it again asks that instance to open its settings
+instead of showing an "already running" message.
 
 To exit: right-click the tray icon and choose "Exit".
 
@@ -40,7 +54,7 @@ Join modifiers with `+` and put the main key last; the order does not change the
 | Modifier | `Ctrl` (also `Control`), `Alt`, `Shift`, `Win` (also `Windows`) |
 | Main key | `A` to `Z`, `0` to `9`, `F1` to `F24`, `Space`, `Esc`, `Enter`, `Tab`, `Backspace`, `Delete`, `Insert`, `Home`, `End`, `PageUp`, `PageDown`, the four arrow keys, `Num0` to `Num9`, `Minus`, `Plus`, and so on |
 
-Examples: `Win+Alt+M`, `Ctrl+Shift+Q`, `Ctrl+Alt+F9`, `Alt+Space`, `F11`, `Ctrl+-`.
+Examples: `Win+Q`, `Win+S`, `Win+W`, `Ctrl+Shift+Q`, `Ctrl+Alt+F9`, `Alt+Space`, `F11`, `Ctrl+-`.
 
 Without a modifier, only function keys (`F1` to `F24`) are allowed, so normal typing is not stolen.
 `F12` is a system-reserved key and cannot be registered; the program rejects it outright.
@@ -54,7 +68,11 @@ over with a keyboard hook; once taken over, the original system function is no l
 
 ```ini
 [general]
-Hotkey=Win+S
+Hotkey=Win+Q
+MoveHotkey=Win+S
+RestoreHotkey=Win+W
+MonitorA=
+MonitorB=
 Mode=minimize
 Language=auto
 NotifyStartup=true
@@ -65,7 +83,11 @@ Debug=false
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| Hotkey | Win+S | Global hotkey; see the previous section for the syntax |
+| Hotkey | Win+Q | Global hotkey for minimizing the foreground window |
+| MoveHotkey | Win+S | Moves the foreground window to the other configured screen, then minimizes it |
+| RestoreHotkey | Win+W | Restores the most recently minimized window |
+| MonitorA | empty | Device name of the first screen in the swap pair; empty chooses the primary screen |
+| MonitorB | empty | Device name of the second screen in the swap pair; empty chooses the first other screen |
 | Mode | minimize | `minimize` minimizes to the taskbar; `hide` hides the window directly |
 | Language | auto | Interface language: `auto` follows Windows, `en` or `zh` forces one; changing it in the settings dialog updates the tray immediately |
 | NotifyStartup | true | Show the balloon that confirms the hotkey at startup |
@@ -94,7 +116,7 @@ example when unpacked to `C:\Program Files`), it falls back to
 | Hidden windows | A submenu listing every window hidden with `hide`; selecting one restores it, and "Restore all hidden windows" restores the whole list. The entries live only in memory and are lost when the program exits |
 | Hotkey: xxx | Shows only the hotkey currently in effect |
 | Suspend hotkey / Resume hotkey | Temporarily disables it, handy while gaming or recording; hold Shift and click to suspend for 5 minutes and then resume automatically |
-| Settings... | Opens the dialog for the hotkey, the mode, the language and notification categories, the normal or elevated auto start and the debug log |
+| Settings... | Opens the dialog for the three hotkeys, the screen pair, the mode, the language and notification categories, the normal or elevated auto start and the debug log |
 | Open config file... | Opens `hotkey.ini` in Notepad |
 | Reload config | Reads it again manually; not needed normally |
 | Start with Windows | The master auto start switch. When ticked, the program starts with Windows using the normal Run entry; clear it to turn auto start off |
@@ -109,7 +131,7 @@ Clicking the tray icon with the left button opens the settings dialog.
 ```
 WindowMinimize.exe [options]
 
---hotkey <combo>     Set a hotkey for this run, overriding the config file
+--hotkey <combo>     Set the minimize hotkey for this run, overriding the config file
 --mode <mode>        minimize or hide
 --config <path>      Use the given config file
 --lang <language>    Interface language, en or zh, defaults to the system language
@@ -177,6 +199,23 @@ highest run level, then removes the normal Run value, so only one copy starts. R
 unregisters the task. Both directions run through a hidden, elevated PowerShell helper and ask for
 administrator permission once.
 
+Each of the three hotkeys has its own `HotkeySource`, so a combination that Windows or another
+program already owns can fall back to the keyboard hook independently. Changing one hotkey does not
+unregister the other two, and a failed registration restores that hotkey's previous value.
+
+The screen move resolves the configured device names through `Screen.AllScreens`. The window keeps
+its size when it fits, is centered in the target work area, and receives the new restore position
+after the asynchronous minimize has settled. The minimized position is also moved, and the DWM
+transition is disabled for that restore, so the window does not fly in from the original screen.
+
+The restore hotkey uses a stack of minimized windows. A newly minimized window is pushed on top,
+old entries are pruned when their window or process is gone, and `Win+W` pops the newest live entry.
+The stack lives in memory and is not persisted across restarts.
+
+A second launch does not show an error box. It creates or opens a named event that the first
+instance waits on, and the first instance opens its settings dialog. A window-message fallback is
+used when the event cannot be opened.
+
 When it gets the foreground window, it skips system UI: the taskbar, the desktop, the Start menu,
 search, and the program's own windows (when the tray menu is clicked, the foreground is usually the
 taskbar or the menu itself). These windows are never treated as minimize targets, so system UI is
@@ -232,9 +271,12 @@ WindowMinimize
    "Hidden windows" submenu in the tray menu to get it back. The list lives only in memory and is
    lost after a restart, leaving only Task Manager. Prefer the default `minimize` for everyday use.
 
-3. A low level keyboard hook is a global hook, and a few games with strict anti-cheat may be
+3. The restore hotkey and the hidden-window list are kept in memory. A closed window or a process
+   that exits is pruned, but a program restart clears the records.
+
+4. A low level keyboard hook is a global hook, and a few games with strict anti-cheat may be
    sensitive to global hooks. If the hotkey does not need to grab keys (normal registration
    succeeds), the program installs no hook.
 
-4. After a keyboard hook takes over a combination Windows occupies (for example `Win+S`), the
+5. After a keyboard hook takes over a combination Windows occupies (for example `Win+Q`), the
    original system function no longer responds, for example the search panel no longer pops up.

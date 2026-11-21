@@ -4,10 +4,30 @@ namespace WindowMinimize;
 /// Runtime configuration. Precedence: command line, then hotkey.ini, then the built-in defaults.
 /// </summary>
 internal sealed class AppConfig {
-    internal const string DefaultHotkey = "Win+S";
+    internal const string DefaultHotkey = "Win+Q";
+    internal const string DefaultMoveHotkey = "Win+S";
+    internal const string DefaultRestoreHotkey = "Win+W";
 
-    /// <summary>Hotkey text, for example Win+Alt+M.</summary>
+    /// <summary>Hotkey text for the normal minimize action.</summary>
     internal string Hotkey { get; set; } = DefaultHotkey;
+
+    /// <summary>Hotkey text for moving the window to the other configured screen, then minimizing it.</summary>
+    internal string MoveHotkey { get; set; } = DefaultMoveHotkey;
+
+    /// <summary>Hotkey text for restoring the most recently minimized window.</summary>
+    internal string RestoreHotkey { get; set; } = DefaultRestoreHotkey;
+
+    /// <summary>Device name of the first screen in the swap pair; empty chooses the primary screen.</summary>
+    internal string MonitorA { get; set; } = string.Empty;
+
+    /// <summary>Device name of the second screen in the swap pair; empty chooses the first other screen.</summary>
+    internal string MonitorB { get; set; } = string.Empty;
+
+    /// <summary>Whether the config file explicitly contains the move hotkey.</summary>
+    internal bool MoveHotkeyConfigured { get; set; }
+
+    /// <summary>Whether the config file explicitly contains the restore hotkey.</summary>
+    internal bool RestoreHotkeyConfigured { get; set; }
 
     /// <summary>minimize = minimize to the taskbar, hide = hide the window outright.</summary>
     internal string Mode { get; set; } = "minimize";

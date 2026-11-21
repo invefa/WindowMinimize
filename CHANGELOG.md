@@ -2,6 +2,24 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
+## Unreleased
+
+### Added
+
+- Three independent hotkeys: minimize (`Win+Q`), move to the other configured screen then minimize
+  (`Win+S`), and restore the most recently minimized window (`Win+W`).
+- Screen A and Screen B selection for the move action, with a swap behavior between the pair.
+- A minimized-window stack backing the restore hotkey; closed windows are pruned on pop.
+- Moved windows also move their minimized position and suppress the DWM restore transition, so a
+  restore does not fly in from the original screen.
+
+### Changed
+
+- The default minimize hotkey moved from `Win+S` to `Win+Q`. Old configs with only the old default
+  migrate automatically, because `Win+S` is now the screen-move hotkey.
+- Starting a second copy now opens the running instance's settings instead of showing an
+  "already running" message.
+
 ## 1.2.2 - 2026-10-19
 
 A fix release for hidden-window tracking.

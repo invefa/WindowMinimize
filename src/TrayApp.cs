@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace WindowMinimize;
@@ -19,6 +20,8 @@ internal enum NoticeKind {
 internal sealed class TrayApp : ApplicationContext {
     private readonly MessageWindow _window;
     private readonly HotkeySource _source;
+    private readonly HotkeySource _moveSource;
+    private readonly HotkeySource _restoreSource;
     private readonly NotifyIcon _icon;
     private ToolStripMenuItem _hotkeyItem = null!;
     private ToolStripMenuItem _hiddenWindowsItem = null!;
@@ -27,9 +30,15 @@ internal sealed class TrayApp : ApplicationContext {
     private ToolStripMenuItem _autoStartAdminItem = null!;
     private readonly System.Windows.Forms.Timer _suspendCountdown;
     private readonly List<HiddenWindow> _hiddenWindows = [];
+    private readonly List<MinimizedWindow> _minimizedStack = [];
+    private readonly EventWaitHandle _showSettingsEvent;
+    private readonly Thread _showSettingsThread;
     private ConfigStore.Watcher? _watcher;
     private HotkeySpec? _spec;
+    private HotkeySpec? _moveSpec;
+    private HotkeySpec? _restoreSpec;
     private string _lastError = string.Empty;
+    private volatile bool _disposed;
     private bool _suspended;
     private bool _elevatedNoticeShown;
     private bool _elevatedAutoStart;
@@ -38,6 +47,8 @@ internal sealed class TrayApp : ApplicationContext {
 
     private sealed record HiddenWindow(IntPtr Handle, uint ProcessId);
 
+    private sealed record MinimizedWindow(IntPtr Handle, uint ProcessId, bool Moved);
+
     internal TrayApp(AppConfig config, bool headless) {
         Config = config;
         Headless = headless;
@@ -45,8 +56,16 @@ internal sealed class TrayApp : ApplicationContext {
 
         _window = new MessageWindow();
         _window.MessageReceived += HandleHotkeyMessage;
-        _source = new HotkeySource(_window.Handle);
+        _source = new HotkeySource(_window.Handle, 0x574D);
         _source.Triggered += MinimizeForeground;
+        _moveSource = new HotkeySource(_window.Handle, 0x574E);
+        _moveSource.Triggered += MoveForeground;
+        _restoreSource = new HotkeySource(_window.Handle, 0x574F);
+        _restoreSource.Triggered += RestoreLastMinimized;
+
+        _showSettingsEvent = SingleInstance.CreateShowSettingsEvent();
+        _showSettingsThread = new Thread(WaitForShowSettingsRequest) { IsBackground = true };
+        _showSettingsThread.Start();
 
         _icon = new NotifyIcon {
             Icon = IconFactory.Create(),
@@ -188,62 +207,93 @@ internal sealed class TrayApp : ApplicationContext {
     internal bool IsUsingHookForWindowsCombo => _source.HookIsWindowsOwned;
 
     /// <summary>
-    /// Handle a message forwarded by the hidden window, a hotkey hit minimizes now.
+    /// Handle a message forwarded by the hidden window: a hotkey hit or a request from another
+    /// instance to open the settings.
     /// </summary>
-    internal void HandleHotkeyMessage(int msg, IntPtr wParam) => _source.HandleMessage(msg, wParam);
+    internal void HandleHotkeyMessage(int msg, IntPtr wParam) {
+        if (msg == Native.WM_SHOW_SETTINGS) {
+            ShowSettingsDialog();
+            return;
+        }
+
+        if (_source.HandleMessage(msg, wParam)) return;
+        if (_moveSource.HandleMessage(msg, wParam)) return;
+        _restoreSource.HandleMessage(msg, wParam);
+    }
+
+    private void WaitForShowSettingsRequest() {
+        while (!_disposed) {
+            if (!_showSettingsEvent.WaitOne(500)) continue;
+            if (_disposed) break;
+
+            Native.PostMessage(_window.Handle, Native.WM_SHOW_SETTINGS, IntPtr.Zero, IntPtr.Zero);
+        }
+    }
 
     /// <summary>
-    /// Apply a config: register the hotkey and refresh the menu. On failure the hotkey that was in
-    /// effect is kept and false is returned.
+    /// Apply a config: register the three hotkeys and refresh the menu. On failure the hotkey that
+    /// was in effect is kept and false is returned.
     /// </summary>
     internal bool Apply(AppConfig config, bool initial = false) {
         Config = config;
 
-        if (!HotkeySpec.TryParse(config.Hotkey, out HotkeySpec? spec, out string parseError)) {
-            _lastError = parseError;
-            Log.Error(initial
-                ? $"hotkey in the config is invalid: {parseError}"
-                : $"hotkey text is invalid, keeping the current hotkey: {parseError}");
-            RefreshMenu();
+        bool minimizeOk = ApplyHotkey(
+            _source, config.Hotkey, AppConfig.DefaultHotkey, ref _spec,
+            "minimize", initial, out string minimizeError
+        );
+        bool moveOk = ApplyHotkey(
+            _moveSource, config.MoveHotkey, AppConfig.DefaultMoveHotkey, ref _moveSpec,
+            "move", initial, out string moveError
+        );
+        bool restoreOk = ApplyHotkey(
+            _restoreSource, config.RestoreHotkey, AppConfig.DefaultRestoreHotkey,
+            ref _restoreSpec, "restore", initial, out string restoreError
+        );
+
+        string error = minimizeError.Length > 0
+            ? minimizeError
+            : moveError.Length > 0 ? moveError : restoreError;
+        _lastError = error;
+        if (error.Length > 0) Log.Error(error);
+        if (minimizeOk && moveOk && restoreOk) _lastError = string.Empty;
+
+        RefreshMenu();
+        return minimizeOk && moveOk && restoreOk;
+    }
+
+    private bool ApplyHotkey(
+        HotkeySource source, string text, string defaultText, ref HotkeySpec? spec,
+        string label, bool initial, out string error
+    ) {
+        error = string.Empty;
+
+        if (!HotkeySpec.TryParse(text, out HotkeySpec? parsed, out string parseError)) {
+            error = parseError;
+            Log.Error($"{label} hotkey in the config is invalid: {parseError}");
             return false;
         }
 
         if (_suspended) {
-            _spec = spec;
-            RefreshMenu();
+            spec = parsed;
             return true;
         }
 
-        if (!_source.TryRegister(spec!, out string registerError)) {
-            _lastError = registerError;
-            Log.Error(registerError);
-
-            // the very first registration falls back to the default hotkey so the tool stays usable
-            if (initial && TryFallbackToDefault(spec!)) {
-                RefreshMenu();
+        if (!source.TryRegister(parsed!, out error)) {
+            Log.Error($"{label} hotkey: {error}");
+            if (initial
+                && !parsed!.Text.Equals(defaultText, StringComparison.OrdinalIgnoreCase)
+                && HotkeySpec.TryParse(defaultText, out HotkeySpec? fallback, out _)
+                && source.TryRegister(fallback!, out _)) {
+                spec = fallback;
+                error = Strings.ErrorFallbackUsed(error, fallback!.Text);
+                Log.Info($"{label} fell back to the default hotkey {fallback!.Text}");
                 return true;
             }
 
-            RefreshMenu();
             return false;
         }
 
-        _spec = spec;
-        _lastError = string.Empty;
-        RefreshMenu();
-        return true;
-    }
-
-    private bool TryFallbackToDefault(HotkeySpec spec) {
-        if (spec.Text.Equals(AppConfig.DefaultHotkey, StringComparison.OrdinalIgnoreCase))
-            return false;
-        if (!HotkeySpec.TryParse(AppConfig.DefaultHotkey, out HotkeySpec? fallback, out _))
-            return false;
-        if (!_source.TryRegister(fallback!, out _)) return false;
-
-        _spec = fallback;
-        _lastError = Strings.ErrorFallbackUsed(_lastError, fallback!.Text);
-        Log.Info($"fell back to the default hotkey {fallback.Text}");
+        spec = parsed;
         return true;
     }
 
@@ -273,15 +323,24 @@ internal sealed class TrayApp : ApplicationContext {
 
         if (suspended) {
             _source.Reset();
-            Log.Info("hotkey suspended");
-        } else if (_spec is not null) {
-            if (!_source.TryRegister(_spec, out string error)) {
-                _lastError = error;
-                Log.Error(error);
-            }
+            _moveSource.Reset();
+            _restoreSource.Reset();
+            Log.Info("hotkeys suspended");
+        } else {
+            ResumeHotkey(_source, _spec, "minimize");
+            ResumeHotkey(_moveSource, _moveSpec, "move");
+            ResumeHotkey(_restoreSource, _restoreSpec, "restore");
         }
 
         RefreshMenu();
+    }
+
+    private void ResumeHotkey(HotkeySource source, HotkeySpec? spec, string label) {
+        if (spec is null) return;
+        if (source.TryRegister(spec, out string error)) return;
+
+        _lastError = error;
+        Log.Error($"{label} hotkey could not resume: {error}");
     }
 
     /// <summary>The Suspend hotkey menu entry, with a countdown that resumes by itself.</summary>
@@ -437,10 +496,121 @@ internal sealed class TrayApp : ApplicationContext {
             _elevatedNoticeShown = false;
         }
 
-        if (hiding && result.Minimized) {
+        if (!result.Minimized) return;
+
+        if (hiding) {
             RememberHidden(hwnd);
             RefreshMenu();
+            return;
         }
+
+        PushMinimized(hwnd, moved: false);
+    }
+
+    /// <summary>
+    /// Move the foreground window to the other screen of the configured pair, then minimize it.
+    /// </summary>
+    internal void MoveForeground() {
+        IntPtr hwnd = WindowOps.GetForegroundTarget(_window.Handle);
+        if (hwnd == IntPtr.Zero) {
+            Log.Debug("no foreground window to move, ignoring this trigger");
+            return;
+        }
+
+        Screen target = ResolveMoveTarget(Screen.FromHandle(hwnd));
+        WindowOps.MinimizeResult result = WindowOps.MinimizeWithRetry(hwnd, "minimize");
+
+        if (result.AccessDenied) {
+            Log.Info("target window refused the minimize, it probably runs as administrator");
+            if (!_elevatedNoticeShown) {
+                _elevatedNoticeShown = true;
+                Notify(Strings.BalloonElevatedTarget, NoticeKind.Permission, ToolTipIcon.Warning);
+            }
+        } else {
+            _elevatedNoticeShown = false;
+        }
+
+        if (!result.Minimized) return;
+
+        PushMinimized(hwnd, moved: true);
+        MoveToScreenAfterMinimize(hwnd, target);
+    }
+
+    /// <summary>
+    /// The minimize call is asynchronous and can overwrite the restore position for a short while.
+    /// Wait for it to settle, then move the window so a later restore lands on the target screen.
+    /// </summary>
+    private static void MoveToScreenAfterMinimize(IntPtr hwnd, Screen target) {
+        _ = Task.Run(async () => {
+            for (int i = 0; i < 20; i++) {
+                if (!Native.IsWindow(hwnd)) return;
+                if (Native.IsIconic(hwnd)) {
+                    // wait for the minimize animation to finish before changing the restore
+                    // position; moving a still visible window would flash across the desktop
+                    await Task.Delay(350).ConfigureAwait(false);
+                    if (!Native.IsWindow(hwnd) || !Native.IsIconic(hwnd)) return;
+
+                    bool moved = WindowOps.MoveToWorkArea(hwnd, target.WorkingArea);
+                    Log.Debug(
+                        $"move after minimize: hwnd=0x{hwnd.ToInt64():X} "
+                        + $"target={target.DeviceName} moved={moved}"
+                    );
+                    return;
+                }
+
+                await Task.Delay(50).ConfigureAwait(false);
+            }
+
+            Log.Debug("window did not minimize, skipping the screen move to avoid a flash");
+        });
+    }
+
+    private Screen ResolveMoveTarget(Screen current) {
+        Screen[] screens = Screen.AllScreens;
+        Screen a = FindScreen(Config.MonitorA) ?? Screen.PrimaryScreen ?? screens[0];
+        Screen b = FindScreen(Config.MonitorB)
+            ?? screens.FirstOrDefault(screen => !SameScreen(screen, a))
+            ?? a;
+
+        if (SameScreen(current, a)) return b;
+        if (SameScreen(current, b)) return a;
+        return b;
+    }
+
+    private static Screen? FindScreen(string deviceName) {
+        if (string.IsNullOrWhiteSpace(deviceName)) return null;
+        return Screen.AllScreens.FirstOrDefault(
+            screen => screen.DeviceName.Equals(deviceName, StringComparison.OrdinalIgnoreCase)
+        );
+    }
+
+    private static bool SameScreen(Screen left, Screen right) =>
+        left.DeviceName.Equals(right.DeviceName, StringComparison.OrdinalIgnoreCase);
+
+    private void PushMinimized(IntPtr hwnd, bool moved) {
+        Native.GetWindowThreadProcessId(hwnd, out uint processId);
+        _minimizedStack.RemoveAll(entry => entry.Handle == hwnd);
+        _minimizedStack.Insert(0, new MinimizedWindow(hwnd, processId, moved));
+        Log.Debug($"minimized window pushed: hwnd=0x{hwnd.ToInt64():X} pid={processId}");
+    }
+
+    /// <summary>Pop the most recent minimized window that is still alive and restore it.</summary>
+    internal void RestoreLastMinimized() {
+        while (_minimizedStack.Count > 0) {
+            MinimizedWindow entry = _minimizedStack[0];
+            _minimizedStack.RemoveAt(0);
+            if (!Native.IsWindow(entry.Handle)) continue;
+
+            Native.GetWindowThreadProcessId(entry.Handle, out uint processId);
+            if (processId != entry.ProcessId) continue;
+
+            if (WindowOps.Restore(entry.Handle, disableTransitions: entry.Moved)) {
+                Log.Debug($"restored minimized window: hwnd=0x{entry.Handle.ToInt64():X}");
+                return;
+            }
+        }
+
+        Log.Debug("no minimized window to restore");
     }
 
     /// <summary>
@@ -595,11 +765,22 @@ internal sealed class TrayApp : ApplicationContext {
             }
 
             Config.Hotkey = dialog.HotkeyText;
+            Config.MoveHotkey = dialog.MoveHotkeyText;
+            Config.RestoreHotkey = dialog.RestoreHotkeyText;
+            Config.MonitorA = dialog.MonitorA;
+            Config.MonitorB = dialog.MonitorB;
             Config.Mode = dialog.Mode;
             Config.NotifyStartup = dialog.NotifyStartup;
             Config.NotifyErrors = dialog.NotifyErrors;
             Config.NotifyPermissions = dialog.NotifyPermissions;
-            Apply(Config);
+
+            bool hotkeysOk = Apply(Config);
+            if (!hotkeysOk) {
+                Notify(
+                    Strings.BalloonHotkeyNotActive(_lastError), NoticeKind.Error,
+                    ToolTipIcon.Warning
+                );
+            }
 
             if (Config.Debug != dialog.Debug) {
                 Config.Debug = dialog.Debug;
@@ -628,6 +809,10 @@ internal sealed class TrayApp : ApplicationContext {
                 : ConfigStore.DefaultIni(Config.Hotkey);
 
             text = SetIniValue(text, "Hotkey", Config.Hotkey);
+            text = SetIniValue(text, "MoveHotkey", Config.MoveHotkey);
+            text = SetIniValue(text, "RestoreHotkey", Config.RestoreHotkey);
+            text = SetIniValue(text, "MonitorA", Config.MonitorA);
+            text = SetIniValue(text, "MonitorB", Config.MonitorB);
             text = SetIniValue(text, "Mode", Config.Mode);
             text = SetIniValue(text, "Language", Config.Language);
             text = SetIniValue(
@@ -698,9 +883,15 @@ internal sealed class TrayApp : ApplicationContext {
 
     protected override void Dispose(bool disposing) {
         if (disposing) {
+            _disposed = true;
+            _showSettingsEvent.Set();
+            _showSettingsThread.Join(500);
+            _showSettingsEvent.Dispose();
             _watcher?.Dispose();
             _suspendCountdown.Dispose();
             _source.Dispose();
+            _moveSource.Dispose();
+            _restoreSource.Dispose();
             _icon.Visible = false;
             _icon.Dispose();
             _window.DestroyHandle();
