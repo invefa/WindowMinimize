@@ -31,6 +31,8 @@ All notable changes to WindowMinimize. Versions follow SemVer.
 
 - The background minimize retry is cancelled when a window is restored, so a fast `Win+Q` followed
   by `Win+W` no longer minimizes the window again.
+- The screen move no longer waits a fixed 350 ms. It starts moving as soon as the window reports
+  minimized, then applies a short settle delay; measured latency dropped to about 100 ms.
 
 ## 1.2.2 - 2026-10-19
 

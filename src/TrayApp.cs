@@ -616,35 +616,34 @@ internal sealed class TrayApp : ApplicationContext {
     private async Task MoveToScreenAfterMinimize(
         IntPtr hwnd, Screen target, bool setMinPosition, bool refreshTaskbar
     ) {
-        for (int i = 0; i < 20; i++) {
+        var elapsed = Stopwatch.StartNew();
+        for (int i = 0; i < 25; i++) {
             if (!Native.IsWindow(hwnd)) return;
-            if (Native.IsIconic(hwnd)) {
-                // wait for the minimize animation to finish before changing the restore
-                // position; moving a still visible window would flash across the desktop
-                await Task.Delay(350).ConfigureAwait(false);
-                if (!Native.IsWindow(hwnd) || !Native.IsIconic(hwnd)) return;
-
-                bool moved = WindowOps.MoveToWorkArea(
-                    hwnd, target.WorkingArea, setMinPosition
-                );
-                Log.Debug(
-                    $"move after minimize: hwnd=0x{hwnd.ToInt64():X} "
-                    + $"target={target.DeviceName} moved={moved}"
-                );
-                if (refreshTaskbar) {
-                    // The shell has already animated the minimize on the source screen. Recreate
-                    // the taskbar button only now, so the restore animation is based on the
-                    // target screen instead.
-                    WindowOps.RefreshTaskbarButton(hwnd);
-                    _minimizeRects[hwnd] = target.WorkingArea;
-                }
-                return;
-            }
-
-            await Task.Delay(50).ConfigureAwait(false);
+            if (Native.IsIconic(hwnd)) break;
+            await Task.Delay(10).ConfigureAwait(false);
         }
 
-        Log.Debug("window did not minimize, skipping the screen move to avoid a flash");
+        if (!Native.IsIconic(hwnd)) {
+            Log.Debug("window did not minimize, skipping the screen move to avoid a flash");
+            return;
+        }
+
+        // The placement is already stable once IsIconic is true. A short settle delay keeps the
+        // minimize animation on the source screen before the taskbar button is recreated.
+        await Task.Delay(80).ConfigureAwait(false);
+        if (!Native.IsWindow(hwnd) || !Native.IsIconic(hwnd)) return;
+
+        bool moved = WindowOps.MoveToWorkArea(hwnd, target.WorkingArea, setMinPosition);
+        Log.Debug(
+            $"move after minimize: hwnd=0x{hwnd.ToInt64():X} "
+            + $"target={target.DeviceName} moved={moved} elapsed={elapsed.ElapsedMilliseconds}ms"
+        );
+        if (refreshTaskbar) {
+            // The shell has already animated the minimize on the source screen. Recreate the
+            // taskbar button only now, so the restore animation is based on the target screen.
+            WindowOps.RefreshTaskbarButton(hwnd);
+            _minimizeRects[hwnd] = target.WorkingArea;
+        }
     }
 
     private Screen ResolveMoveTarget(Screen current) {
