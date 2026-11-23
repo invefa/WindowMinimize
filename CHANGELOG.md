@@ -2,6 +2,12 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
+## Unreleased
+
+### Added
+
+- Every settings row shows a short hover hint describing what the option does.
+
 ## 1.4.0 - 2026-11-23
 
 ### Added

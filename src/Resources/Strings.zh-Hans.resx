@@ -323,4 +323,54 @@ hotkey.ini 示例:
   <data name="BalloonRestartFailed" xml:space="preserve">
     <value>无法以管理员身份重启：&#10;{0}</value>
   </data>
-</root>
+  <data name="TipHotkey" xml:space="preserve">
+    <value>最小化当前窗口。点输入框后按下组合键即可修改。</value>
+  </data>
+  <data name="TipMoveHotkey" xml:space="preserve">
+    <value>在当前屏幕最小化，再到另一块屏幕还原，不暴露切换过程。</value>
+  </data>
+  <data name="TipRestoreHotkey" xml:space="preserve">
+    <value>还原最近一个被最小化的窗口。</value>
+  </data>
+  <data name="TipMode" xml:space="preserve">
+    <value>最小化保留任务栏按钮；直接隐藏会把窗口从任务栏移除。</value>
+  </data>
+  <data name="TipLanguage" xml:space="preserve">
+    <value>立即切换界面语言，不需要重启。</value>
+  </data>
+  <data name="TipMonitorA" xml:space="preserve">
+    <value>窗口切换屏幕时离开的那块屏幕。</value>
+  </data>
+  <data name="TipMonitorB" xml:space="preserve">
+    <value>窗口切换屏幕时到达的那块屏幕。</value>
+  </data>
+  <data name="TipRestoreAnimation" xml:space="preserve">
+    <value>还原窗口时使用的动效。</value>
+  </data>
+  <data name="TipTrackAllMinimized" xml:space="preserve">
+    <value>记录任何方式最小化的窗口，还原热键也能找回。</value>
+  </data>
+  <data name="TipCheckUpdates" xml:space="preserve">
+    <value>程序启动时在GitHub上查询新版本。</value>
+  </data>
+  <data name="TipAutoUpdate" xml:space="preserve">
+    <value>发现新版本后自动下载并安装。</value>
+  </data>
+  <data name="TipAutoStart" xml:space="preserve">
+    <value>登录系统后自动启动本程序。</value>
+  </data>
+  <data name="TipAutoStartAdmin" xml:space="preserve">
+    <value>以管理员身份启动，管理员权限的窗口也能处理。</value>
+  </data>
+  <data name="TipDebug" xml:space="preserve">
+    <value>需要排查问题时把详细信息写入日志文件。</value>
+  </data>
+  <data name="TipNotifyStartup" xml:space="preserve">
+    <value>程序启动时显示托盘提示气泡。</value>
+  </data>
+  <data name="TipNotifyErrors" xml:space="preserve">
+    <value>操作失败时显示托盘提示气泡。</value>
+  </data>
+  <data name="TipNotifyPermissions" xml:space="preserve">
+    <value>窗口需要更高权限时显示托盘提示气泡。</value>
+  </data></root>

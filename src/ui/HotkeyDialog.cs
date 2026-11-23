@@ -30,6 +30,13 @@ internal sealed class HotkeyDialog : Form {
     private readonly ComboBox _languageBox;
     private readonly Label _hint;
     private readonly Button? _restartButton = null;
+    // hover hints, the same text the help document explains at length
+    private readonly ToolTip _tips = new() {
+        InitialDelay = 400,
+        ReshowDelay = 100,
+        AutoPopDelay = 20000,
+        ShowAlways = true,
+    };
 
     internal string HotkeyText => _hotkeyBox.Text.Trim();
 
@@ -446,7 +453,25 @@ internal sealed class HotkeyDialog : Form {
         layout.Controls.Add(notificationsLabel, 0, 13);
         layout.Controls.Add(notificationBoxes, 1, 13);
         layout.Controls.Add(_hint, 1, 14);
-        layout.Controls.Add(buttonRow, 0, 15);
+        layout.Controls.Add(buttonRow, 0, 15);        layout.Controls.Add(buttonRow, 0, 15);
+
+        Hint(Strings.TipHotkey, hotkeyLabel, _hotkeyBox);
+        Hint(Strings.TipMoveHotkey, moveHotkeyLabel, _moveHotkeyBox);
+        Hint(Strings.TipRestoreHotkey, restoreHotkeyLabel, _restoreHotkeyBox);
+        Hint(Strings.TipMode, modeLabel, _minimizeRadio, _hideRadio);
+        Hint(Strings.TipLanguage, languageLabel, _languageBox);
+        Hint(Strings.TipMonitorA, monitorALabel, _monitorABox);
+        Hint(Strings.TipMonitorB, monitorBLabel, _monitorBBox);
+        Hint(Strings.TipRestoreAnimation, restoreAnimationLabel, _restoreAnimationBox);
+        Hint(Strings.TipTrackAllMinimized, trackingLabel, _trackAllMinimizedBox);
+        Hint(Strings.TipCheckUpdates, updatesLabel, _checkUpdatesBox);
+        Hint(Strings.TipAutoUpdate, _autoUpdateBox);
+        Hint(Strings.TipAutoStart, startupLabel, _autoStartBox);
+        Hint(Strings.TipAutoStartAdmin, _autoStartAdminBox);
+        Hint(Strings.TipDebug, debugLabel, _debugBox);
+        Hint(Strings.TipNotifyStartup, notificationsLabel, _notifyStartupBox);
+        Hint(Strings.TipNotifyErrors, _notifyErrorsBox);
+        Hint(Strings.TipNotifyPermissions, _notifyPermissionsBox);
         layout.SetColumnSpan(buttonRow, 2);
 
         Controls.Add(layout);
@@ -463,6 +488,10 @@ internal sealed class HotkeyDialog : Form {
         Anchor = AnchorStyles.Top | AnchorStyles.Left,
         Margin = new Padding(3, 3, 12, 3),
     };
+
+    private void Hint(string text, params Control[] targets) {
+        foreach (Control target in targets) _tips.SetToolTip(target, text);
+    }
 
     private void StopHotkeyCapture() {
         _hotkeyBox.CancelCapture();
@@ -492,6 +521,11 @@ internal sealed class HotkeyDialog : Form {
             child.MouseDown += (_, _) => StopHotkeyCapture();
             AttachDismissHandlers(child);
         }
+    }
+
+    protected override void Dispose(bool disposing) {
+        if (disposing) _tips.Dispose();
+        base.Dispose(disposing);
     }
 
     private static TableLayoutPanel HotkeyRow(HotkeyCaptureBox box) {

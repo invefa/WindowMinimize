@@ -87,6 +87,24 @@ internal static class Strings {
         Format(nameof(UpdateFailed), error);
     internal static string MonitorPrimary   => Get(nameof(MonitorPrimary));
     internal static string DialogSyntaxHint => Get(nameof(DialogSyntaxHint));
+    // hover hints for the settings rows, short enough to read in a tooltip
+    internal static string TipHotkey            => Get(nameof(TipHotkey));
+    internal static string TipMoveHotkey        => Get(nameof(TipMoveHotkey));
+    internal static string TipRestoreHotkey     => Get(nameof(TipRestoreHotkey));
+    internal static string TipMode              => Get(nameof(TipMode));
+    internal static string TipLanguage          => Get(nameof(TipLanguage));
+    internal static string TipMonitorA          => Get(nameof(TipMonitorA));
+    internal static string TipMonitorB          => Get(nameof(TipMonitorB));
+    internal static string TipRestoreAnimation  => Get(nameof(TipRestoreAnimation));
+    internal static string TipTrackAllMinimized => Get(nameof(TipTrackAllMinimized));
+    internal static string TipCheckUpdates      => Get(nameof(TipCheckUpdates));
+    internal static string TipAutoUpdate        => Get(nameof(TipAutoUpdate));
+    internal static string TipAutoStart         => Get(nameof(TipAutoStart));
+    internal static string TipAutoStartAdmin    => Get(nameof(TipAutoStartAdmin));
+    internal static string TipDebug             => Get(nameof(TipDebug));
+    internal static string TipNotifyStartup     => Get(nameof(TipNotifyStartup));
+    internal static string TipNotifyErrors      => Get(nameof(TipNotifyErrors));
+    internal static string TipNotifyPermissions => Get(nameof(TipNotifyPermissions));
     internal static string DialogMode       => Get(nameof(DialogMode));
     internal static string DialogStartup    => Get(nameof(DialogStartup));
     internal static string DialogDebug      => Get(nameof(DialogDebug));

@@ -325,4 +325,54 @@ notes:
   <data name="BalloonRestartFailed" xml:space="preserve">
     <value>Could not restart as administrator:&#10;{0}</value>
   </data>
-</root>
+  <data name="TipHotkey" xml:space="preserve">
+    <value>Minimize the window in front. Click the field and press a combination to change it.</value>
+  </data>
+  <data name="TipMoveHotkey" xml:space="preserve">
+    <value>Minimize on the current screen, then restore on the other one, without exposing the move.</value>
+  </data>
+  <data name="TipRestoreHotkey" xml:space="preserve">
+    <value>Restore the window that was minimized last.</value>
+  </data>
+  <data name="TipMode" xml:space="preserve">
+    <value>Minimize keeps the taskbar button; hide removes the window from the taskbar.</value>
+  </data>
+  <data name="TipLanguage" xml:space="preserve">
+    <value>Switch the interface language now, without a restart.</value>
+  </data>
+  <data name="TipMonitorA" xml:space="preserve">
+    <value>The screen a window leaves when it switches screens.</value>
+  </data>
+  <data name="TipMonitorB" xml:space="preserve">
+    <value>The screen a window arrives on when it switches screens.</value>
+  </data>
+  <data name="TipRestoreAnimation" xml:space="preserve">
+    <value>The animation used while a window is restored.</value>
+  </data>
+  <data name="TipTrackAllMinimized" xml:space="preserve">
+    <value>Track windows minimized by any means, so the restore hotkey can find them too.</value>
+  </data>
+  <data name="TipCheckUpdates" xml:space="preserve">
+    <value>Look for a newer release on GitHub when the program starts.</value>
+  </data>
+  <data name="TipAutoUpdate" xml:space="preserve">
+    <value>Download and install a new release after one is found.</value>
+  </data>
+  <data name="TipAutoStart" xml:space="preserve">
+    <value>Start the program after you log on.</value>
+  </data>
+  <data name="TipAutoStartAdmin" xml:space="preserve">
+    <value>Start elevated, so windows owned by administrators can be handled too.</value>
+  </data>
+  <data name="TipDebug" xml:space="preserve">
+    <value>Write debug detail to the log file when something needs investigating.</value>
+  </data>
+  <data name="TipNotifyStartup" xml:space="preserve">
+    <value>Show a tray balloon when the program starts.</value>
+  </data>
+  <data name="TipNotifyErrors" xml:space="preserve">
+    <value>Show a tray balloon when an action fails.</value>
+  </data>
+  <data name="TipNotifyPermissions" xml:space="preserve">
+    <value>Show a tray balloon when a window needs higher permission.</value>
+  </data></root>
