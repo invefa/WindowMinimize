@@ -28,6 +28,12 @@ internal sealed class HotkeyDialog : Form {
     private readonly ComboBox _languageBox;
     private readonly Label _hint;
     private readonly Button? _restartButton = null;
+    private readonly ToolTip _toolTip = new() {
+        AutoPopDelay = 15000,
+        InitialDelay = 250,
+        ReshowDelay = 100,
+        ShowAlways = true,
+    };
 
     internal string HotkeyText => _hotkeyBox.Text.Trim();
 
@@ -99,7 +105,7 @@ internal sealed class HotkeyDialog : Form {
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 360));
 
-        var hotkeyLabel = RowLabel(Strings.DialogHotkey);
+        var hotkeyLabel = RowLabel(Strings.DialogHotkey, Strings.HelpHotkey);
 
         _hotkeyBox = new TextBox {
             Dock = DockStyle.Fill,
@@ -115,7 +121,7 @@ internal sealed class HotkeyDialog : Form {
             Margin = new Padding(0, 0, 0, 10),
         };
 
-        var moveHotkeyLabel = RowLabel(Strings.DialogMoveHotkey);
+        var moveHotkeyLabel = RowLabel(Strings.DialogMoveHotkey, Strings.HelpMoveHotkey);
 
         _moveHotkeyBox = new TextBox {
             Dock = DockStyle.Fill,
@@ -123,7 +129,7 @@ internal sealed class HotkeyDialog : Form {
             Text = config.MoveHotkey,
         };
 
-        var restoreHotkeyLabel = RowLabel(Strings.DialogRestoreHotkey);
+        var restoreHotkeyLabel = RowLabel(Strings.DialogRestoreHotkey, Strings.HelpRestoreHotkey);
 
         _restoreHotkeyBox = new TextBox {
             Dock = DockStyle.Fill,
@@ -131,7 +137,7 @@ internal sealed class HotkeyDialog : Form {
             Text = config.RestoreHotkey,
         };
 
-        var modeLabel = RowLabel(Strings.DialogMode);
+        var modeLabel = RowLabel(Strings.DialogMode, Strings.HelpMode);
 
         var modes = new FlowLayoutPanel {
             AutoSize = true,
@@ -157,7 +163,7 @@ internal sealed class HotkeyDialog : Form {
         modes.Controls.Add(_minimizeRadio);
         modes.Controls.Add(_hideRadio);
 
-        var languageLabel = RowLabel(Strings.DialogLanguage);
+        var languageLabel = RowLabel(Strings.DialogLanguage, Strings.HelpLanguage);
 
         _languageBox = new ComboBox {
             DropDownStyle = ComboBoxStyle.DropDownList,
@@ -175,15 +181,17 @@ internal sealed class HotkeyDialog : Form {
         };
 
         var monitors = BuildMonitorChoices();
-        var monitorALabel = RowLabel(Strings.DialogMonitorA);
+        var monitorALabel = RowLabel(Strings.DialogMonitorA, Strings.HelpMonitors);
         var monitorADefault = monitors.FirstOrDefault(item => item.Primary) ?? monitors[0];
         _monitorABox = MonitorComboBox(monitors, config.MonitorA, monitorADefault);
 
-        var monitorBLabel = RowLabel(Strings.DialogMonitorB);
+        var monitorBLabel = RowLabel(Strings.DialogMonitorB, Strings.HelpMonitors);
         var monitorBDefault = monitors.FirstOrDefault(item => !item.Primary) ?? monitors[0];
         _monitorBBox = MonitorComboBox(monitors, config.MonitorB, monitorBDefault);
 
-        var restoreAnimationLabel = RowLabel(Strings.DialogRestoreAnimation);
+        var restoreAnimationLabel = RowLabel(
+            Strings.DialogRestoreAnimation, Strings.HelpRestoreAnimation
+        );
         _restoreAnimationBox = new ComboBox {
             DropDownStyle = ComboBoxStyle.DropDownList,
             Width = 300,
@@ -232,10 +240,10 @@ internal sealed class HotkeyDialog : Form {
         updateBoxes.Controls.Add(_checkUpdatesBox);
         updateBoxes.Controls.Add(_autoUpdateBox);
 
-        var startupLabel = RowLabel(Strings.DialogStartup);
+        var startupLabel = RowLabel(Strings.DialogStartup, Strings.HelpStartup);
 
-        var trackingLabel = RowLabel(Strings.DialogTracking);
-        var updatesLabel = RowLabel(Strings.DialogUpdates);
+        var trackingLabel = RowLabel(Strings.DialogTracking, Strings.HelpTrackAll);
+        var updatesLabel = RowLabel(Strings.DialogUpdates, Strings.HelpUpdates);
 
         var startupBoxes = new FlowLayoutPanel {
             AutoSize = true,
@@ -272,7 +280,7 @@ internal sealed class HotkeyDialog : Form {
         startupBoxes.Controls.Add(_autoStartBox);
         startupBoxes.Controls.Add(_autoStartAdminBox);
 
-        var debugLabel = RowLabel(Strings.DialogLog);
+        var debugLabel = RowLabel(Strings.DialogLog, Strings.HelpLog);
 
         _debugBox = new CheckBox {
             Text = Strings.DialogDebug,
@@ -281,7 +289,7 @@ internal sealed class HotkeyDialog : Form {
             Margin = new Padding(0, 6, 0, 6),
         };
 
-        var notificationsLabel = RowLabel(Strings.DialogNotifications);
+        var notificationsLabel = RowLabel(Strings.DialogNotifications, Strings.HelpNotifications);
 
         var notificationBoxes = new TableLayoutPanel {
             AutoSize = true,
@@ -427,12 +435,45 @@ internal sealed class HotkeyDialog : Form {
         CancelButton = cancel;
     }
 
-    private static Label RowLabel(string text) => new() {
-        Text = text,
-        AutoSize = true,
-        Anchor = AnchorStyles.Top | AnchorStyles.Left,
-        Margin = new Padding(3, 3, 12, 3),
-    };
+    private Control RowLabel(string text, string? help = null) {
+        var label = new Label {
+            Text = text,
+            AutoSize = true,
+            Anchor = AnchorStyles.Top | AnchorStyles.Left,
+            Margin = new Padding(0),
+        };
+
+        if (string.IsNullOrWhiteSpace(help)) {
+            return new Label {
+                Text = text,
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left,
+                Margin = new Padding(3, 3, 12, 3),
+            };
+        }
+
+        var panel = new FlowLayoutPanel {
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            WrapContents = false,
+            Margin = new Padding(3, 3, 12, 3),
+        };
+        panel.Controls.Add(label);
+
+        var helpLabel = new Label {
+            Text = "?",
+            AutoSize = false,
+            Width = 16,
+            Height = 16,
+            TextAlign = ContentAlignment.MiddleCenter,
+            BorderStyle = BorderStyle.FixedSingle,
+            Cursor = Cursors.Help,
+            Margin = new Padding(4, 1, 0, 0),
+        };
+        _toolTip.SetToolTip(helpLabel, help);
+        panel.Controls.Add(helpLabel);
+        return panel;
+    }
 
     private static List<MonitorChoice> BuildMonitorChoices() {
         var choices = new List<MonitorChoice>();

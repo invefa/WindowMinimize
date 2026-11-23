@@ -177,6 +177,8 @@ Windows自身占用的组合，例如`Win+S`打开搜索或`Win+D`显示桌面�
 
 如果Release提供了`SHA256SUMS.txt`，下载完成后会校验SHA-256。随后一个独立的PowerShell辅助进程等待当前程序退出，替换可执行文件并重新启动。更新文件保存在`%LOCALAPPDATA%\WindowMinimize\updates`。
 
+设置项标签旁的问号图标提供Windows标准悬停提示，说明热键、屏幕配对、还原方式、记录、更新、启动和通知等选项。
+
 三个热键动作会串行执行。切换屏幕会等到延迟移动完成才处理下一个动作，还原会等到还原动画结束，因此快速连按不会把两次操作交叉插入。还原时还会取消该窗口尚未执行的后台最小化重试，所以快速按`Win+W`不会被延迟重试重新最小化。
 
 再次启动程序时不会弹出重复运行错误。第二个实例通过命名事件通知第一个实例，由第一个实例打开设置界面；命名事件打不开时回退到窗口消息。
@@ -196,7 +198,7 @@ pwsh -NoProfile -File build\build.ps1
 加`-Lite`会生成`dist\lite\WindowMinimize-lite.exe`，这是依赖框架的单文件版本，运行机器需要.NET8 Desktop Runtime。
 它放在单独目录，因为单文件发布会先清空输出目录。
 
-推送与`src\WindowMinimize.csproj`中`<Version>`一致的标签，例如`v1.3.0`，会触发
+推送与`src\WindowMinimize.csproj`中`<Version>`一致的标签，例如`v1.3.1`，会触发
 `.github\workflows\release.yml`运行单元测试、构建两个exe、提取`CHANGELOG.md`中对应版本的段落，并把exe附加到Release。
 
 单元测试：

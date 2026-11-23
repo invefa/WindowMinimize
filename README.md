@@ -239,6 +239,10 @@ The downloaded executable is checked against the release `SHA256SUMS.txt` when t
 then a detached PowerShell helper waits for the current process to exit, replaces the executable
 and restarts it. Update files live under `%LOCALAPPDATA%\WindowMinimize\updates`.
 
+Question-mark icons beside the settings labels show the standard Windows hover help for each
+option. The tooltip explains the hotkey, screen pair, restore mode, tracking, update, startup and
+notification settings.
+
 Hotkey actions are serialized. A screen move holds the queue until its delayed placement is done,
 and a restore holds it until the restore animation has finished, so fast repeated presses cannot
 interleave two operations. Restoring also cancels the background minimize retry for that window, so
@@ -267,7 +271,7 @@ Add `-Lite` to get `dist\lite\WindowMinimize-lite.exe` instead, the framework de
 that needs the .NET 8 Desktop Runtime on the machine it runs on. It lives in a folder of its own
 because a single file publish clears its output folder before writing.
 
-Pushing a tag such as `v1.3.0`, matching `<Version>` in `src\WindowMinimize.csproj`, makes
+Pushing a tag such as `v1.3.1`, matching `<Version>` in `src\WindowMinimize.csproj`, makes
 `.github\workflows\release.yml` run the unit tests, build both exe files, extract the matching
 section of `CHANGELOG.md` and attach the exe files to the release.
 

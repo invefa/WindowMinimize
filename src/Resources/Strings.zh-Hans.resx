@@ -108,6 +108,42 @@
   <data name="DialogUpdates" xml:space="preserve">
     <value>更新</value>
   </data>
+  <data name="HelpHotkey" xml:space="preserve">
+    <value>最小化当前前台窗口的全局热键。主键放在最后，例如 Win+Q。</value>
+  </data>
+  <data name="HelpMoveHotkey" xml:space="preserve">
+    <value>先最小化当前窗口，再把还原位置移动到配置的另一块屏幕。</value>
+  </data>
+  <data name="HelpRestoreHotkey" xml:space="preserve">
+    <value>还原最近最小化的窗口。开启全窗口历史后，也包括其他程序最小化的窗口。</value>
+  </data>
+  <data name="HelpMode" xml:space="preserve">
+    <value>最小化会把窗口放到任务栏。隐藏会同时移出屏幕和任务栏，需要通过隐藏窗口菜单恢复。</value>
+  </data>
+  <data name="HelpLanguage" xml:space="preserve">
+    <value>自动跟随Windows显示语言。英文和简体中文可强制指定界面语言。</value>
+  </data>
+  <data name="HelpMonitors" xml:space="preserve">
+    <value>交换屏幕使用的两块屏幕。窗口在 A 上移到 B，在 B 上移回 A，在其他屏幕上移到 B。</value>
+  </data>
+  <data name="HelpRestoreAnimation" xml:space="preserve">
+    <value>原生动画保留 Windows 过渡。淡入和无过渡可避免跨屏动画；系统默认完全不调整。</value>
+  </data>
+  <data name="HelpTrackAll" xml:space="preserve">
+    <value>记录所有程序的最小化窗口，不只记录本工具触发的窗口。Win+W 会从更大的历史中还原。</value>
+  </data>
+  <data name="HelpUpdates" xml:space="preserve">
+    <value>启动时检查GitHub Release。自动更新会下载并安装匹配的完整版或Lite版，并在可用时校验SHA-256。</value>
+  </data>
+  <data name="HelpStartup" xml:space="preserve">
+    <value>登录时启动 WindowMinimize。管理员选项使用最高运行级别的计划任务。</value>
+  </data>
+  <data name="HelpLog" xml:space="preserve">
+    <value>把诊断信息写入可执行文件旁的 hotkey.log。</value>
+  </data>
+  <data name="HelpNotifications" xml:space="preserve">
+    <value>选择显示哪些托盘气泡：启动提示、错误提示和权限或提权提示。</value>
+  </data>
   <data name="DialogCheckUpdates" xml:space="preserve">
     <value>启动时检查更新</value>
   </data>

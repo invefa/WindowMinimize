@@ -109,6 +109,42 @@
   <data name="DialogUpdates" xml:space="preserve">
     <value>Updates</value>
   </data>
+  <data name="HelpHotkey" xml:space="preserve">
+    <value>Global hotkey that minimizes the current foreground window. The key name is the last part, for example Win+Q.</value>
+  </data>
+  <data name="HelpMoveHotkey" xml:space="preserve">
+    <value>Minimizes the current window, then moves its restore position to the other configured screen.</value>
+  </data>
+  <data name="HelpRestoreHotkey" xml:space="preserve">
+    <value>Restores the most recently minimized window. With all-window history enabled, this includes windows minimized by other programs.</value>
+  </data>
+  <data name="HelpMode" xml:space="preserve">
+    <value>Minimize sends the window to the taskbar. Hide removes it from the screen and the taskbar; use the hidden-windows menu to bring it back.</value>
+  </data>
+  <data name="HelpLanguage" xml:space="preserve">
+    <value>Auto follows the Windows display language. English and Chinese force the interface language.</value>
+  </data>
+  <data name="HelpMonitors" xml:space="preserve">
+    <value>The two screens used by the screen-switch hotkey. A window on screen A moves to B, a window on B moves to A, and a window on another screen moves to B.</value>
+  </data>
+  <data name="HelpRestoreAnimation" xml:space="preserve">
+    <value>Native keeps the Windows restore animation. Fade and Disable avoid a cross-screen animation; System default leaves the animation untouched.</value>
+  </data>
+  <data name="HelpTrackAll" xml:space="preserve">
+    <value>Record windows minimized by any program, not only by this tool. Win+W then restores from that larger history.</value>
+  </data>
+  <data name="HelpUpdates" xml:space="preserve">
+    <value>Check GitHub releases at startup. Auto update downloads and installs a newer full or lite build after checking its SHA-256 checksum when available.</value>
+  </data>
+  <data name="HelpStartup" xml:space="preserve">
+    <value>Start WindowMinimize when you sign in. The elevated option uses a highest-run-level scheduled task.</value>
+  </data>
+  <data name="HelpLog" xml:space="preserve">
+    <value>Write diagnostic messages to hotkey.log next to the executable.</value>
+  </data>
+  <data name="HelpNotifications" xml:space="preserve">
+    <value>Choose which tray balloons are shown: startup, errors, and permission or elevation notices.</value>
+  </data>
   <data name="DialogCheckUpdates" xml:space="preserve">
     <value>Check for updates at startup</value>
   </data>
