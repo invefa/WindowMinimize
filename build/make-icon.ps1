@@ -4,7 +4,7 @@ param(
 
 # Generates app.ico. Composition: two downward chevron arrows collapsing onto a single bar at the
 # bottom, suggesting "collapse the window to the taskbar". Drawn in a 32-unit coordinate system.
-# The same geometry lives in Draw() in src\IconFactory.cs (the tray icon has to be drawn live at
+# The same geometry lives in Draw() in src\ui\IconFactory.cs (the tray icon has to be drawn live at
 # the system small-icon size to stay sharp), so keep the two in sync when changing this.
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing

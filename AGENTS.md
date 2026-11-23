@@ -23,6 +23,18 @@ hotkeys, window minimizing, screen switching, minimized-window history, settings
 Source lives in`src`, unit tests in`test/unit`, desktop end-to-end tests in`test/e2e`, and the build
 entry point is`build/build.ps1`.
 
+`src` is grouped by responsibility, and every file keeps the`WindowMinimize` namespace:
+
+| Folder | Owns |
+|---|---|
+| `app` | Entry point, tray shell, single instance, version, log |
+| `config` | Settings model and`hotkey.ini` storage |
+| `hotkey` | Shortcut syntax and global hotkey registration |
+| `window` | Win32 declarations, window operations, taskbar interop |
+| `ui` | Settings dialog, custom controls, tray icon, string accessor |
+| `update` | GitHub release check and installation |
+| `Resources` | String tables only, no code |
+
 ## Build and validation
 
 ```powershell

@@ -20,6 +20,18 @@ WindowMinimize是Windows托盘工具，使用C#、.NET8和WinForms。程序支�
 
 源码在`src`，单元测试在`test/unit`，桌面端到端测试在`test/e2e`，构建入口为`build/build.ps1`。
 
+`src`按职责分目录，所有文件统一使用`WindowMinimize`命名空间：
+
+| 目录 | 职责 |
+|---|---|
+| `app` | 程序入口、托盘外壳、单实例、版本、日志 |
+| `config` | 设置模型与`hotkey.ini`存取 |
+| `hotkey` | 快捷键语法与全局热键注册 |
+| `window` | Win32声明、窗口操作、任务栏互操作 |
+| `ui` | 设置对话框、自定义控件、托盘图标、文案访问 |
+| `update` | GitHub版本检查与安装 |
+| `Resources` | 仅资源字符串表，不含代码 |
+
 ## 构建与验证
 
 ```powershell
