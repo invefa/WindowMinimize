@@ -9,7 +9,7 @@ namespace WindowMinimize;
 /// Settings dialog: hotkey, mode, auto start and the debug log. The hotkey that is in effect keeps
 /// working while the dialog is open.
 /// </summary>
-internal sealed class HotkeyDialog : Form, IMessageFilter {
+internal sealed class HotkeyDialog : Form {
     private readonly HotkeyCaptureBox _hotkeyBox;
     private readonly HotkeyCaptureBox _moveHotkeyBox;
     private readonly HotkeyCaptureBox _restoreHotkeyBox;
@@ -95,8 +95,13 @@ internal sealed class HotkeyDialog : Form, IMessageFilter {
             e.Cancel = true;
             OpenHelpDocument();
         };
-        Deactivate += (_, _) => StopHotkeyCapture();
-        Activated += (_, _) => ResumeHotkeyCapture();
+        Deactivate += (_, _) => SuspendHotkeyCapture();
+        Shown += (_, _) => {
+            _hotkeyBox.AllowCapture = true;
+            _moveHotkeyBox.AllowCapture = true;
+            _restoreHotkeyBox.AllowCapture = true;
+        };
+        Activated += (_, _) => BeginInvoke(new Action(ResumeHotkeyCapture));
 
         var layout = new TableLayoutPanel {
             AutoSize = true,
@@ -349,7 +354,6 @@ internal sealed class HotkeyDialog : Form, IMessageFilter {
             box.CaptureAccepted += () => _hint.Visible = false;
         }
 
-        Application.AddMessageFilter(this);
 
         var buttonRow = new TableLayoutPanel {
             AutoSize = true,
@@ -446,6 +450,9 @@ internal sealed class HotkeyDialog : Form, IMessageFilter {
         layout.SetColumnSpan(buttonRow, 2);
 
         Controls.Add(layout);
+
+        AttachDismissHandlers(this);
+        MouseDown += (_, _) => StopHotkeyCapture();
         AcceptButton = save;
         CancelButton = cancel;
     }
@@ -463,26 +470,28 @@ internal sealed class HotkeyDialog : Form, IMessageFilter {
         _restoreHotkeyBox.CancelCapture();
     }
 
+    private void SuspendHotkeyCapture() {
+        _hotkeyBox.SuspendCapture();
+        _moveHotkeyBox.SuspendCapture();
+        _restoreHotkeyBox.SuspendCapture();
+    }
+
     private void ResumeHotkeyCapture() {
         _hotkeyBox.ResumeCapture();
         _moveHotkeyBox.ResumeCapture();
         _restoreHotkeyBox.ResumeCapture();
     }
 
-    public bool PreFilterMessage(ref Message m) {
-        if (m.Msg is not (0x0201 or 0x0204 or 0x0207)) return false;
-
-        Control? target = Control.FromHandle(m.HWnd);
-        if (target is null || target.FindForm() != this) return false;
-        if (target is HotkeyCaptureBox or ClearIconButton) return false;
-
-        StopHotkeyCapture();
-        return false;
-    }
-
-    protected override void Dispose(bool disposing) {
-        if (disposing) Application.RemoveMessageFilter(this);
-        base.Dispose(disposing);
+    /// <summary>
+    /// Any click outside a hotkey field ends listening, so a stray click cannot leave a field
+    /// swallowing the next key press.
+    /// </summary>
+    private void AttachDismissHandlers(Control root) {
+        foreach (Control child in root.Controls) {
+            if (child is HotkeyCaptureBox or ClearIconButton) continue;
+            child.MouseDown += (_, _) => StopHotkeyCapture();
+            AttachDismissHandlers(child);
+        }
     }
 
     private static TableLayoutPanel HotkeyRow(HotkeyCaptureBox box) {

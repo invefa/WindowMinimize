@@ -4,8 +4,8 @@ using System.Windows.Forms;
 namespace WindowMinimize;
 
 /// <summary>
-/// A read-only hotkey field that listens while it has focus, without replacing its current text
-/// until a complete combination is pressed.
+/// A read-only hotkey field that listens only while it has focus and the dialog is active. The
+/// current text stays untouched until a complete combination is pressed.
 /// </summary>
 internal sealed class HotkeyCaptureBox : TextBox {
     private Native.LowLevelKeyboardProc? _hookProc;
@@ -13,6 +13,7 @@ internal sealed class HotkeyCaptureBox : TextBox {
     private string _previous = string.Empty;
     private uint _modifiers;
     private bool _capturing;
+    private bool _resumeOnActivate;
 
     internal HotkeyCaptureBox(string text, string prompt) {
         Text = text;
@@ -29,6 +30,12 @@ internal sealed class HotkeyCaptureBox : TextBox {
 
     internal event Action? CaptureAccepted;
 
+    /// <summary>
+    /// Enabled once the dialog is shown, so the automatic focus while the dialog opens does not
+    /// start listening behind the user's back.
+    /// </summary>
+    internal bool AllowCapture { get; set; }
+
     internal void ClearValue() {
         if (_capturing) EndCapture(keep: true);
         _previous = string.Empty;
@@ -36,18 +43,39 @@ internal sealed class HotkeyCaptureBox : TextBox {
         ForeColor = SystemColors.WindowText;
     }
 
-    internal void CancelCapture() => EndCapture(keep: false);
-
-    internal void ResumeCapture() {
-        if (Focused) BeginCapture();
+    /// <summary>Stop listening and put the previous value back.</summary>
+    internal void CancelCapture() {
+        _resumeOnActivate = false;
+        EndCapture(keep: false);
     }
 
-    protected override void OnEnter(EventArgs e) {
-        base.OnEnter(e);
+    /// <summary>Stop listening while the dialog is inactive, remembering to resume later.</summary>
+    internal void SuspendCapture() {
+        bool wasCapturing = _capturing;
+        EndCapture(keep: false);
+        _resumeOnActivate = wasCapturing;
+    }
+
+    /// <summary>Resume listening when the dialog becomes active again with this field focused.</summary>
+    internal void ResumeCapture() {
+        bool resume = _resumeOnActivate;
+        _resumeOnActivate = false;
+        if (resume && Focused) BeginCapture();
+    }
+
+    protected override void OnGotFocus(EventArgs e) {
+        base.OnGotFocus(e);
+        if (AllowCapture) BeginCapture();
+    }
+
+    protected override void OnMouseDown(MouseEventArgs e) {
+        base.OnMouseDown(e);
+        AllowCapture = true;
         BeginCapture();
     }
 
     protected override void OnLeave(EventArgs e) {
+        _resumeOnActivate = false;
         EndCapture(keep: false);
         base.OnLeave(e);
     }
@@ -106,6 +134,7 @@ internal sealed class HotkeyCaptureBox : TextBox {
         if (!down) return new IntPtr(1);
 
         if (vk == 0x1B) {
+            _resumeOnActivate = false;
             EndCapture(keep: false);
             return new IntPtr(1);
         }
