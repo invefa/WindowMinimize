@@ -20,7 +20,7 @@ internal sealed class HotkeyCaptureBox : TextBox {
         ReadOnly = true;
         BackColor = SystemColors.Window;
         ForeColor = SystemColors.WindowText;
-        Cursor = Cursors.Hand;
+        Cursor = Cursors.IBeam;
         ShortcutsEnabled = false;
         Margin = new Padding(0, 3, 0, 3);
     }
