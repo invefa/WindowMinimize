@@ -4,11 +4,10 @@ using System.Windows.Forms;
 namespace WindowMinimize;
 
 /// <summary>
-/// A read-only hotkey field that captures the next key combination through a low-level keyboard
-/// hook, so Windows and modified keys are captured too.
+/// A read-only hotkey field that listens while it has focus, without replacing its current text
+/// until a complete combination is pressed.
 /// </summary>
 internal sealed class HotkeyCaptureBox : TextBox {
-    private readonly string _prompt;
     private Native.LowLevelKeyboardProc? _hookProc;
     private IntPtr _hook;
     private string _previous = string.Empty;
@@ -16,8 +15,8 @@ internal sealed class HotkeyCaptureBox : TextBox {
     private bool _capturing;
 
     internal HotkeyCaptureBox(string text, string prompt) {
-        _prompt = prompt;
         Text = text;
+        PlaceholderText = prompt;
         ReadOnly = true;
         BackColor = SystemColors.Window;
         ForeColor = SystemColors.WindowText;
@@ -39,14 +38,14 @@ internal sealed class HotkeyCaptureBox : TextBox {
 
     internal void CancelCapture() => EndCapture(keep: false);
 
+    protected override void OnEnter(EventArgs e) {
+        base.OnEnter(e);
+        BeginCapture();
+    }
+
     protected override void OnLeave(EventArgs e) {
         EndCapture(keep: false);
         base.OnLeave(e);
-    }
-
-    protected override void OnMouseDown(MouseEventArgs e) {
-        base.OnMouseDown(e);
-        if (!_capturing) BeginCapture();
     }
 
     private void BeginCapture() {
@@ -55,8 +54,6 @@ internal sealed class HotkeyCaptureBox : TextBox {
         _capturing = true;
         _previous = Text;
         _modifiers = CurrentModifiers();
-        Text = _prompt;
-        ForeColor = SystemColors.GrayText;
         _hookProc = HookProc;
         _hook = Native.SetWindowsHookEx(
             Native.WH_KEYBOARD_LL, _hookProc, Native.GetModuleHandle(null), 0
@@ -112,16 +109,15 @@ internal sealed class HotkeyCaptureBox : TextBox {
         uint modifiers = _modifiers | CurrentModifiers();
         if ((vk == 0x08 || vk == 0x2E) && modifiers == 0) {
             _previous = string.Empty;
-            EndCapture(keep: true);
+            Text = string.Empty;
             return new IntPtr(1);
         }
 
         if (HotkeySpec.TryCreate(modifiers, vk, out HotkeySpec? spec, out string error)) {
-            Text = spec!.Text;
+            _previous = spec!.Text;
+            Text = spec.Text;
             CaptureAccepted?.Invoke();
-            EndCapture(keep: true);
         } else {
-            Text = _prompt;
             CaptureRejected?.Invoke(error);
         }
 

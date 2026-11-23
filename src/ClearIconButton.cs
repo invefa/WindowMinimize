@@ -20,7 +20,10 @@ internal sealed class ClearIconButton : Button {
         Text = string.Empty;
         FlatStyle = FlatStyle.Flat;
         FlatAppearance.BorderSize = 0;
-        Size = new Size(20, 20);
+        FlatAppearance.MouseOverBackColor = Color.Transparent;
+        FlatAppearance.MouseDownBackColor = Color.Transparent;
+        UseVisualStyleBackColor = false;
+        Size = new Size(22, 22);
         TabStop = false;
         Cursor = Cursors.Hand;
         BackColor = Color.Transparent;
@@ -37,10 +40,10 @@ internal sealed class ClearIconButton : Button {
         }
 
         using var pen = new Pen(SystemColors.GrayText, 1.5f);
-        int left = 7;
-        int top = 7;
-        int right = Width - 8;
-        int bottom = Height - 8;
+        int left = 6;
+        int top = 6;
+        int right = Width - 7;
+        int bottom = Height - 7;
         e.Graphics.DrawLine(pen, left, top, right, bottom);
         e.Graphics.DrawLine(pen, right, top, left, bottom);
     }
