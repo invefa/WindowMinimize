@@ -38,6 +38,10 @@ internal sealed class HotkeyCaptureBox : TextBox {
 
     internal void CancelCapture() => EndCapture(keep: false);
 
+    internal void ResumeCapture() {
+        if (Focused) BeginCapture();
+    }
+
     protected override void OnEnter(EventArgs e) {
         base.OnEnter(e);
         BeginCapture();
@@ -49,7 +53,7 @@ internal sealed class HotkeyCaptureBox : TextBox {
     }
 
     private void BeginCapture() {
-        if (_capturing || IsDisposed) return;
+        if (_capturing || IsDisposed || !Focused) return;
 
         _capturing = true;
         _previous = Text;

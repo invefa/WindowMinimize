@@ -95,6 +95,8 @@ internal sealed class HotkeyDialog : Form {
             e.Cancel = true;
             OpenHelpDocument();
         };
+        Deactivate += (_, _) => StopHotkeyCapture();
+        Activated += (_, _) => ResumeHotkeyCapture();
 
         var layout = new TableLayoutPanel {
             AutoSize = true,
@@ -452,6 +454,18 @@ internal sealed class HotkeyDialog : Form {
         Anchor = AnchorStyles.Top | AnchorStyles.Left,
         Margin = new Padding(3, 3, 12, 3),
     };
+
+    private void StopHotkeyCapture() {
+        _hotkeyBox.CancelCapture();
+        _moveHotkeyBox.CancelCapture();
+        _restoreHotkeyBox.CancelCapture();
+    }
+
+    private void ResumeHotkeyCapture() {
+        _hotkeyBox.ResumeCapture();
+        _moveHotkeyBox.ResumeCapture();
+        _restoreHotkeyBox.ResumeCapture();
+    }
 
     private static TableLayoutPanel HotkeyRow(HotkeyCaptureBox box) {
         var row = new TableLayoutPanel {
