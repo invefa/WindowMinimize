@@ -460,18 +460,11 @@ internal sealed class HotkeyDialog : Form {
         };
         panel.Controls.Add(label);
 
-        var helpLabel = new Label {
-            Text = "?",
-            AutoSize = false,
-            Width = 16,
-            Height = 16,
-            TextAlign = ContentAlignment.MiddleCenter,
-            BorderStyle = BorderStyle.FixedSingle,
-            Cursor = Cursors.Help,
+        var helpBadge = new HelpBadge {
             Margin = new Padding(4, 1, 0, 0),
         };
-        _toolTip.SetToolTip(helpLabel, help);
-        panel.Controls.Add(helpLabel);
+        _toolTip.SetToolTip(helpBadge, help);
+        panel.Controls.Add(helpBadge);
         return panel;
     }
 

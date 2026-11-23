@@ -2,6 +2,13 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
+## 1.3.2 - 2026-11-23
+
+### Fixed
+
+- The settings help badges are now circular and use a 1px system-color outline with a readable
+  centered question mark.
+
 ## 1.3.1 - 2026-11-23
 
 ### Added
