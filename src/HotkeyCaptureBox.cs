@@ -18,6 +18,8 @@ internal sealed class HotkeyCaptureBox : TextBox {
         _prompt = prompt;
         Text = text;
         ReadOnly = true;
+        BackColor = SystemColors.Window;
+        ForeColor = SystemColors.WindowText;
         Cursor = Cursors.Hand;
         ShortcutsEnabled = false;
         Margin = new Padding(0, 3, 0, 3);
@@ -27,10 +29,14 @@ internal sealed class HotkeyCaptureBox : TextBox {
 
     internal event Action? CaptureAccepted;
 
-    protected override void OnEnter(EventArgs e) {
-        base.OnEnter(e);
-        BeginCapture();
+    internal void ClearValue() {
+        if (_capturing) EndCapture(keep: true);
+        _previous = string.Empty;
+        Text = string.Empty;
+        ForeColor = SystemColors.WindowText;
     }
+
+    internal void CancelCapture() => EndCapture(keep: false);
 
     protected override void OnLeave(EventArgs e) {
         EndCapture(keep: false);
@@ -41,8 +47,6 @@ internal sealed class HotkeyCaptureBox : TextBox {
         base.OnMouseDown(e);
         if (!_capturing) BeginCapture();
     }
-
-    internal void CancelCapture() => EndCapture(keep: false);
 
     private void BeginCapture() {
         if (_capturing || IsDisposed) return;
@@ -91,7 +95,6 @@ internal sealed class HotkeyCaptureBox : TextBox {
         uint vk = info.VkCode;
 
         if (!down) return new IntPtr(1);
-
         if (IsModifier(vk)) return new IntPtr(1);
 
         if (vk == 0x1B) {

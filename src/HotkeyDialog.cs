@@ -136,6 +136,10 @@ internal sealed class HotkeyDialog : Form {
             Dock = DockStyle.Fill,
         };
 
+        var hotkeyRow = HotkeyRow(_hotkeyBox);
+        var moveHotkeyRow = HotkeyRow(_moveHotkeyBox);
+        var restoreHotkeyRow = HotkeyRow(_restoreHotkeyBox);
+
         var modeLabel = RowLabel(Strings.DialogMode);
 
         var modes = new FlowLayoutPanel {
@@ -407,12 +411,12 @@ internal sealed class HotkeyDialog : Form {
         buttonRow.Controls.Add(rightButtons, 1, 0);
 
         layout.Controls.Add(hotkeyLabel, 0, 0);
-        layout.Controls.Add(_hotkeyBox, 1, 0);
+        layout.Controls.Add(hotkeyRow, 1, 0);
         layout.Controls.Add(syntaxHint, 1, 1);
         layout.Controls.Add(moveHotkeyLabel, 0, 2);
-        layout.Controls.Add(_moveHotkeyBox, 1, 2);
+        layout.Controls.Add(moveHotkeyRow, 1, 2);
         layout.Controls.Add(restoreHotkeyLabel, 0, 3);
-        layout.Controls.Add(_restoreHotkeyBox, 1, 3);
+        layout.Controls.Add(restoreHotkeyRow, 1, 3);
         layout.Controls.Add(modeLabel, 0, 4);
         layout.Controls.Add(modes, 1, 4);
         layout.Controls.Add(languageLabel, 0, 5);
@@ -448,6 +452,36 @@ internal sealed class HotkeyDialog : Form {
         Anchor = AnchorStyles.Top | AnchorStyles.Left,
         Margin = new Padding(3, 3, 12, 3),
     };
+
+    private static TableLayoutPanel HotkeyRow(HotkeyCaptureBox box) {
+        var row = new TableLayoutPanel {
+            ColumnCount = 2,
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Margin = new Padding(0),
+            Padding = new Padding(0),
+        };
+        row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 24));
+
+        box.Dock = DockStyle.Fill;
+        var clear = new Button {
+            Text = "X",
+            Dock = DockStyle.Fill,
+            FlatStyle = FlatStyle.Flat,
+            Margin = new Padding(4, 3, 0, 3),
+            TabStop = false,
+            Cursor = Cursors.Hand,
+            AccessibleName = "Clear shortcut",
+        };
+        clear.FlatAppearance.BorderSize = 1;
+        clear.Click += (_, _) => box.ClearValue();
+
+        row.Controls.Add(box, 0, 0);
+        row.Controls.Add(clear, 1, 0);
+        return row;
+    }
 
     /// <summary>Open the standalone help document in the default browser.</summary>
     private static void OpenHelpDocument() {
