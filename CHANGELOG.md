@@ -2,7 +2,7 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
-## Unreleased
+## 1.3.0 - 2026-11-23
 
 ### Added
 
