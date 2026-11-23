@@ -22,6 +22,8 @@ All notable changes to WindowMinimize. Versions follow SemVer.
 
 ### Changed
 
+- The screen move keeps the window's relative position within the target work area instead of
+  centering it there.
 - The default minimize hotkey moved from `Win+S` to `Win+Q`. Old configs with only the old default
   migrate automatically, because `Win+S` is now the screen-move hotkey.
 - Starting a second copy now opens the running instance's settings instead of showing an

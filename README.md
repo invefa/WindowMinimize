@@ -209,11 +209,12 @@ unregister the other two, and a failed registration restores that hotkey's previ
 
 The screen move resolves the configured device names through `Screen.AllScreens`. The window is
 minimized first, so the minimize animation stays on the source screen. Only after the minimize has
-settled does the program write the target restore position, move `ptMinPosition` with
-`WPF_SETMINPOSITION`, and recreate the taskbar button on the target screen. The restore animation
-therefore starts on the target screen while the minimize animation never crosses screens. The
-settings dialog also offers a target fade, a transition-free restore, or the untouched system
-behavior; normal windows keep the native animation.
+settled does the program write the target restore position, keep the window's relative position
+within the target work area, move `ptMinPosition` with `WPF_SETMINPOSITION`, and recreate the
+taskbar button on the target screen. The restore animation therefore starts on the target screen
+while the minimize animation never crosses screens. The settings dialog also offers a target fade,
+a transition-free restore, or the untouched system behavior; normal windows keep the native
+animation.
 
 The restore hotkey uses a stack of minimized windows. A newly minimized window is pushed on top,
 old entries are pruned when their window or process is gone, and `Win+W` pops the newest live entry.

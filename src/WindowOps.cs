@@ -144,10 +144,6 @@ internal static class WindowOps {
     }
 
     /// <summary>
-    /// Move the restore position of a window into the target work area. The size is kept when it
-    /// fits, and a minimized window is not shown by this call.
-    /// </summary>
-    /// <summary>
     /// Recreate the taskbar button after a minimized window moved to another screen. The shell
     /// assigns the recreated button to the monitor that now contains the window, which also
     /// retargets the native restore animation.
@@ -176,6 +172,10 @@ internal static class WindowOps {
         }
     }
 
+    /// <summary>
+    /// Move the restore position of a window into the target work area. The size is kept when it
+    /// fits, and a minimized window is not shown by this call.
+    /// </summary>
     internal static bool MoveToWorkArea(IntPtr hwnd, Rectangle work, bool setMinPosition) {
         if (hwnd == IntPtr.Zero || !Native.IsWindow(hwnd)) return false;
 
@@ -195,8 +195,25 @@ internal static class WindowOps {
         width = Math.Min(width, work.Width);
         height = Math.Min(height, work.Height);
 
-        int left = work.Left + (work.Width - width) / 2;
-        int top = work.Top + (work.Height - height) / 2;
+        Rectangle sourceWork = Screen.FromRectangle(
+            Rectangle.FromLTRB(normal.Left, normal.Top, normal.Right, normal.Bottom)
+        ).WorkingArea;
+
+        // Keep the window at the same relative point on the screen instead of centering it.
+        double relativeX = sourceWork.Width > 0
+            ? (normal.Left + (normal.Right - normal.Left) / 2.0 - sourceWork.Left)
+                / sourceWork.Width
+            : 0.5;
+        double relativeY = sourceWork.Height > 0
+            ? (normal.Top + (normal.Bottom - normal.Top) / 2.0 - sourceWork.Top)
+                / sourceWork.Height
+            : 0.5;
+
+        int left = work.Left + (int)Math.Round(relativeX * work.Width) - width / 2;
+        int top = work.Top + (int)Math.Round(relativeY * work.Height) - height / 2;
+        left = Math.Clamp(left, work.Left, work.Right - width);
+        top = Math.Clamp(top, work.Top, work.Bottom - height);
+
         placement.NormalPosition = new Native.RECT {
             Left = left,
             Top = top,
