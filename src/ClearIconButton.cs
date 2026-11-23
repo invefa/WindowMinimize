@@ -4,9 +4,10 @@ using System.Windows.Forms;
 
 namespace WindowMinimize;
 
-/// <summary>A small borderless clear button drawn as an X icon.</summary>
-internal sealed class ClearIconButton : Button {
+/// <summary>A borderless, transparent X icon button.</summary>
+internal sealed class ClearIconButton : Control {
     private bool _hover;
+    private bool _pressed;
 
     internal ClearIconButton() {
         SetStyle(
@@ -17,13 +18,7 @@ internal sealed class ClearIconButton : Button {
             | ControlStyles.SupportsTransparentBackColor,
             true
         );
-        Text = string.Empty;
-        FlatStyle = FlatStyle.Flat;
-        FlatAppearance.BorderSize = 0;
-        FlatAppearance.MouseOverBackColor = Color.Transparent;
-        FlatAppearance.MouseDownBackColor = Color.Transparent;
-        UseVisualStyleBackColor = false;
-        Size = new Size(22, 22);
+        Size = new Size(20, 20);
         TabStop = false;
         Cursor = Cursors.Hand;
         BackColor = Color.Transparent;
@@ -33,8 +28,8 @@ internal sealed class ClearIconButton : Button {
 
     protected override void OnPaint(PaintEventArgs e) {
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        var circle = new Rectangle(1, 1, Width - 3, Height - 3);
         if (_hover) {
+            var circle = new Rectangle(1, 1, Width - 3, Height - 3);
             using var fill = new SolidBrush(SystemColors.ControlLight);
             e.Graphics.FillEllipse(fill, circle);
         }
@@ -48,6 +43,20 @@ internal sealed class ClearIconButton : Button {
         e.Graphics.DrawLine(pen, right, top, left, bottom);
     }
 
+    protected override void OnMouseDown(MouseEventArgs e) {
+        _pressed = true;
+        Invalidate();
+        base.OnMouseDown(e);
+    }
+
+    protected override void OnMouseUp(MouseEventArgs e) {
+        bool clicked = _pressed && ClientRectangle.Contains(e.Location);
+        _pressed = false;
+        Invalidate();
+        base.OnMouseUp(e);
+        if (clicked) OnClick(EventArgs.Empty);
+    }
+
     protected override void OnMouseEnter(EventArgs e) {
         _hover = true;
         Invalidate();
@@ -56,6 +65,7 @@ internal sealed class ClearIconButton : Button {
 
     protected override void OnMouseLeave(EventArgs e) {
         _hover = false;
+        _pressed = false;
         Invalidate();
         base.OnMouseLeave(e);
     }
