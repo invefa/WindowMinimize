@@ -18,7 +18,7 @@ internal sealed class ClearIconButton : Control {
             | ControlStyles.SupportsTransparentBackColor,
             true
         );
-        Size = new Size(20, 20);
+        Size = new Size(26, 23);
         TabStop = false;
         Cursor = Cursors.Hand;
         BackColor = Color.Transparent;
@@ -29,18 +29,34 @@ internal sealed class ClearIconButton : Control {
     protected override void OnPaint(PaintEventArgs e) {
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
         if (_hover) {
-            var circle = new Rectangle(1, 1, Width - 3, Height - 3);
+            using var path = RoundedRectangle(1, 1, Width - 3, Height - 3, 4);
             using var fill = new SolidBrush(SystemColors.ControlLight);
-            e.Graphics.FillEllipse(fill, circle);
+            e.Graphics.FillPath(fill, path);
         }
 
+        int centerX = Width / 2;
+        int centerY = Height / 2;
+        const int arm = 5;
         using var pen = new Pen(SystemColors.GrayText, 1.5f);
-        int left = 6;
-        int top = 6;
-        int right = Width - 7;
-        int bottom = Height - 7;
-        e.Graphics.DrawLine(pen, left, top, right, bottom);
-        e.Graphics.DrawLine(pen, right, top, left, bottom);
+        e.Graphics.DrawLine(
+            pen, centerX - arm, centerY - arm, centerX + arm, centerY + arm
+        );
+        e.Graphics.DrawLine(
+            pen, centerX + arm, centerY - arm, centerX - arm, centerY + arm
+        );
+    }
+
+    private static GraphicsPath RoundedRectangle(
+        int x, int y, int width, int height, int radius
+    ) {
+        int diameter = radius * 2;
+        var path = new GraphicsPath();
+        path.AddArc(x, y, diameter, diameter, 180, 90);
+        path.AddArc(x + width - diameter, y, diameter, diameter, 270, 90);
+        path.AddArc(x + width - diameter, y + height - diameter, diameter, diameter, 0, 90);
+        path.AddArc(x, y + height - diameter, diameter, diameter, 90, 90);
+        path.CloseFigure();
+        return path;
     }
 
     protected override void OnMouseDown(MouseEventArgs e) {
