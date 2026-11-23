@@ -2,6 +2,15 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
+## 1.5.1 - 2026-11-24
+
+### Changed
+
+- The help document now covers every feature in full: command line options, the whole tray menu,
+  hotkey rules and hook fallback, both minimize modes, the screen switching sequence, restore
+  history and animations, every settings row, all configuration keys, the update pipeline,
+  permissions, logging, and common problems.
+
 ## 1.5.0 - 2026-11-23
 
 ### Added

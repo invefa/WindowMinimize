@@ -10,18 +10,21 @@
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
 body {
-    max-width: 720px;
+    max-width: 760px;
     margin: 32px auto;
-    padding: 0 20px;
+    padding: 0 20px 48px;
     background: Canvas;
     color: CanvasText;
-    font: 15px/1.55 "Segoe UI", "Microsoft YaHei", sans-serif;
+    font: 15px/1.6 "Segoe UI", "Microsoft YaHei", sans-serif;
 }
 h1 { margin: 0 0 6px; font-size: 26px; font-weight: 600; }
-h2 { margin: 28px 0 10px; font-size: 18px; font-weight: 600; }
+h2 { margin: 32px 0 10px; font-size: 19px; font-weight: 600; }
+h3 { margin: 20px 0 6px; font-size: 15px; font-weight: 600; }
 p, li { margin: 6px 0; }
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 26px; }
+ul, ol { margin: 6px 0; padding-left: 22px; }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
 .lang { color: GrayText; font-size: 13px; }
+.lead { margin: 0 0 22px; color: GrayText; font-size: 13px; }
 select {
     padding: 2px 4px;
     background: Canvas;
@@ -31,12 +34,16 @@ select {
     font: inherit;
     font-size: 13px;
 }
-table { border-collapse: collapse; width: 100%; margin: 8px 0 14px; }
-th, td { padding: 6px 8px; border-bottom: 1px solid ButtonBorder; text-align: left; }
+nav { margin: 0 0 26px; padding: 10px 0; border-top: 1px solid ButtonBorder; border-bottom: 1px solid ButtonBorder; font-size: 13px; }
+nav ol { margin: 0; padding-left: 20px; }
+nav li { margin: 2px 0; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0 16px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid ButtonBorder; text-align: left; vertical-align: top; }
 th { font-weight: 600; }
+td:first-child { white-space: nowrap; }
 code { padding: 1px 4px; border: 1px solid ButtonBorder; border-radius: 3px; font: 13px Consolas, monospace; }
 a { color: LinkText; }
-.note { margin-top: 26px; color: GrayText; font-size: 13px; }
+.note { margin-top: 26px; padding-top: 12px; border-top: 1px solid ButtonBorder; color: GrayText; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -51,35 +58,269 @@ a { color: LinkText; }
 </select>
 </div>
 </div>
+<p class="lead">用全局热键最小化前台窗口，把窗口送到另一块屏幕，再按需还原。</p>
 
-<p>WindowMinimize驻留在通知区域，通过全局热键最小化当前前台窗口。</p>
+<nav>
+<ol>
+<li><a href="#overview">概览</a></li>
+<li><a href="#start">启动与实例</a></li>
+<li><a href="#tray">托盘图标与菜单</a></li>
+<li><a href="#hotkey">热键</a></li>
+<li><a href="#minimize">最小化</a></li>
+<li><a href="#movescreen">切换屏幕</a></li>
+<li><a href="#restore">还原与历史</a></li>
+<li><a href="#settings">设置界面</a></li>
+<li><a href="#config">配置文件</a></li>
+<li><a href="#update">更新</a></li>
+<li><a href="#permission">权限</a></li>
+<li><a href="#log">日志与通知</a></li>
+<li><a href="#helpdoc">这份文档</a></li>
+<li><a href="#faq">常见问题</a></li>
+</ol>
+</nav>
 
-<h2>热键</h2>
+<h2 id="overview">一、概览</h2>
+<p>WindowMinimize常驻通知区域，不提供主窗口。它注册全局热键，对当前前台窗口执行最小化、跨屏移动和还原。程序本身不注入其它进程，也不修改被操作的窗口，只调用系统提供的窗口接口。</p>
+<p>运行需要Windows与.NET8桌面运行时。完整版自带运行时，可以直接运行；Lite版体积小，但要求机器上已安装.NET8桌面运行时。</p>
+
+<h2 id="start">二、启动与实例</h2>
+<h3>2.1 双击启动</h3>
+<p>双击可执行文件后没有窗口，只在通知区域出现图标。首次运行会在可执行文件旁写入<code>hotkey.ini</code>，随后按默认热键开始工作。</p>
+
+<h3>2.2 重复启动</h3>
+<p>同一时间只允许一个实例。再次启动时，新进程会把请求转给正在运行的实例，由它打开设置界面，新进程自己退出。以管理员权限运行本程序时，普通权限的第二次启动无法转交请求，会提示已经在运行。</p>
+
+<h3>2.3 命令行参数</h3>
 <table>
-<tr><th>动作</th><th>默认值</th></tr>
-<tr><td>最小化当前前台窗口</td><td><code>Win+Q</code></td></tr>
-<tr><td>移动到另一块屏幕后最小化</td><td><code>Win+S</code></td></tr>
-<tr><td>还原最近最小化的窗口</td><td><code>Win+W</code></td></tr>
+<tr><th>参数</th><th>作用</th></tr>
+<tr><td><code>--hotkey</code></td><td>指定本次运行的最小化热键，例如<code>--hotkey Win+Q</code>。只影响本次运行，不写回配置文件。</td></tr>
+<tr><td><code>--mode</code></td><td><code>minimize</code>最小化到任务栏，<code>hide</code>直接隐藏窗口。只影响本次运行。</td></tr>
+<tr><td><code>--config</code></td><td>使用指定的配置文件，默认可执行文件旁的<code>hotkey.ini</code>。</td></tr>
+<tr><td><code>--lang</code></td><td>界面语言，<code>en</code>或<code>zh</code>，默认跟随系统。</td></tr>
+<tr><td><code>--debug</code></td><td>强制写入调试日志，等同在设置里开启写入调试日志。</td></tr>
+<tr><td><code>--no-tray</code></td><td>不显示托盘图标，供脚本调用。此时失败只写日志，不弹窗。</td></tr>
+<tr><td><code>--help</code></td><td>输出用法说明后退出。</td></tr>
+</table>
+<p>参数解析失败时返回退出码2并打印用法；参数正确但已有实例在运行时返回1。</p>
+
+<h2 id="tray">三、托盘图标与菜单</h2>
+<h3>3.1 鼠标操作</h3>
+<p>左键单击图标打开设置界面。右键打开菜单。图标提示文字显示当前热键与权限级别。</p>
+
+<h3>3.2 菜单结构</h3>
+<table>
+<tr><th>菜单项</th><th>作用</th></tr>
+<tr><td>版本行</td><td>显示版本号与当前权限，管理员或普通用户，不可点击。</td></tr>
+<tr><td>检查更新</td><td>立即查询GitHub上的最新稳定版本，结果用气泡或对话框反馈。</td></tr>
+<tr><td>隐藏窗口</td><td>子菜单，列出被隐藏方式收起的窗口，可逐个还原，也可全部还原。用最小化方式收起的窗口不在其中。</td></tr>
+<tr><td>热键行</td><td>显示当前生效的热键，挂起时显示挂起状态，不可点击。</td></tr>
+<tr><td>挂起热键</td><td>切换挂起与恢复。挂起期间热键不响应，托盘图标保持运行。按住Shift点击时挂起5分钟，到点自动恢复。</td></tr>
+<tr><td>设置</td><td>打开设置界面，等同左键单击图标。</td></tr>
+<tr><td>打开配置文件</td><td>用记事本打开当前的配置文件。</td></tr>
+<tr><td>重新加载配置</td><td>立即重新读取配置文件。文件被外部修改时通常不必手动执行，程序会自己发现变化。</td></tr>
+<tr><td>开机自动启动</td><td>开关普通权限的开机自启，写入当前用户的启动项。</td></tr>
+<tr><td>以管理员身份开机自启</td><td>开关管理员权限的开机自启，通过计划任务注册。</td></tr>
+<tr><td>以管理员身份重启</td><td>请求UAC提权并重新启动本程序。已经是管理员时该项不可用。</td></tr>
+<tr><td>退出</td><td>结束程序。历史记录随进程一起消失。</td></tr>
 </table>
 
-<h2>切换屏幕</h2>
-<p><code>Win+S</code>先在原屏幕完成最小化，再把窗口的还原位置和任务栏按钮移动到另一块配置的屏幕。窗口保持在工作区中的相对位置。最小化动画留在原屏幕，还原动画在目标屏幕准备。</p>
-<p>屏幕A和屏幕B在设置界面选择。窗口在A上移动到B，在B上移回A，在其他屏幕上移动到B。</p>
+<h2 id="hotkey">四、热键</h2>
+<h3>4.1 默认热键</h3>
+<table>
+<tr><th>动作</th><th>默认值</th><th>说明</th></tr>
+<tr><td>最小化</td><td><code>Win+Q</code></td><td>最小化当前前台窗口。</td></tr>
+<tr><td>切换屏幕</td><td><code>Win+S</code></td><td>在原屏幕最小化，再在另一块屏幕准备还原。</td></tr>
+<tr><td>还原</td><td><code>Win+W</code></td><td>还原最近一个进入历史的窗口。</td></tr>
+</table>
 
-<h2>还原历史</h2>
-<p>默认情况下，<code>Win+W</code>只还原本工具触发的窗口。开启<strong>记录所有程序的最小化窗口</strong>后，通过任务栏或其他程序最小化的窗口也会进入历史。历史保存在内存中；开启选项时会把当前已最小化的窗口加入记录。</p>
+<h3>4.2 组合键规则</h3>
+<ul>
+<li>修饰键为Ctrl、Alt、Shift、Win，加一个主键，用<code>+</code>连接，例如<code>Ctrl+Alt+M</code>。</li>
+<li>主键可以是字母、数字、<code>F1</code>到<code>F24</code>、空格、Esc、Enter、方向键等。</li>
+<li>不带修饰键时只允许功能键。字母和数字会抢走正常输入，因此被拒绝。</li>
+<li><code>F12</code>由Windows保留，不能使用。</li>
+<li>系统保留的组合会被拒绝，例如<code>Alt+Tab</code>、<code>Win+L</code>。</li>
+</ul>
 
-<h2>设置</h2>
-<p>设置界面控制三个热键、最小化方式、语言、屏幕配对、还原动效、全窗口记录、更新检查和自动启动。点击热键输入框后按下组合键即可修改；X按钮清除，Esc取消，Backspace也可清除。</p>
-<p>鼠标停在任意一行上会显示该项的简短说明。标题栏的问号按钮会打开这份帮助文档。选择<strong>最小化</strong>会保留任务栏按钮；选择<strong>隐藏</strong>会同时移出屏幕和任务栏，隐藏窗口需要从托盘菜单恢复。</p>
+<h3>4.3 Windows自带的Win组合</h3>
+<p><code>Win+Q</code>、<code>Win+S</code>、<code>Win+W</code>这类组合属于系统自身，常规注册接口拿不到。程序改用低级键盘钩子接收这些按键，只转发配置的组合，其余按键照常传给系统。启动提示会说明当前热键是通过钩子生效的。</p>
+<p>钩子模式下按键先经过本程序再交给系统，因此响应顺序与常规注册略有不同，两者都是即时响应。</p>
 
-<h2>更新</h2>
-<p>启用启动检查后，程序会查询GitHub最新稳定Release。也可以在托盘菜单中选择<strong>检查更新</strong>。自动更新会下载匹配的完整版或Lite版，在Release提供校验文件时验证SHA-256，退出后替换可执行文件并重新启动。</p>
+<h3>4.4 注册失败</h3>
+<p>热键被其它程序占用或格式无效时，程序会尝试配置文件里的默认值。仍然失败时，如果不是无托盘模式，会自动打开设置界面，并在提示气泡里说明原因。具体的失败信息写入日志。</p>
 
-<h2>权限</h2>
-<p>当前台是管理员权限窗口时，Windows不会把热键传给普通权限进程。需要处理这类窗口时，以管理员权限启动WindowMinimize，或开启管理员自启选项。</p>
+<h3>4.5 挂起</h3>
+<p>挂起后三个热键同时停止响应，适合临时让其它程序占用这些按键。挂起状态在托盘菜单第一行可以看到，点击菜单项或在设置里保存都会恢复。</p>
 
-<p class="note">配置保存在可执行文件旁的<code>hotkey.ini</code>；该目录不可写时使用<code>%APPDATA%\WindowMinimize</code>。</p>
+<h2 id="minimize">五、最小化</h2>
+<h3>5.1 目标窗口</h3>
+<p>目标是当前前台窗口的最顶层窗口。以下情况按一次空触发处理，不做任何操作：前台窗口不可见、前台是任务栏或桌面、前台是开始菜单与搜索界面、前台是本程序自己的窗口。这样在桌面上误按热键不会产生副作用。</p>
+
+<h3>5.2 最小化到任务栏</h3>
+<p>调用标准的窗口最小化接口，窗口进入任务栏，位置记忆保留。还原后窗口回到原来的屏幕与位置。</p>
+
+<h3>5.3 直接隐藏窗口</h3>
+<p>窗口离开屏幕，同时从任务栏移除。隐藏的窗口不会出现在任务栏或Alt+Tab，需要通过托盘菜单的隐藏窗口子菜单还原。这种方式适合把窗口真正收起来，代价是必须回到托盘才能找回。</p>
+
+<h3>5.4 首次无效时的重试</h3>
+<p>部分窗口会忽略第一次最小化请求。程序在请求后等待350毫秒复查，仍未最小化就再请求一次；仍然无效时，把窗口强制前置后再次最小化。还原操作会取消这个后台重试，避免窗口刚还原又被最小化。</p>
+
+<h2 id="movescreen">六、切换屏幕</h2>
+<h3>6.1 过程</h3>
+<ol>
+<li>在窗口当前所在的屏幕完成最小化，最小化动画留在原屏幕。</li>
+<li>等最小化动画结束后，记录窗口在工作区中的相对位置。</li>
+<li>按同样的相对位置，把窗口的还原位置和任务栏按钮放到目标屏幕。</li>
+<li>还原动画按目标屏幕准备，还原时窗口直接出现在目标屏幕。</li>
+</ol>
+<p>整个过程看不到窗口跨越屏幕的画面，也看不到任务栏按钮先消失再出现的跳变。</p>
+
+<h3>6.2 屏幕配对</h3>
+<p>设置里的屏幕A与屏幕B决定移动方向：窗口在A上时送到B，在B上时送到A，在其它屏幕上时送到B。只接一块屏幕时热键仍然可用，来源与目标相同，效果等同普通最小化。</p>
+<p>屏幕以设备名保存，显示器热插拔后重新接回同一块屏幕仍能匹配。</p>
+
+<h3>6.3 位置保持</h3>
+<p>窗口不按绝对坐标搬动，而是按它在原工作区中的相对位置换算到目标工作区。两块屏幕分辨率不同时，窗口落在目标屏幕的对应位置，不会跑到屏幕外。窗口尺寸不变。</p>
+
+<h2 id="restore">七、还原与历史</h2>
+<h3>7.1 历史</h3>
+<p>每次最小化都会把窗口压入历史，还原热键弹出最近一个。历史保存在内存中，退出程序后清空。窗口已经关闭时会被跳过。</p>
+
+<h3>7.2 记录所有程序</h3>
+<p>默认只记录本工具最小化的窗口。开启记录所有程序的最小化窗口后，通过任务栏、其它程序或系统最小化的窗口也会进入历史。开启时会把当时已经最小化的窗口一并加入。没有标题的窗口和系统外壳窗口不会被记录，避免还原到无意义的对象。</p>
+
+<h3>7.3 还原动效</h3>
+<table>
+<tr><th>选项</th><th>行为</th></tr>
+<tr><td>原生动画</td><td>使用系统的还原动画。</td></tr>
+<tr><td>淡入</td><td>窗口在目标位置直接出现，伴随短暂淡入。</td></tr>
+<tr><td>关闭动效</td><td>不使用动画，立即出现。</td></tr>
+<tr><td>系统默认</td><td>交给系统决定。</td></tr>
+</table>
+<p>只有切换过屏幕的窗口才按这里的设置还原。普通最小化的窗口总是使用原生动画，避免在同一块屏幕上还原时出现位置跳变。</p>
+
+<h2 id="settings">八、设置界面</h2>
+<h3>8.1 打开方式</h3>
+<p>左键单击托盘图标，或在托盘菜单选择设置。设置界面打开期间，当前热键继续工作。</p>
+
+<h3>8.2 热键录入</h3>
+<ul>
+<li>点击热键输入框后直接按下组合键，不需要手动输入文本。</li>
+<li>只有输入框有焦点、并且设置窗口是活动窗口时才接收按键。</li>
+<li>点击界面其它位置、切到别的窗口或关闭窗口都会立即停止接收，不会在后台吞掉按键。</li>
+<li>Esc取消本次录入并恢复原值，Backspace与Delete清空，右侧X按钮同样清空。</li>
+<li>输入框为空时显示按下快捷键的占位提示。</li>
+</ul>
+
+<h3>8.3 冲突检测</h3>
+<p>三个热键中任意两个相同就无法保存，界面在底部提示重复的组合并保留对话框。被Windows保留或被其它程序占用的组合在录入时就会被拒绝；保存后若注册失败，托盘仍然会给出提示。</p>
+
+<h3>8.4 各项含义</h3>
+<table>
+<tr><th>项目</th><th>含义</th></tr>
+<tr><td>方式</td><td>最小化到任务栏保留任务栏按钮；直接隐藏会把窗口从屏幕和任务栏一起移除。</td></tr>
+<tr><td>语言</td><td>界面语言，跟随系统、简体中文或英文，切换后立即生效。</td></tr>
+<tr><td>屏幕A</td><td>切换屏幕时窗口离开的那块屏幕。</td></tr>
+<tr><td>屏幕B</td><td>切换屏幕时窗口到达的那块屏幕。</td></tr>
+<tr><td>还原动效</td><td>切换过屏幕的窗口在还原时使用的动画。</td></tr>
+<tr><td>记录所有程序的最小化窗口</td><td>把任意方式最小化的窗口纳入还原历史。</td></tr>
+<tr><td>启动时检查更新</td><td>启动后查询GitHub上的新版本。</td></tr>
+<tr><td>自动安装更新</td><td>发现新版本后不再询问，直接下载并安装。</td></tr>
+<tr><td>开机自动启动</td><td>登录后以普通权限启动本程序。</td></tr>
+<tr><td>以管理员身份开机自启</td><td>登录后以管理员权限启动，用于处理管理员权限的窗口。需要开机自动启动同时开启。</td></tr>
+<tr><td>写入调试日志</td><td>把详细信息写入<code>hotkey.log</code>，排查问题时使用。</td></tr>
+<tr><td>启动提示</td><td>启动时显示气泡，说明热键是否生效。</td></tr>
+<tr><td>错误提示</td><td>操作失败时显示气泡。</td></tr>
+<tr><td>权限提示</td><td>窗口需要更高权限时显示气泡。</td></tr>
+</table>
+<p>鼠标停在任意一行上会显示该行的简短说明。保存按钮把当前值写入配置文件并立即应用，不需要重启。</p>
+
+<h2 id="config">九、配置文件</h2>
+<h3>9.1 位置</h3>
+<p>默认是可执行文件旁的<code>hotkey.ini</code>。该目录不可写时，改用<code>%APPDATA%\WindowMinimize\hotkey.ini</code>。</p>
+
+<h3>9.2 键</h3>
+<table>
+<tr><th>键</th><th>默认值</th><th>含义</th></tr>
+<tr><td><code>Hotkey</code></td><td><code>Win+Q</code></td><td>最小化热键。</td></tr>
+<tr><td><code>MoveHotkey</code></td><td><code>Win+S</code></td><td>切换屏幕热键。</td></tr>
+<tr><td><code>RestoreHotkey</code></td><td><code>Win+W</code></td><td>还原热键。</td></tr>
+<tr><td><code>Mode</code></td><td><code>minimize</code></td><td><code>minimize</code>或<code>hide</code>。</td></tr>
+<tr><td><code>MonitorA</code></td><td>空</td><td>屏幕A的设备名，留空自动选择。</td></tr>
+<tr><td><code>MonitorB</code></td><td>空</td><td>屏幕B的设备名，留空自动选择。</td></tr>
+<tr><td><code>RestoreAnimation</code></td><td><code>native</code></td><td><code>native</code>、<code>fade</code>、<code>disable</code>或<code>default</code>。</td></tr>
+<tr><td><code>TrackAllMinimized</code></td><td><code>false</code></td><td>是否记录所有程序的最小化窗口。</td></tr>
+<tr><td><code>CheckUpdates</code></td><td><code>true</code></td><td>启动时是否检查更新。</td></tr>
+<tr><td><code>AutoUpdate</code></td><td><code>false</code></td><td>是否自动安装更新。</td></tr>
+<tr><td><code>AutoStart</code></td><td>无</td><td>开机自启，写入后由程序按值应用。</td></tr>
+<tr><td><code>Language</code></td><td><code>auto</code></td><td><code>auto</code>、<code>en</code>或<code>zh</code>。</td></tr>
+<tr><td><code>Debug</code></td><td><code>false</code></td><td>是否写入调试日志。</td></tr>
+</table>
+<p>旧配置只有<code>Hotkey</code>时，程序沿用该值作为最小化热键，其余键补上默认值。旧版把<code>Win+S</code>当作最小化热键，升级后该组合改作切换屏幕热键。</p>
+
+<h3>9.3 生效方式</h3>
+<p>保存后立即生效。程序监视配置文件的变化，外部编辑保存后会自动重新加载，不需要重启。托盘菜单的重新加载配置用于手动触发。文件写坏导致解析失败时，失败项保持原值并写入日志，其余项照常应用。</p>
+
+<h2 id="update">十、更新</h2>
+<h3>10.1 检查时机</h3>
+<p>启动时自动检查，可在设置里关闭；也可以随时从托盘菜单手动检查。</p>
+
+<h3>10.2 版本来源与匹配</h3>
+<p>查询的是GitHub仓库<code>invefa/WindowMinimize</code>的最新稳定Release。程序按当前使用的是完整版还是Lite版，选取对应的资产文件。</p>
+
+<h3>10.3 校验</h3>
+<p>Release提供<code>SHA256SUMS.txt</code>时，程序先下载校验文件，核对下载文件的SHA-256，不一致就放弃本次更新并报错。</p>
+
+<h3>10.4 安装</h3>
+<ol>
+<li>下载到<code>%LOCALAPPDATA%\WindowMinimize\updates</code>。</li>
+<li>确认后退出程序，启动一个独立的PowerShell脚本。</li>
+<li>脚本最多等60秒让进程结束，然后复制新文件覆盖可执行文件。</li>
+<li>脚本重新启动程序，过程写入<code>%LOCALAPPDATA%\WindowMinimize\update.log</code>。</li>
+</ol>
+<p>自动安装更新打开时，发现新版本不再询问，直接走上面的流程。</p>
+
+<h3>10.5 失败处理</h3>
+<p>网络不可用、没有匹配的资产、校验失败、文件被占用都会给出提示。此时当前版本继续运行，配置与历史不受影响。可执行文件所在目录不可写时，替换会失败，需要把程序放到有写权限的目录后重新更新。</p>
+
+<h2 id="permission">十一、权限</h2>
+<h3>11.1 前台是管理员权限窗口</h3>
+<p>Windows不会把热键发给普通权限进程，当前台是管理员权限窗口时热键没有反应。需要处理这类窗口时，以管理员权限运行本程序。权限提示气泡会说明这一情况。</p>
+
+<h3>11.2 管理员自启</h3>
+<p>以管理员身份开机自启通过计划任务注册，任务名与程序名相同。登录时由任务计划程序以最高权限启动，不经过UAC确认。</p>
+
+<h3>11.3 提权重启</h3>
+<p>托盘菜单的以管理员身份重启会请求UAC，确认后结束当前进程并以管理员权限重新启动。取消UAC不会影响正在运行的实例。</p>
+
+<h2 id="log">十二、日志与通知</h2>
+<h3>12.1 调试日志</h3>
+<p>开启写入调试日志后，详细信息写入可执行文件同目录的<code>hotkey.log</code>，每次启动覆盖上一次的内容。日志记录热键注册结果、每次操作的目标窗口与结果、更新流程。命令行参数<code>--debug</code>可以临时打开。</p>
+
+<h3>12.2 通知气泡</h3>
+<p>提示分三类，可分别关闭：启动提示说明热键是否生效以及生效方式；错误提示在操作失败时出现；权限提示在窗口需要更高权限时出现。关闭某一类不影响日志记录。</p>
+
+<h2 id="helpdoc">十三、这份文档</h2>
+<p>标题栏的问号按钮打开这份文档。文档随程序内嵌，首次打开时解包到<code>%LOCALAPPDATA%\WindowMinimize\help</code>；升级后内容有变化会替换旧副本，不会停留在旧版本。</p>
+<p>右上角的配色选择器提供跟随系统、浅色、深色三档，默认跟随系统。选择结果保存在浏览器本地，下次打开保持。文档不写死颜色，深浅两态都取自系统色。</p>
+
+<h2 id="faq">十四、常见问题</h2>
+<h3>热键没有反应</h3>
+<p>先看托盘菜单里的热键行是否显示挂起，再确认前台窗口是不是管理员权限窗口。都不是的话，打开写入调试日志后复现一次，日志里会有注册结果与被忽略的原因。</p>
+
+<h3>隐藏的窗口找不回来</h3>
+<p>隐藏方式收起的窗口不在任务栏，也不在Alt+Tab，只能从托盘菜单的隐藏窗口子菜单还原。改用最小化到任务栏可以避免这种情况。</p>
+
+<h3>还原热键跳过了某个窗口</h3>
+<p>该窗口可能没有被记录。默认只记录本工具最小化的窗口，开启记录所有程序的最小化窗口后才会包含其它来源。已经关闭的窗口也会被跳过。</p>
+
+<h3>切换屏幕后位置不对</h3>
+<p>窗口按在原工作区的相对位置换算。如果两块屏幕的工作区差异很大，例如任务栏位置不同，换算结果会跟着变化。调整屏幕A与屏幕B的选择可以固定移动方向。</p>
+
+<h3>升级后打开的仍是旧文档</h3>
+<p>程序会比较解包副本与内嵌文档的内容，不一致时替换。若目录不可写，删除<code>%LOCALAPPDATA%\WindowMinimize\help</code>后重新打开即可。</p>
+
+<p class="note">配置保存在可执行文件旁的<code>hotkey.ini</code>；该目录不可写时使用<code>%APPDATA%\WindowMinimize</code>。日志与更新文件位于<code>%LOCALAPPDATA%\WindowMinimize</code>。</p>
 
 <script>
 (function () {

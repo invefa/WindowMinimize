@@ -10,18 +10,21 @@
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
 body {
-    max-width: 720px;
+    max-width: 760px;
     margin: 32px auto;
-    padding: 0 20px;
+    padding: 0 20px 48px;
     background: Canvas;
     color: CanvasText;
-    font: 15px/1.55 "Segoe UI", sans-serif;
+    font: 15px/1.6 "Segoe UI", sans-serif;
 }
 h1 { margin: 0 0 6px; font-size: 26px; font-weight: 600; }
-h2 { margin: 28px 0 10px; font-size: 18px; font-weight: 600; }
+h2 { margin: 32px 0 10px; font-size: 19px; font-weight: 600; }
+h3 { margin: 20px 0 6px; font-size: 15px; font-weight: 600; }
 p, li { margin: 6px 0; }
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 26px; }
+ul, ol { margin: 6px 0; padding-left: 22px; }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
 .lang { color: GrayText; font-size: 13px; }
+.lead { margin: 0 0 22px; color: GrayText; font-size: 13px; }
 select {
     padding: 2px 4px;
     background: Canvas;
@@ -31,12 +34,16 @@ select {
     font: inherit;
     font-size: 13px;
 }
-table { border-collapse: collapse; width: 100%; margin: 8px 0 14px; }
-th, td { padding: 6px 8px; border-bottom: 1px solid ButtonBorder; text-align: left; }
+nav { margin: 0 0 26px; padding: 10px 0; border-top: 1px solid ButtonBorder; border-bottom: 1px solid ButtonBorder; font-size: 13px; }
+nav ol { margin: 0; padding-left: 20px; }
+nav li { margin: 2px 0; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0 16px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid ButtonBorder; text-align: left; vertical-align: top; }
 th { font-weight: 600; }
+td:first-child { white-space: nowrap; }
 code { padding: 1px 4px; border: 1px solid ButtonBorder; border-radius: 3px; font: 13px Consolas, monospace; }
 a { color: LinkText; }
-.note { margin-top: 26px; color: GrayText; font-size: 13px; }
+.note { margin-top: 26px; padding-top: 12px; border-top: 1px solid ButtonBorder; color: GrayText; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -51,35 +58,269 @@ a { color: LinkText; }
 </select>
 </div>
 </div>
+<p class="lead">Minimize the foreground window with a global hotkey, send it to another screen, and bring it back when needed.</p>
 
-<p>WindowMinimize lives in the notification area and minimizes the foreground window with global hotkeys.</p>
+<nav>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#start">Starting and single instance</a></li>
+<li><a href="#tray">Tray icon and menu</a></li>
+<li><a href="#hotkey">Hotkeys</a></li>
+<li><a href="#minimize">Minimizing</a></li>
+<li><a href="#movescreen">Screen switching</a></li>
+<li><a href="#restore">Restoring and history</a></li>
+<li><a href="#settings">Settings dialog</a></li>
+<li><a href="#config">Configuration file</a></li>
+<li><a href="#update">Updates</a></li>
+<li><a href="#permission">Permissions</a></li>
+<li><a href="#log">Log and notifications</a></li>
+<li><a href="#helpdoc">This document</a></li>
+<li><a href="#faq">Troubleshooting</a></li>
+</ol>
+</nav>
 
-<h2>Hotkeys</h2>
+<h2 id="overview">1. Overview</h2>
+<p>WindowMinimize sits in the notification area and provides no main window. It registers global hotkeys that minimize the foreground window, move it to another screen, and restore it later. The program does not inject into other processes and does not modify the windows it acts on; it only calls the window interfaces Windows offers.</p>
+<p>It needs Windows and the .NET 8 desktop runtime. The full build carries the runtime and runs as is; the lite build is small but expects the .NET 8 desktop runtime to be installed.</p>
+
+<h2 id="start">2. Starting and single instance</h2>
+<h3>2.1 Double click</h3>
+<p>Starting the executable shows no window, only a tray icon. The first run writes <code>hotkey.ini</code> next to the executable and then starts working with the default hotkeys.</p>
+
+<h3>2.2 Starting twice</h3>
+<p>Only one instance runs at a time. A second start forwards a request to the running instance, which opens its settings dialog, and the new process exits. When the running instance is elevated, a normal-privilege second start cannot forward the request and reports that the program is already running.</p>
+
+<h3>2.3 Command line</h3>
 <table>
-<tr><th>Action</th><th>Default</th></tr>
-<tr><td>Minimize the foreground window</td><td><code>Win+Q</code></td></tr>
-<tr><td>Move to the other screen, then minimize</td><td><code>Win+S</code></td></tr>
-<tr><td>Restore the most recently minimized window</td><td><code>Win+W</code></td></tr>
+<tr><th>Option</th><th>Effect</th></tr>
+<tr><td><code>--hotkey</code></td><td>Use this minimize hotkey for this run, for example <code>--hotkey Win+Q</code>. The configuration file is not changed.</td></tr>
+<tr><td><code>--mode</code></td><td><code>minimize</code> keeps the taskbar button, <code>hide</code> hides the window. Applies to this run only.</td></tr>
+<tr><td><code>--config</code></td><td>Use this configuration file instead of <code>hotkey.ini</code> next to the executable.</td></tr>
+<tr><td><code>--lang</code></td><td>Interface language, <code>en</code> or <code>zh</code>, system language by default.</td></tr>
+<tr><td><code>--debug</code></td><td>Force the debug log, same as enabling the log in the settings dialog.</td></tr>
+<tr><td><code>--no-tray</code></td><td>Do not show the tray icon, for scripted use. Failures are logged instead of shown.</td></tr>
+<tr><td><code>--help</code></td><td>Print the usage text and exit.</td></tr>
+</table>
+<p>Bad arguments exit with code 2 and print the usage text. A valid start while another instance runs exits with code 1.</p>
+
+<h2 id="tray">3. Tray icon and menu</h2>
+<h3>3.1 Mouse</h3>
+<p>A left click opens the settings dialog. A right click opens the menu. The tray tooltip shows the active hotkey and the privilege level.</p>
+
+<h3>3.2 Menu</h3>
+<table>
+<tr><th>Item</th><th>Effect</th></tr>
+<tr><td>Version row</td><td>Version and privilege level, administrator or standard user. Not clickable.</td></tr>
+<tr><td>Check for updates</td><td>Query the latest stable GitHub release now; the result appears as a balloon or a dialog.</td></tr>
+<tr><td>Hidden windows</td><td>Submenu listing windows hidden by the hide mode. Each can be restored, and all can be restored at once. Windows minimized to the taskbar are not listed.</td></tr>
+<tr><td>Hotkey row</td><td>The hotkey in effect, or the suspended state. Not clickable.</td></tr>
+<tr><td>Suspend hotkeys</td><td>Toggle suspension. While suspended the hotkeys do nothing and the tray icon stays. Hold Shift while clicking to suspend for five minutes; it resumes by itself.</td></tr>
+<tr><td>Settings</td><td>Open the settings dialog, same as a left click.</td></tr>
+<tr><td>Open configuration</td><td>Open the configuration file in Notepad.</td></tr>
+<tr><td>Reload configuration</td><td>Read the configuration file again now. Usually unnecessary, the program notices external edits by itself.</td></tr>
+<tr><td>Start with Windows</td><td>Toggle the standard-privilege autostart entry for the current user.</td></tr>
+<tr><td>Start with Windows as administrator</td><td>Toggle the elevated autostart, registered as a scheduled task.</td></tr>
+<tr><td>Restart as administrator</td><td>Request elevation and restart. Disabled while already elevated.</td></tr>
+<tr><td>Exit</td><td>End the program. The history disappears with the process.</td></tr>
 </table>
 
-<h2>Screen switching</h2>
-<p><code>Win+S</code> minimizes the window on the source screen, then moves its restore position and taskbar button to the other configured screen. The window keeps its relative position within the work area. The minimize animation stays on the source screen; the restore animation is prepared for the target screen.</p>
-<p>Screen A and Screen B are selected in the settings dialog. A window on A moves to B, a window on B moves to A, and a window on another screen moves to B.</p>
+<h2 id="hotkey">4. Hotkeys</h2>
+<h3>4.1 Defaults</h3>
+<table>
+<tr><th>Action</th><th>Default</th><th>Notes</th></tr>
+<tr><td>Minimize</td><td><code>Win+Q</code></td><td>Minimize the foreground window.</td></tr>
+<tr><td>Move to the other screen</td><td><code>Win+S</code></td><td>Minimize on the source screen, prepare the restore on the other one.</td></tr>
+<tr><td>Restore</td><td><code>Win+W</code></td><td>Restore the window that entered the history last.</td></tr>
+</table>
 
-<h2>Restore history</h2>
-<p>By default, <code>Win+W</code> restores windows minimized by this tool. Enable <strong>Record minimized windows from all programs</strong> to include windows minimized from the taskbar or other programs. The history is kept in memory; previously minimized windows are collected when the option is enabled.</p>
+<h3>4.2 Combination rules</h3>
+<ul>
+<li>A modifier among Ctrl, Alt, Shift and Win plus one main key, joined with <code>+</code>, for example <code>Ctrl+Alt+M</code>.</li>
+<li>The main key can be a letter, a digit, <code>F1</code> to <code>F24</code>, Space, Esc, Enter, an arrow key and so on.</li>
+<li>Without a modifier only function keys are allowed. Letters and digits would steal normal typing and are rejected.</li>
+<li><code>F12</code> is reserved by Windows and cannot be used.</li>
+<li>System combinations such as <code>Alt+Tab</code> and <code>Win+L</code> are rejected.</li>
+</ul>
 
-<h2>Settings</h2>
-<p>The settings dialog controls the three hotkeys, the mode, the language, the screen pair, the restore animation, all-window history, update checks and startup. Click a hotkey field and press the combination to change it; the X button clears it, Esc cancels, and Backspace also clears.</p>
-<p>Every row shows a short hint when the pointer rests on it. The question mark in the title bar opens this document. Choose <strong>Minimize</strong> to keep a taskbar button, or <strong>Hide</strong> to remove the window from the screen and taskbar; hidden windows are restored from the tray menu.</p>
+<h3>4.3 Windows-owned Win combinations</h3>
+<p>Combinations such as <code>Win+Q</code>, <code>Win+S</code> and <code>Win+W</code> belong to the system and cannot be taken through the regular registration call. The program listens with a low-level keyboard hook instead, forwards only the configured combination, and passes every other key on to Windows. The startup balloon states when a hotkey works through the hook.</p>
+<p>In hook mode the key reaches this program before Windows, so the ordering differs slightly from a registered hotkey. Both respond immediately.</p>
 
-<h2>Updates</h2>
-<p>The program checks the latest stable GitHub release at startup when enabled. Use <strong>Check for updates</strong> in the tray menu for a manual check. Automatic updates download the matching full or lite executable, verify the release SHA-256 checksum when available, replace the executable after exit, and restart the program.</p>
+<h3>4.4 Registration failure</h3>
+<p>When another program holds the hotkey or the text is invalid, the program falls back to the default from the configuration file. If that fails too and the tray icon is enabled, the settings dialog opens and a balloon explains the reason. The details go to the log.</p>
 
-<h2>Permissions</h2>
-<p>Windows does not send hotkeys to a normal process while an elevated window is in front. Start WindowMinimize as administrator, or enable the elevated startup option, to handle those windows.</p>
+<h3>4.5 Suspension</h3>
+<p>Suspending stops all three hotkeys at once, which is useful when another program needs those keys for a while. The tray menu shows the state in the hotkey row; clicking the menu item or saving the settings restores the hotkeys.</p>
 
-<p class="note">Configuration is stored in <code>hotkey.ini</code> next to the executable, or under <code>%APPDATA%\WindowMinimize</code> when that directory is not writable.</p>
+<h2 id="minimize">5. Minimizing</h2>
+<h3>5.1 Target window</h3>
+<p>The target is the top-level window of the current foreground window. These cases are treated as an empty trigger and do nothing: the foreground window is not visible, the foreground is the taskbar or the desktop, the foreground is the Start menu or search, or the foreground belongs to this program. Pressing the hotkey on the desktop therefore has no side effect.</p>
+
+<h3>5.2 Minimize to the taskbar</h3>
+<p>The standard minimize call is used, so the window enters the taskbar and keeps its placement. Restoring it returns it to the original screen and position.</p>
+
+<h3>5.3 Hide the window</h3>
+<p>The window leaves the screen and is removed from the taskbar. A hidden window appears in neither the taskbar nor Alt+Tab, so it has to be restored from the hidden windows submenu. This mode really puts a window away; the cost is that the tray menu is the only way back.</p>
+
+<h3>5.4 Retry when the first request is ignored</h3>
+<p>Some windows ignore the first minimize request. The program checks again after 350 milliseconds and asks once more, and if that also fails it brings the window to the front and minimizes it again. A restore cancels this background retry, so a window is not minimized again right after being restored.</p>
+
+<h2 id="movescreen">6. Screen switching</h2>
+<h3>6.1 Sequence</h3>
+<ol>
+<li>Minimize the window on the screen it currently occupies; the minimize animation stays there.</li>
+<li>Once the animation has finished, record the window position relative to the work area.</li>
+<li>Place the restore position and the taskbar button on the target screen at the same relative position.</li>
+<li>Prepare the restore animation for the target screen, so the window appears there directly.</li>
+</ol>
+<p>The window is never seen crossing between screens, and the taskbar button does not visibly disappear and reappear.</p>
+
+<h3>6.2 Screen pairing</h3>
+<p>Screen A and Screen B in the settings decide the direction: a window on A goes to B, a window on B goes to A, and a window on any other screen goes to B. With a single screen the hotkey still works; source and target are the same, so it behaves like a plain minimize.</p>
+<p>Screens are stored by device name, so a monitor that is unplugged and reconnected is still recognized.</p>
+
+<h3>6.3 Position</h3>
+<p>The window is not moved by absolute coordinates. Its relative position in the source work area is mapped onto the target work area, so the window lands at the corresponding place even when the screens differ in resolution, and it does not end up off-screen. The window size does not change.</p>
+
+<h2 id="restore">7. Restoring and history</h2>
+<h3>7.1 History</h3>
+<p>Every minimize pushes the window onto the history and the restore hotkey pops the most recent one. The history lives in memory and is cleared when the program exits. Windows that no longer exist are skipped.</p>
+
+<h3>7.2 Recording all programs</h3>
+<p>By default only windows minimized by this tool are recorded. With the all-programs option enabled, windows minimized from the taskbar, from another program or by the system also enter the history, and windows already minimized at that moment are collected too. Windows without a title and shell surfaces are never recorded, so the restore hotkey does not target meaningless objects.</p>
+
+<h3>7.3 Restore animation</h3>
+<table>
+<tr><th>Option</th><th>Behaviour</th></tr>
+<tr><td>Native</td><td>The system restore animation.</td></tr>
+<tr><td>Fade</td><td>The window appears at its target position with a short fade.</td></tr>
+<tr><td>Disabled</td><td>No animation, the window appears at once.</td></tr>
+<tr><td>System default</td><td>Leave the choice to the system.</td></tr>
+</table>
+<p>Only windows that were moved to another screen use this setting. A plain minimize always restores with the native animation, which keeps the window from jumping inside the same screen.</p>
+
+<h2 id="settings">8. Settings dialog</h2>
+<h3>8.1 Opening it</h3>
+<p>Left click the tray icon, or choose Settings in the tray menu. The hotkeys keep working while the dialog is open.</p>
+
+<h3>8.2 Entering a hotkey</h3>
+<ul>
+<li>Click a hotkey field and press the combination; typing the text by hand is not needed.</li>
+<li>Keys are captured only while the field has focus and the dialog is the active window.</li>
+<li>Clicking elsewhere in the dialog, switching to another window or closing the dialog stops capturing at once, so keys are never swallowed in the background.</li>
+<li>Esc cancels the entry and restores the previous value, Backspace and Delete clear it, and the X button on the right clears it as well.</li>
+<li>An empty field shows a placeholder telling you to press a shortcut.</li>
+</ul>
+
+<h3>8.3 Conflict detection</h3>
+<p>Two of the three hotkeys cannot hold the same combination: saving is refused, the dialog stays open and the duplicate is named at the bottom. Combinations reserved by Windows or held by another program are rejected while pressing them. If registration fails after saving, the tray still reports it.</p>
+
+<h3>8.4 What each option does</h3>
+<table>
+<tr><th>Option</th><th>Meaning</th></tr>
+<tr><td>Mode</td><td>Minimize keeps the taskbar button; hide removes the window from the screen and the taskbar.</td></tr>
+<tr><td>Language</td><td>System, Simplified Chinese or English. A change applies immediately.</td></tr>
+<tr><td>Screen A</td><td>The screen a window leaves when it switches screens.</td></tr>
+<tr><td>Screen B</td><td>The screen a window arrives on when it switches screens.</td></tr>
+<tr><td>Restore animation</td><td>The animation used for windows that were moved to another screen.</td></tr>
+<tr><td>Record minimized windows from all programs</td><td>Include windows minimized by any means in the restore history.</td></tr>
+<tr><td>Check for updates at startup</td><td>Look for a newer release on GitHub after starting.</td></tr>
+<tr><td>Install updates automatically</td><td>Download and install a new release without asking.</td></tr>
+<tr><td>Start with Windows</td><td>Start with standard privileges after logon.</td></tr>
+<tr><td>Start with Windows as administrator</td><td>Start elevated after logon, for windows owned by administrators. Requires the normal autostart to be on.</td></tr>
+<tr><td>Write debug log</td><td>Write detail to <code>hotkey.log</code> when investigating a problem.</td></tr>
+<tr><td>Startup notice</td><td>Show a balloon at startup stating whether the hotkeys are active.</td></tr>
+<tr><td>Error notice</td><td>Show a balloon when an action fails.</td></tr>
+<tr><td>Permission notice</td><td>Show a balloon when a window needs higher permission.</td></tr>
+</table>
+<p>Resting the pointer on any row shows a one-line hint for that row. Save writes the values to the configuration file and applies them at once, with no restart.</p>
+
+<h2 id="config">9. Configuration file</h2>
+<h3>9.1 Location</h3>
+<p><code>hotkey.ini</code> next to the executable by default, or <code>%APPDATA%\WindowMinimize\hotkey.ini</code> when that directory is not writable.</p>
+
+<h3>9.2 Keys</h3>
+<table>
+<tr><th>Key</th><th>Default</th><th>Meaning</th></tr>
+<tr><td><code>Hotkey</code></td><td><code>Win+Q</code></td><td>Minimize hotkey.</td></tr>
+<tr><td><code>MoveHotkey</code></td><td><code>Win+S</code></td><td>Screen switching hotkey.</td></tr>
+<tr><td><code>RestoreHotkey</code></td><td><code>Win+W</code></td><td>Restore hotkey.</td></tr>
+<tr><td><code>Mode</code></td><td><code>minimize</code></td><td><code>minimize</code> or <code>hide</code>.</td></tr>
+<tr><td><code>MonitorA</code></td><td>empty</td><td>Device name of screen A, chosen automatically when empty.</td></tr>
+<tr><td><code>MonitorB</code></td><td>empty</td><td>Device name of screen B, chosen automatically when empty.</td></tr>
+<tr><td><code>RestoreAnimation</code></td><td><code>native</code></td><td><code>native</code>, <code>fade</code>, <code>disable</code> or <code>default</code>.</td></tr>
+<tr><td><code>TrackAllMinimized</code></td><td><code>false</code></td><td>Record windows minimized by all programs.</td></tr>
+<tr><td><code>CheckUpdates</code></td><td><code>true</code></td><td>Check for updates at startup.</td></tr>
+<tr><td><code>AutoUpdate</code></td><td><code>false</code></td><td>Install updates automatically.</td></tr>
+<tr><td><code>AutoStart</code></td><td>absent</td><td>Autostart state, applied by the program from the value.</td></tr>
+<tr><td><code>Language</code></td><td><code>auto</code></td><td><code>auto</code>, <code>en</code> or <code>zh</code>.</td></tr>
+<tr><td><code>Debug</code></td><td><code>false</code></td><td>Write the debug log.</td></tr>
+</table>
+<p>A configuration that only carries <code>Hotkey</code> keeps that value as the minimize hotkey and takes defaults for the rest. Earlier versions used <code>Win+S</code> as the minimize hotkey; after an upgrade that combination becomes the screen switching hotkey.</p>
+
+<h3>9.3 When changes apply</h3>
+<p>Saving applies immediately. The program watches the file, so an external edit is picked up without a restart; the tray item reloads it by hand. When parsing fails, the affected keys keep their previous values and the failure is logged, while the remaining keys still apply.</p>
+
+<h2 id="update">10. Updates</h2>
+<h3>10.1 Timing</h3>
+<p>Checked at startup unless disabled in the settings, and on demand from the tray menu.</p>
+
+<h3>10.2 Source and file matching</h3>
+<p>The latest stable release of the GitHub repository <code>invefa/WindowMinimize</code> is queried. The program picks the asset that matches the build in use, full or lite.</p>
+
+<h3>10.3 Verification</h3>
+<p>When the release carries <code>SHA256SUMS.txt</code>, the program downloads it first and compares the SHA-256 of the downloaded file. A mismatch aborts the update with an error.</p>
+
+<h3>10.4 Installation</h3>
+<ol>
+<li>The file is downloaded to <code>%LOCALAPPDATA%\WindowMinimize\updates</code>.</li>
+<li>After confirmation the program exits and starts a detached PowerShell script.</li>
+<li>The script waits up to 60 seconds for the process to end, then copies the new file over the executable.</li>
+<li>The script starts the program again and writes the outcome to <code>%LOCALAPPDATA%\WindowMinimize\update.log</code>.</li>
+</ol>
+<p>With automatic installs enabled the confirmation is skipped and the sequence runs directly.</p>
+
+<h3>10.5 Failures</h3>
+<p>An unreachable network, no matching asset, a failed checksum and a locked file each produce a message. The current version keeps running and neither the configuration nor the history is affected. When the folder holding the executable is not writable the replacement fails, so the program has to live in a writable folder to update itself.</p>
+
+<h2 id="permission">11. Permissions</h2>
+<h3>11.1 An elevated window in front</h3>
+<p>Windows does not deliver hotkeys to a standard-privilege process while an elevated window is in front, so the hotkey does nothing in that situation. Run the program as administrator to handle those windows. The permission balloon explains this case.</p>
+
+<h3>11.2 Elevated autostart</h3>
+<p>Elevated autostart is registered as a scheduled task with the same name as the program. At logon the task scheduler starts it with the highest privileges, without a UAC prompt.</p>
+
+<h3>11.3 Restarting elevated</h3>
+<p>The tray item requests UAC and, after confirmation, ends the current process and starts an elevated one. Cancelling the prompt leaves the running instance untouched.</p>
+
+<h2 id="log">12. Log and notifications</h2>
+<h3>12.1 Debug log</h3>
+<p>With the debug log enabled, detail goes to <code>hotkey.log</code> next to the executable, and each start replaces the previous content. The log records hotkey registration results, the target window and outcome of every action, and the update sequence. The command line option <code>--debug</code> turns it on for one run.</p>
+
+<h3>12.2 Notification balloons</h3>
+<p>There are three categories that can be switched separately: the startup notice states whether the hotkeys are active and how they are registered; the error notice appears when an action fails; the permission notice appears when a window needs higher privileges. Turning a category off does not affect the log.</p>
+
+<h2 id="helpdoc">13. This document</h2>
+<p>The question mark in the title bar opens this document. It ships inside the executable and is unpacked to <code>%LOCALAPPDATA%\WindowMinimize\help</code> on first use; after an upgrade a changed document replaces the old copy instead of leaving it behind.</p>
+<p>The colour scheme picker at the top right offers System, Light and Dark, System by default. The choice is kept in the browser. The document defines no fixed colours; both schemes come from system colours.</p>
+
+<h2 id="faq">14. Troubleshooting</h2>
+<h3>The hotkey does nothing</h3>
+<p>Check the hotkey row in the tray menu for a suspended state, then check whether the foreground window is elevated. If neither applies, enable the debug log, reproduce the case and read the log; it records the registration result and the reason a trigger was ignored.</p>
+
+<h3>A hidden window cannot be found</h3>
+<p>A window hidden with the hide mode is in neither the taskbar nor Alt+Tab; it can only be restored from the hidden windows submenu. Switching to the minimize mode avoids the situation.</p>
+
+<h3>The restore hotkey skips a window</h3>
+<p>That window was probably not recorded. Only windows minimized by this tool are recorded by default; enable the all-programs option to include other sources. Windows that have been closed are skipped as well.</p>
+
+<h3>The position is wrong after a screen switch</h3>
+<p>The relative position in the source work area is mapped onto the target work area, so very different work areas, for example with the taskbar on another edge, shift the result. Choosing screen A and screen B explicitly fixes the direction.</p>
+
+<h3>An upgrade still shows the old document</h3>
+<p>The unpacked copy is compared with the embedded document and replaced when it differs. If the folder is not writable, delete <code>%LOCALAPPDATA%\WindowMinimize\help</code> and open the document again.</p>
+
+<p class="note">Configuration lives in <code>hotkey.ini</code> next to the executable, or under <code>%APPDATA%\WindowMinimize</code> when that directory is not writable. Logs and update files live under <code>%LOCALAPPDATA%\WindowMinimize</code>.</p>
 
 <script>
 (function () {
