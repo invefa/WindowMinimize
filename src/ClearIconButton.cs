@@ -34,9 +34,9 @@ internal sealed class ClearIconButton : Control {
             e.Graphics.FillPath(fill, path);
         }
 
-        int centerX = Width / 2;
-        int centerY = Height / 2;
-        const int arm = 5;
+        float centerX = (Width - 1) / 2f;
+        float centerY = (Height - 1) / 2f;
+        const float arm = 5f;
         using var pen = new Pen(SystemColors.GrayText, 1.5f);
         e.Graphics.DrawLine(
             pen, centerX - arm, centerY - arm, centerX + arm, centerY + arm
