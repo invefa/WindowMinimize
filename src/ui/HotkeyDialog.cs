@@ -103,11 +103,7 @@ internal sealed class HotkeyDialog : Form {
             OpenHelpDocument();
         };
         Deactivate += (_, _) => SuspendHotkeyCapture();
-        Shown += (_, _) => {
-            _hotkeyBox.AllowCapture = true;
-            _moveHotkeyBox.AllowCapture = true;
-            _restoreHotkeyBox.AllowCapture = true;
-        };
+        Shown += (_, _) => EnableHotkeyCapture();
         Activated += (_, _) => BeginInvoke(new Action(ResumeHotkeyCapture));
 
         var layout = new TableLayoutPanel {
@@ -489,6 +485,12 @@ internal sealed class HotkeyDialog : Form {
         Margin = new Padding(3, 3, 12, 3),
     };
 
+    private void EnableHotkeyCapture() {
+        _hotkeyBox.AllowCapture = true;
+        _moveHotkeyBox.AllowCapture = true;
+        _restoreHotkeyBox.AllowCapture = true;
+    }
+
     private void Hint(string text, params Control[] targets) {
         foreach (Control target in targets) _tips.SetToolTip(target, text);
     }
@@ -568,15 +570,19 @@ internal sealed class HotkeyDialog : Form {
                 Directory.CreateDirectory(directory);
                 path = Path.Combine(directory, file);
 
-                if (!File.Exists(path)) {
-                    using Stream? resource = Assembly.GetExecutingAssembly()
-                        .GetManifestResourceStream($"WindowMinimize.{file}");
-                    if (resource is null) {
-                        throw new FileNotFoundException("help resource is missing", file);
-                    }
+                // the document ships inside the executable, so a newer build has to replace the
+                // copy an earlier version left behind
+                using Stream? resource = Assembly.GetExecutingAssembly()
+                    .GetManifestResourceStream($"WindowMinimize.{file}");
+                if (resource is null) {
+                    throw new FileNotFoundException("help resource is missing", file);
+                }
 
-                    using FileStream output = File.Create(path);
-                    resource.CopyTo(output);
+                using var buffer = new MemoryStream();
+                resource.CopyTo(buffer);
+                byte[] embedded = buffer.ToArray();
+                if (!File.Exists(path) || !File.ReadAllBytes(path).SequenceEqual(embedded)) {
+                    File.WriteAllBytes(path, embedded);
                 }
             }
 

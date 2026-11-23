@@ -3,9 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>WindowMinimize帮助</title>
 <style>
 :root { color-scheme: light dark; }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 body {
     max-width: 720px;
     margin: 32px auto;
@@ -17,7 +20,17 @@ body {
 h1 { margin: 0 0 6px; font-size: 26px; font-weight: 600; }
 h2 { margin: 28px 0 10px; font-size: 18px; font-weight: 600; }
 p, li { margin: 6px 0; }
-.lang { margin-bottom: 26px; color: GrayText; font-size: 13px; }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 26px; }
+.lang { color: GrayText; font-size: 13px; }
+select {
+    padding: 2px 4px;
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid ButtonBorder;
+    border-radius: 2px;
+    font: inherit;
+    font-size: 13px;
+}
 table { border-collapse: collapse; width: 100%; margin: 8px 0 14px; }
 th, td { padding: 6px 8px; border-bottom: 1px solid ButtonBorder; text-align: left; }
 th { font-weight: 600; }
@@ -27,8 +40,17 @@ a { color: LinkText; }
 </style>
 </head>
 <body>
+<div class="bar">
 <h1>WindowMinimize</h1>
-<div class="lang"><a href="HELP.html">English</a></div>
+<div class="lang">
+<a href="HELP.html">English</a>
+<select id="theme" aria-label="配色">
+<option value="system">跟随系统</option>
+<option value="light">浅色</option>
+<option value="dark">深色</option>
+</select>
+</div>
+</div>
 
 <p>WindowMinimize驻留在通知区域，通过全局热键最小化当前前台窗口。</p>
 
@@ -49,7 +71,7 @@ a { color: LinkText; }
 
 <h2>设置</h2>
 <p>设置界面控制三个热键、最小化方式、语言、屏幕配对、还原动效、全窗口记录、更新检查和自动启动。点击热键输入框后按下组合键即可修改；X按钮清除，Esc取消，Backspace也可清除。</p>
-<p>标题栏的问号按钮会打开这份帮助文档。选择<strong>最小化</strong>会保留任务栏按钮；选择<strong>隐藏</strong>会同时移出屏幕和任务栏，隐藏窗口需要从托盘菜单恢复。</p>
+<p>鼠标停在任意一行上会显示该项的简短说明。标题栏的问号按钮会打开这份帮助文档。选择<strong>最小化</strong>会保留任务栏按钮；选择<strong>隐藏</strong>会同时移出屏幕和任务栏，隐藏窗口需要从托盘菜单恢复。</p>
 
 <h2>更新</h2>
 <p>启用启动检查后，程序会查询GitHub最新稳定Release。也可以在托盘菜单中选择<strong>检查更新</strong>。自动更新会下载匹配的完整版或Lite版，在Release提供校验文件时验证SHA-256，退出后替换可执行文件并重新启动。</p>
@@ -58,5 +80,39 @@ a { color: LinkText; }
 <p>当前台是管理员权限窗口时，Windows不会把热键传给普通权限进程。需要处理这类窗口时，以管理员权限启动WindowMinimize，或开启管理员自启选项。</p>
 
 <p class="note">配置保存在可执行文件旁的<code>hotkey.ini</code>；该目录不可写时使用<code>%APPDATA%\WindowMinimize</code>。</p>
+
+<script>
+(function () {
+    var root = document.documentElement;
+    var picker = document.getElementById("theme");
+    var modes = ["system", "light", "dark"];
+
+    function apply(mode) {
+        if (mode === "system") root.removeAttribute("data-theme");
+        else root.setAttribute("data-theme", mode);
+    }
+
+    function stored() {
+        try {
+            var value = localStorage.getItem("windowminimize-help-theme");
+            return modes.indexOf(value) === -1 ? "system" : value;
+        } catch (error) {
+            return "system";
+        }
+    }
+
+    var current = stored();
+    apply(current);
+    picker.value = current;
+
+    picker.addEventListener("change", function () {
+        apply(picker.value);
+        try {
+            localStorage.setItem("windowminimize-help-theme", picker.value);
+        } catch (error) {
+        }
+    });
+})();
+</script>
 </body>
 </html>

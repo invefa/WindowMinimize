@@ -2,11 +2,18 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
-## Unreleased
+## 1.5.0 - 2026-11-23
 
 ### Added
 
 - Every settings row shows a short hover hint describing what the option does.
+- The help document has a colour scheme picker with System, Light, and Dark; the choice is kept in
+  the browser.
+
+### Fixed
+
+- The extracted help copy is replaced when it differs from the one inside the executable, so an
+  upgrade no longer keeps serving the previous document.
 
 ## 1.4.0 - 2026-11-23
 
