@@ -271,7 +271,7 @@ Add `-Lite` to get `dist\lite\WindowMinimize-lite.exe` instead, the framework de
 that needs the .NET 8 Desktop Runtime on the machine it runs on. It lives in a folder of its own
 because a single file publish clears its output folder before writing.
 
-Pushing a tag such as `v1.3.3`, matching `<Version>` in `src\WindowMinimize.csproj`, makes
+Pushing a tag such as `v1.4.0`, matching `<Version>` in `src\WindowMinimize.csproj`, makes
 `.github\workflows\release.yml` run the unit tests, build both exe files, extract the matching
 section of `CHANGELOG.md` and attach the exe files to the release.
 

@@ -2,12 +2,24 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
-## Unreleased
+## 1.4.0 - 2026-11-23
+
+### Added
+
+- Hotkey fields capture the next key combination from the keyboard instead of requiring typed
+  syntax, with a clear button on each field.
+- Duplicate assignments across the three hotkeys are rejected before saving.
+
+### Fixed
+
+- Win combinations such as Win+Q are captured correctly; the modifier state now comes from the
+  keyboard hook instead of the asynchronous key state.
+- Listening stops when the dialog loses focus or another place in the dialog is clicked, so a stray
+  click cannot swallow the next key press.
 
 ### Changed
 
-- Hotkey fields capture the next key combination directly, and duplicate assignments are rejected
-  before saving.
+- Sources are grouped under `app`, `config`, `hotkey`, `window`, `ui`, and `update`.
 
 ## 1.3.3 - 2026-11-23
 
