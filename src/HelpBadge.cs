@@ -5,6 +5,8 @@ namespace WindowMinimize;
 
 /// <summary>A small circular question mark with the standard hover tooltip.</summary>
 internal sealed class HelpBadge : Control {
+    // Segoe MDL2 Assets: Unknown, drawn as a question mark inside a circle
+    private static readonly string Glyph = ((char)0xE9CE).ToString();
     private bool _hover;
 
     internal HelpBadge() {
@@ -22,26 +24,16 @@ internal sealed class HelpBadge : Control {
         BackColor = Color.Transparent;
         AccessibleRole = AccessibleRole.PushButton;
         AccessibleName = "?";
-        Font = new Font("Segoe UI", 11f, FontStyle.Regular);
+        Font = new Font("Segoe MDL2 Assets", 13f, FontStyle.Regular);
     }
 
     protected override void OnPaint(PaintEventArgs e) {
         e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-        var circle = new Rectangle(0, 0, Width - 1, Height - 1);
-
-        if (_hover) {
-            using var fill = new SolidBrush(SystemColors.ControlLight);
-            e.Graphics.FillEllipse(fill, circle);
-        }
-
-        using (var border = new Pen(SystemColors.ControlDark)) {
-            e.Graphics.DrawEllipse(border, circle);
-        }
-
+        Color color = _hover ? SystemColors.ControlText : SystemColors.GrayText;
         TextRenderer.DrawText(
-            e.Graphics, "?", Font, circle, SystemColors.ControlText,
+            e.Graphics, Glyph, Font, ClientRectangle, color,
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
-            | TextFormatFlags.NoPadding
+            | TextFormatFlags.NoPadding | TextFormatFlags.SingleLine
         );
     }
 
