@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-Hans.md)
 
-一个用自定义全局热键最小化当前前台窗口的Windows小工具。程序驻留在托盘，默认最小化热键为`Win+Q`，发布为单文件exe，不依赖.NET运行时或任何第三方组件。
+一个用自定义全局热键最小化当前前台窗口的Windows小工具。程序驻留在托盘，默认最小化热键为`Win+Q`，发布为单文件exe，不依赖.NET运行时或任何第三方组件。标题栏的帮助按钮会打开独立的[帮助文档](HELP.zh-Hans.html)，英文版本为[HELP.html](HELP.html)。
 
 从[发布页](https://github.com/invefa/WindowMinimize/releases/latest)下载完整版
 （`WindowMinimize-<version>-win-x64.exe`）直接运行，无需安装。同一个页面上的
@@ -177,7 +177,7 @@ Windows自身占用的组合，例如`Win+S`打开搜索或`Win+D`显示桌面�
 
 如果Release提供了`SHA256SUMS.txt`，下载完成后会校验SHA-256。随后一个独立的PowerShell辅助进程等待当前程序退出，替换可执行文件并重新启动。更新文件保存在`%LOCALAPPDATA%\WindowMinimize\updates`。
 
-设置项标签旁的问号图标提供Windows标准悬停提示，说明热键、屏幕配对、还原方式、记录、更新、启动和通知等选项。
+标题栏的帮助按钮会打开独立帮助文档，说明热键、屏幕切换、还原历史、设置、更新和权限。
 
 三个热键动作会串行执行。切换屏幕会等到延迟移动完成才处理下一个动作，还原会等到还原动画结束，因此快速连按不会把两次操作交叉插入。还原时还会取消该窗口尚未执行的后台最小化重试，所以快速按`Win+W`不会被延迟重试重新最小化。
 

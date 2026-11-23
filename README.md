@@ -4,7 +4,8 @@
 
 A small Windows tool that minimizes the current foreground window with a custom global hotkey. It
 lives in the tray, its default minimize hotkey is `Win+Q`, it is a single-file exe, and it depends
-on neither the .NET runtime nor any third-party component.
+on neither the .NET runtime nor any third-party component. The title-bar Help button opens the
+separate [help document](HELP.html); the Chinese version is [HELP.zh-Hans.html](HELP.zh-Hans.html).
 
 Download the full build (`WindowMinimize-<version>-win-x64.exe`) from the
 [releases page](https://github.com/invefa/WindowMinimize/releases/latest) and run it, no
@@ -239,9 +240,8 @@ The downloaded executable is checked against the release `SHA256SUMS.txt` when t
 then a detached PowerShell helper waits for the current process to exit, replaces the executable
 and restarts it. Update files live under `%LOCALAPPDATA%\WindowMinimize\updates`.
 
-Question-mark icons beside the settings labels show the standard Windows hover help for each
-option. The tooltip explains the hotkey, screen pair, restore mode, tracking, update, startup and
-notification settings.
+The title-bar Help button opens the separate help document. The document explains the hotkeys,
+screen switching, restore history, settings, updates and permissions.
 
 Hotkey actions are serialized. A screen move holds the queue until its delayed placement is done,
 and a restore holds it until the restore animation has finished, so fast repeated presses cannot

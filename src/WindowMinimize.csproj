@@ -53,6 +53,8 @@
              The zh-Hans file becomes the satellite assembly that carries the Chinese text. -->
         <EmbeddedResource Include="Resources\Strings.resx" />
         <EmbeddedResource Include="Resources\Strings.zh-Hans.resx" />
+        <EmbeddedResource Include="..\HELP.html" LogicalName="WindowMinimize.HELP.html" WithCulture="false" />
+        <EmbeddedResource Include="..\HELP.zh-Hans.html" LogicalName="WindowMinimize.HELP.zh-Hans.html" WithCulture="false" />
     </ItemGroup>
 
 </Project>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WindowMinimize帮助</title>
+<style>
+:root { color-scheme: light dark; }
+body {
+    max-width: 720px;
+    margin: 32px auto;
+    padding: 0 20px;
+    background: Canvas;
+    color: CanvasText;
+    font: 15px/1.55 "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+h1 { margin: 0 0 6px; font-size: 26px; font-weight: 600; }
+h2 { margin: 28px 0 10px; font-size: 18px; font-weight: 600; }
+p, li { margin: 6px 0; }
+.lang { margin-bottom: 26px; color: GrayText; font-size: 13px; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0 14px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid ButtonBorder; text-align: left; }
+th { font-weight: 600; }
+code { padding: 1px 4px; border: 1px solid ButtonBorder; border-radius: 3px; font: 13px Consolas, monospace; }
+a { color: LinkText; }
+.note { margin-top: 26px; color: GrayText; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>WindowMinimize</h1>
+<div class="lang"><a href="HELP.html">English</a></div>
+
+<p>WindowMinimize驻留在通知区域，通过全局热键最小化当前前台窗口。</p>
+
+<h2>热键</h2>
+<table>
+<tr><th>动作</th><th>默认值</th></tr>
+<tr><td>最小化当前前台窗口</td><td><code>Win+Q</code></td></tr>
+<tr><td>移动到另一块屏幕后最小化</td><td><code>Win+S</code></td></tr>
+<tr><td>还原最近最小化的窗口</td><td><code>Win+W</code></td></tr>
+</table>
+
+<h2>切换屏幕</h2>
+<p><code>Win+S</code>先在原屏幕完成最小化，再把窗口的还原位置和任务栏按钮移动到另一块配置的屏幕。窗口保持在工作区中的相对位置。最小化动画留在原屏幕，还原动画在目标屏幕准备。</p>
+<p>屏幕A和屏幕B在设置界面选择。窗口在A上移动到B，在B上移回A，在其他屏幕上移动到B。</p>
+
+<h2>还原历史</h2>
+<p>默认情况下，<code>Win+W</code>只还原本工具触发的窗口。开启<strong>记录所有程序的最小化窗口</strong>后，通过任务栏或其他程序最小化的窗口也会进入历史。历史保存在内存中；开启选项时会把当前已最小化的窗口加入记录。</p>
+
+<h2>设置</h2>
+<p>设置界面控制三个热键、最小化方式、语言、屏幕配对、还原动效、全窗口记录、更新检查和自动启动。</p>
+<p>标题栏的问号按钮会打开这份帮助文档。选择<strong>最小化</strong>会保留任务栏按钮；选择<strong>隐藏</strong>会同时移出屏幕和任务栏，隐藏窗口需要从托盘菜单恢复。</p>
+
+<h2>更新</h2>
+<p>启用启动检查后，程序会查询GitHub最新稳定Release。也可以在托盘菜单中选择<strong>检查更新</strong>。自动更新会下载匹配的完整版或Lite版，在Release提供校验文件时验证SHA-256，退出后替换可执行文件并重新启动。</p>
+
+<h2>权限</h2>
+<p>当前台是管理员权限窗口时，Windows不会把热键传给普通权限进程。需要处理这类窗口时，以管理员权限启动WindowMinimize，或开启管理员自启选项。</p>
+
+<p class="note">配置保存在可执行文件旁的<code>hotkey.ini</code>；该目录不可写时使用<code>%APPDATA%\WindowMinimize</code>。</p>
+</body>
+</html>

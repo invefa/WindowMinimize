@@ -2,6 +2,13 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
+## Unreleased
+
+### Changed
+
+- Replaced the per-setting question-mark badges with the standard Windows title-bar Help button.
+  The button opens standalone bilingual help documents, embedded in the executable as a fallback.
+
 ## 1.3.2 - 2026-11-23
 
 ### Fixed

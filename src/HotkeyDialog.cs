@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Drawing;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace WindowMinimize;
@@ -28,12 +30,6 @@ internal sealed class HotkeyDialog : Form {
     private readonly ComboBox _languageBox;
     private readonly Label _hint;
     private readonly Button? _restartButton = null;
-    private readonly ToolTip _toolTip = new() {
-        AutoPopDelay = 15000,
-        InitialDelay = 250,
-        ReshowDelay = 100,
-        ShowAlways = true,
-    };
 
     internal string HotkeyText => _hotkeyBox.Text.Trim();
 
@@ -87,6 +83,7 @@ internal sealed class HotkeyDialog : Form {
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
+        HelpButton = true;
         ShowInTaskbar = true;
         StartPosition = FormStartPosition.CenterScreen;
         AutoSize = true;
@@ -94,6 +91,10 @@ internal sealed class HotkeyDialog : Form {
         MinimumSize = new Size(460, 0);
         Font = new Font("Segoe UI", 9f);
         AutoScaleMode = AutoScaleMode.Font;
+        HelpButtonClicked += (_, e) => {
+            e.Cancel = true;
+            OpenHelpDocument();
+        };
 
         var layout = new TableLayoutPanel {
             AutoSize = true,
@@ -105,7 +106,7 @@ internal sealed class HotkeyDialog : Form {
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 360));
 
-        var hotkeyLabel = RowLabel(Strings.DialogHotkey, Strings.HelpHotkey);
+        var hotkeyLabel = RowLabel(Strings.DialogHotkey);
 
         _hotkeyBox = new TextBox {
             Dock = DockStyle.Fill,
@@ -121,7 +122,7 @@ internal sealed class HotkeyDialog : Form {
             Margin = new Padding(0, 0, 0, 10),
         };
 
-        var moveHotkeyLabel = RowLabel(Strings.DialogMoveHotkey, Strings.HelpMoveHotkey);
+        var moveHotkeyLabel = RowLabel(Strings.DialogMoveHotkey);
 
         _moveHotkeyBox = new TextBox {
             Dock = DockStyle.Fill,
@@ -129,7 +130,7 @@ internal sealed class HotkeyDialog : Form {
             Text = config.MoveHotkey,
         };
 
-        var restoreHotkeyLabel = RowLabel(Strings.DialogRestoreHotkey, Strings.HelpRestoreHotkey);
+        var restoreHotkeyLabel = RowLabel(Strings.DialogRestoreHotkey);
 
         _restoreHotkeyBox = new TextBox {
             Dock = DockStyle.Fill,
@@ -137,7 +138,7 @@ internal sealed class HotkeyDialog : Form {
             Text = config.RestoreHotkey,
         };
 
-        var modeLabel = RowLabel(Strings.DialogMode, Strings.HelpMode);
+        var modeLabel = RowLabel(Strings.DialogMode);
 
         var modes = new FlowLayoutPanel {
             AutoSize = true,
@@ -163,7 +164,7 @@ internal sealed class HotkeyDialog : Form {
         modes.Controls.Add(_minimizeRadio);
         modes.Controls.Add(_hideRadio);
 
-        var languageLabel = RowLabel(Strings.DialogLanguage, Strings.HelpLanguage);
+        var languageLabel = RowLabel(Strings.DialogLanguage);
 
         _languageBox = new ComboBox {
             DropDownStyle = ComboBoxStyle.DropDownList,
@@ -181,17 +182,15 @@ internal sealed class HotkeyDialog : Form {
         };
 
         var monitors = BuildMonitorChoices();
-        var monitorALabel = RowLabel(Strings.DialogMonitorA, Strings.HelpMonitors);
+        var monitorALabel = RowLabel(Strings.DialogMonitorA);
         var monitorADefault = monitors.FirstOrDefault(item => item.Primary) ?? monitors[0];
         _monitorABox = MonitorComboBox(monitors, config.MonitorA, monitorADefault);
 
-        var monitorBLabel = RowLabel(Strings.DialogMonitorB, Strings.HelpMonitors);
+        var monitorBLabel = RowLabel(Strings.DialogMonitorB);
         var monitorBDefault = monitors.FirstOrDefault(item => !item.Primary) ?? monitors[0];
         _monitorBBox = MonitorComboBox(monitors, config.MonitorB, monitorBDefault);
 
-        var restoreAnimationLabel = RowLabel(
-            Strings.DialogRestoreAnimation, Strings.HelpRestoreAnimation
-        );
+        var restoreAnimationLabel = RowLabel(Strings.DialogRestoreAnimation);
         _restoreAnimationBox = new ComboBox {
             DropDownStyle = ComboBoxStyle.DropDownList,
             Width = 300,
@@ -240,10 +239,10 @@ internal sealed class HotkeyDialog : Form {
         updateBoxes.Controls.Add(_checkUpdatesBox);
         updateBoxes.Controls.Add(_autoUpdateBox);
 
-        var startupLabel = RowLabel(Strings.DialogStartup, Strings.HelpStartup);
+        var startupLabel = RowLabel(Strings.DialogStartup);
 
-        var trackingLabel = RowLabel(Strings.DialogTracking, Strings.HelpTrackAll);
-        var updatesLabel = RowLabel(Strings.DialogUpdates, Strings.HelpUpdates);
+        var trackingLabel = RowLabel(Strings.DialogTracking);
+        var updatesLabel = RowLabel(Strings.DialogUpdates);
 
         var startupBoxes = new FlowLayoutPanel {
             AutoSize = true,
@@ -280,7 +279,7 @@ internal sealed class HotkeyDialog : Form {
         startupBoxes.Controls.Add(_autoStartBox);
         startupBoxes.Controls.Add(_autoStartAdminBox);
 
-        var debugLabel = RowLabel(Strings.DialogLog, Strings.HelpLog);
+        var debugLabel = RowLabel(Strings.DialogLog);
 
         _debugBox = new CheckBox {
             Text = Strings.DialogDebug,
@@ -289,7 +288,7 @@ internal sealed class HotkeyDialog : Form {
             Margin = new Padding(0, 6, 0, 6),
         };
 
-        var notificationsLabel = RowLabel(Strings.DialogNotifications, Strings.HelpNotifications);
+        var notificationsLabel = RowLabel(Strings.DialogNotifications);
 
         var notificationBoxes = new TableLayoutPanel {
             AutoSize = true,
@@ -435,37 +434,48 @@ internal sealed class HotkeyDialog : Form {
         CancelButton = cancel;
     }
 
-    private Control RowLabel(string text, string? help = null) {
-        var label = new Label {
-            Text = text,
-            AutoSize = true,
-            Anchor = AnchorStyles.Top | AnchorStyles.Left,
-            Margin = new Padding(0),
-        };
+    private static Label RowLabel(string text) => new() {
+        Text = text,
+        AutoSize = true,
+        Anchor = AnchorStyles.Top | AnchorStyles.Left,
+        Margin = new Padding(3, 3, 12, 3),
+    };
 
-        if (string.IsNullOrWhiteSpace(help)) {
-            return new Label {
-                Text = text,
-                AutoSize = true,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left,
-                Margin = new Padding(3, 3, 12, 3),
-            };
+    /// <summary>Open the standalone help document in the default browser.</summary>
+    private static void OpenHelpDocument() {
+        string file = Strings.Culture.TwoLetterISOLanguageName.Equals(
+            "zh", StringComparison.OrdinalIgnoreCase
+        ) ? "HELP.zh-Hans.html" : "HELP.html";
+
+        try {
+            string path = Path.Combine(AppContext.BaseDirectory, file);
+            if (!File.Exists(path)) {
+                string directory = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "WindowMinimize", "help"
+                );
+                Directory.CreateDirectory(directory);
+                path = Path.Combine(directory, file);
+
+                if (!File.Exists(path)) {
+                    using Stream? resource = Assembly.GetExecutingAssembly()
+                        .GetManifestResourceStream($"WindowMinimize.{file}");
+                    if (resource is null) {
+                        throw new FileNotFoundException("help resource is missing", file);
+                    }
+
+                    using FileStream output = File.Create(path);
+                    resource.CopyTo(output);
+                }
+            }
+
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+        } catch (Exception ex) {
+            MessageBox.Show(
+                Strings.HelpOpenFailed(ex.Message), Strings.AppName,
+                MessageBoxButtons.OK, MessageBoxIcon.Warning
+            );
         }
-
-        var panel = new FlowLayoutPanel {
-            AutoSize = true,
-            AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            WrapContents = false,
-            Margin = new Padding(3, 3, 12, 3),
-        };
-        panel.Controls.Add(label);
-
-        var helpBadge = new HelpBadge {
-            Margin = new Padding(4, 1, 0, 0),
-        };
-        _toolTip.SetToolTip(helpBadge, help);
-        panel.Controls.Add(helpBadge);
-        return panel;
     }
 
     private static List<MonitorChoice> BuildMonitorChoices() {

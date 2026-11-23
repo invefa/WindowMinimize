@@ -33,8 +33,8 @@ pwsh -NoProfile -File build\build.ps1 -Lite
 ```
 
 `test/e2e` needs a real desktop, a foreground window, and global hotkeys; run it according to the
-affected scope. Check UI changes at the real window size, and check custom controls in the preview
-panel; the preview command is`test/preview/help_preview.ps1`.
+affected scope. Check UI changes at the real window size. When a custom control is added, provide a
+preview under`test/preview` and give the run command in the delivery.
 
 ## Change rules
 
@@ -71,7 +71,7 @@ panel; the preview command is`test/preview/help_preview.ps1`.
   palette or decorative heavy fills.
 - Show custom controls in`test/preview` with fixed examples and interaction states before wiring
   them into the settings dialog. Give the run command in the delivery.
-- Use the standard`ToolTip` for help badges. Keep the badge small, with a clear outline, a centered
-  question mark, and hover feedback.
+- Use the standard Windows title-bar Help button for the standalone help document. Keep
+  `HELP.html` and`HELP.zh-Hans.html` available as the document source and embedded fallback.
 - Check alignment, clipping, and hit areas at 100%, 125%, and 150% scaling. Accept visual changes
   against a screenshot from the running application.

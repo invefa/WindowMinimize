@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WindowMinimize Help</title>
+<style>
+:root { color-scheme: light dark; }
+body {
+    max-width: 720px;
+    margin: 32px auto;
+    padding: 0 20px;
+    background: Canvas;
+    color: CanvasText;
+    font: 15px/1.55 "Segoe UI", sans-serif;
+}
+h1 { margin: 0 0 6px; font-size: 26px; font-weight: 600; }
+h2 { margin: 28px 0 10px; font-size: 18px; font-weight: 600; }
+p, li { margin: 6px 0; }
+.lang { margin-bottom: 26px; color: GrayText; font-size: 13px; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0 14px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid ButtonBorder; text-align: left; }
+th { font-weight: 600; }
+code { padding: 1px 4px; border: 1px solid ButtonBorder; border-radius: 3px; font: 13px Consolas, monospace; }
+a { color: LinkText; }
+.note { margin-top: 26px; color: GrayText; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>WindowMinimize</h1>
+<div class="lang"><a href="HELP.zh-Hans.html">简体中文</a></div>
+
+<p>WindowMinimize lives in the notification area and minimizes the foreground window with global hotkeys.</p>
+
+<h2>Hotkeys</h2>
+<table>
+<tr><th>Action</th><th>Default</th></tr>
+<tr><td>Minimize the foreground window</td><td><code>Win+Q</code></td></tr>
+<tr><td>Move to the other screen, then minimize</td><td><code>Win+S</code></td></tr>
+<tr><td>Restore the most recently minimized window</td><td><code>Win+W</code></td></tr>
+</table>
+
+<h2>Screen switching</h2>
+<p><code>Win+S</code> minimizes the window on the source screen, then moves its restore position and taskbar button to the other configured screen. The window keeps its relative position within the work area. The minimize animation stays on the source screen; the restore animation is prepared for the target screen.</p>
+<p>Screen A and Screen B are selected in the settings dialog. A window on A moves to B, a window on B moves to A, and a window on another screen moves to B.</p>
+
+<h2>Restore history</h2>
+<p>By default, <code>Win+W</code> restores windows minimized by this tool. Enable <strong>Record minimized windows from all programs</strong> to include windows minimized from the taskbar or other programs. The history is kept in memory; previously minimized windows are collected when the option is enabled.</p>
+
+<h2>Settings</h2>
+<p>The settings dialog controls the three hotkeys, the mode, the language, the screen pair, the restore animation, all-window history, update checks and startup.</p>
+<p>The question mark in the title bar opens this document. Choose <strong>Minimize</strong> to keep a taskbar button, or <strong>Hide</strong> to remove the window from the screen and taskbar; hidden windows are restored from the tray menu.</p>
+
+<h2>Updates</h2>
+<p>The program checks the latest stable GitHub release at startup when enabled. Use <strong>Check for updates</strong> in the tray menu for a manual check. Automatic updates download the matching full or lite executable, verify the release SHA-256 checksum when available, replace the executable after exit, and restart the program.</p>
+
+<h2>Permissions</h2>
+<p>Windows does not send hotkeys to a normal process while an elevated window is in front. Start WindowMinimize as administrator, or enable the elevated startup option, to handle those windows.</p>
+
+<p class="note">Configuration is stored in <code>hotkey.ini</code> next to the executable, or under <code>%APPDATA%\WindowMinimize</code> when that directory is not writable.</p>
+</body>
+</html>

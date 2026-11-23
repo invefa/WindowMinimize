@@ -29,8 +29,8 @@ pwsh -NoProfile -File build\build.ps1
 pwsh -NoProfile -File build\build.ps1 -Lite
 ```
 
-`test/e2e`需要真实桌面、前台窗口和全局热键，按受影响范围运行。界面改动要在实际窗口尺寸下检查，
-自定义控件还需要检查预览面板；预览入口为`test/preview/help_preview.ps1`。
+`test/e2e`需要真实桌面、前台窗口和全局热键，按受影响范围运行。界面改动要在实际窗口尺寸下检查。
+新增自定义控件时，在`test/preview`中建立预览，并在交付时给出运行命令。
 
 ## 变更规则
 
@@ -54,5 +54,5 @@ pwsh -NoProfile -File build\build.ps1 -Lite
 
 - 设置页优先使用现有WinForms控件、系统颜色和项目资源，不引入固定色板或装饰性重色。
 - 自定义控件先在`test/preview`中展示固定示例和交互状态，再接入设置页；交付时给出运行命令。
-- 问号提示使用标准`ToolTip`，徽标需保持小尺寸、清晰描边、居中问号和悬停反馈。
+- 独立帮助文档使用标准Windows标题栏帮助按钮。`HELP.html`和`HELP.zh-Hans.html`作为可维护源文件，同时作为程序内嵌回退。
 - 检查窗口在100%、125%和150%缩放下的对齐、截断和点击区域；视觉改动以实际运行截图验收。
