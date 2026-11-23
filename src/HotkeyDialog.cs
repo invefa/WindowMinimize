@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Reflection;
 using System.Windows.Forms;
 
@@ -467,37 +466,15 @@ internal sealed class HotkeyDialog : Form {
         row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 24));
 
         box.Dock = DockStyle.Fill;
-        var clear = new Button {
-            Text = "X",
-            FlatStyle = FlatStyle.Flat,
-            Size = new Size(20, 20),
+        var clear = new ClearIconButton {
             Anchor = AnchorStyles.None,
             Margin = new Padding(0),
-            TabStop = false,
-            Cursor = Cursors.Hand,
-            BackColor = SystemColors.Window,
-            ForeColor = SystemColors.GrayText,
-            TextAlign = ContentAlignment.MiddleCenter,
-            AccessibleName = "Clear shortcut",
         };
-        clear.FlatAppearance.BorderSize = 0;
-        clear.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
-        clear.FlatAppearance.MouseDownBackColor = SystemColors.ControlLight;
-        clear.Resize += (_, _) => SetRoundRegion(clear);
-        SetRoundRegion(clear);
         clear.Click += (_, _) => box.ClearValue();
 
         row.Controls.Add(box, 0, 0);
         row.Controls.Add(clear, 1, 0);
         return row;
-    }
-
-    private static void SetRoundRegion(Control control) {
-        using var path = new GraphicsPath();
-        path.AddEllipse(0, 0, control.Width - 1, control.Height - 1);
-        Region? old = control.Region;
-        control.Region = new Region(path);
-        old?.Dispose();
     }
 
     /// <summary>Open the standalone help document in the default browser.</summary>
