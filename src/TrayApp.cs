@@ -29,7 +29,9 @@ internal sealed class TrayApp : ApplicationContext {
     private ToolStripMenuItem _suspendItem = null!;
     private ToolStripMenuItem _autoStartItem = null!;
     private ToolStripMenuItem _autoStartAdminItem = null!;
+    private ToolStripMenuItem _updateItem = null!;
     private readonly System.Windows.Forms.Timer _suspendCountdown;
+    private System.Windows.Forms.Timer? _updateTimer;
     private readonly List<HiddenWindow> _hiddenWindows = [];
     private readonly List<MinimizedWindow> _minimizedStack = [];
     private readonly List<MinimizedWindow> _allMinimized = [];
@@ -52,6 +54,7 @@ internal sealed class TrayApp : ApplicationContext {
     private bool _elevatedNoticeShown;
     private bool _elevatedAutoStart;
     private bool _settingsOpen;
+    private bool _checkingUpdate;
     private int _suspendSecondsLeft;
 
     private sealed record HiddenWindow(IntPtr Handle, uint ProcessId);
@@ -157,6 +160,9 @@ internal sealed class TrayApp : ApplicationContext {
         var settingsItem = new ToolStripMenuItem(
             Strings.MenuSettings, null, (_, _) => ShowSettingsDialog()
         );
+        _updateItem = new ToolStripMenuItem(
+            Strings.MenuCheckUpdate, null, (_, _) => CheckForUpdatesInteractive()
+        );
 
         _autoStartItem = new ToolStripMenuItem(
             Strings.MenuAutoStart, null, (_, _) => ToggleAutoStart()
@@ -186,6 +192,7 @@ internal sealed class TrayApp : ApplicationContext {
 
         menu.Items.Add(versionItem);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(_updateItem);
         menu.Items.Add(_hiddenWindowsItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(_hotkeyItem);
@@ -912,6 +919,101 @@ internal sealed class TrayApp : ApplicationContext {
         });
     }
 
+    /// <summary>Start the background update check used at program startup.</summary>
+    internal void BeginUpdateCheck() {
+        if (Headless || (!Config.CheckUpdates && !Config.AutoUpdate)) return;
+
+        var timer = new System.Windows.Forms.Timer { Interval = 1500 };
+        _updateTimer = timer;
+        timer.Tick += async (_, _) => {
+            timer.Stop();
+            timer.Dispose();
+            _updateTimer = null;
+            await CheckForUpdatesAsync(interactive: false, automatic: true)
+                .ConfigureAwait(true);
+        };
+        timer.Start();
+    }
+
+    private async void CheckForUpdatesInteractive() {
+        await CheckForUpdatesAsync(interactive: true, automatic: false).ConfigureAwait(true);
+    }
+
+    private async Task CheckForUpdatesAsync(bool interactive, bool automatic) {
+        if (_checkingUpdate || _disposed) return;
+        _checkingUpdate = true;
+        if (_updateItem is not null) _updateItem.Enabled = false;
+
+        try {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            UpdateInfo? update = await UpdateService.CheckAsync(timeout.Token)
+                .ConfigureAwait(true);
+
+            if (update is null) {
+                if (interactive) {
+                    MessageBox.Show(
+                        Strings.UpdateNone, Strings.AppName,
+                        MessageBoxButtons.OK, MessageBoxIcon.Information
+                    );
+                }
+                return;
+            }
+
+            if (automatic && Config.AutoUpdate) {
+                await InstallUpdateAsync(update).ConfigureAwait(true);
+                return;
+            }
+
+            string message = Strings.UpdateAvailable(AppInfo.Version, update.Version);
+            if (interactive) {
+                DialogResult answer = MessageBox.Show(
+                    message, Strings.AppName, MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+                if (answer == DialogResult.Yes) {
+                    await InstallUpdateAsync(update).ConfigureAwait(true);
+                }
+            } else {
+                Notify(message, NoticeKind.Startup);
+            }
+        } catch (Exception ex) {
+            Log.Error($"update check failed: {ex.Message}");
+            if (interactive) {
+                MessageBox.Show(
+                    Strings.UpdateFailed(ex.Message), Strings.AppName,
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning
+                );
+            }
+        } finally {
+            _checkingUpdate = false;
+            if (_updateItem is not null) _updateItem.Enabled = true;
+        }
+    }
+
+    private async Task InstallUpdateAsync(UpdateInfo update) {
+        try {
+            Notify(Strings.UpdateDownloading(update.Version), NoticeKind.Startup);
+            string downloaded = await UpdateService.DownloadAsync(
+                update, CancellationToken.None
+            ).ConfigureAwait(true);
+            if (!UpdateService.StartUpdater(downloaded, out string error)) {
+                string message = Strings.UpdateFailed(error);
+                Log.Error(message);
+                Notify(message, NoticeKind.Error, ToolTipIcon.Warning);
+                return;
+            }
+
+            Log.Info($"update {update.Version} downloaded, restarting through the updater");
+            Notify(Strings.UpdateStarting(update.Version), NoticeKind.Startup);
+            await Task.Delay(500).ConfigureAwait(true);
+            ExitThread();
+        } catch (Exception ex) {
+            string message = Strings.UpdateFailed(ex.Message);
+            Log.Error(message);
+            Notify(message, NoticeKind.Error, ToolTipIcon.Warning);
+        }
+    }
+
     /// <summary>Show the settings dialog.</summary>
     internal void ShowSettingsDialog() {
         if (_settingsOpen) return;
@@ -941,6 +1043,8 @@ internal sealed class TrayApp : ApplicationContext {
             bool wasTrackingAll = Config.TrackAllMinimized;
             Config.TrackAllMinimized = dialog.TrackAllMinimized;
             if (!wasTrackingAll && Config.TrackAllMinimized) SeedAllMinimized();
+            Config.CheckUpdates = dialog.CheckUpdates;
+            Config.AutoUpdate = dialog.AutoUpdate;
             Config.Mode = dialog.Mode;
             Config.NotifyStartup = dialog.NotifyStartup;
             Config.NotifyErrors = dialog.NotifyErrors;
@@ -988,6 +1092,12 @@ internal sealed class TrayApp : ApplicationContext {
             text = SetIniValue(text, "RestoreAnimation", Config.RestoreAnimation);
             text = SetIniValue(
                 text, "TrackAllMinimized", Config.TrackAllMinimized ? "true" : "false"
+            );
+            text = SetIniValue(
+                text, "CheckUpdates", Config.CheckUpdates ? "true" : "false"
+            );
+            text = SetIniValue(
+                text, "AutoUpdate", Config.AutoUpdate ? "true" : "false"
             );
             text = SetIniValue(text, "Mode", Config.Mode);
             text = SetIniValue(text, "Language", Config.Language);
@@ -1065,6 +1175,7 @@ internal sealed class TrayApp : ApplicationContext {
             _showSettingsEvent.Dispose();
             _watcher?.Dispose();
             _suspendCountdown.Dispose();
+            _updateTimer?.Dispose();
             _source.Dispose();
             _moveSource.Dispose();
             _restoreSource.Dispose();

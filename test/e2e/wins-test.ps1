@@ -22,7 +22,7 @@ try {
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     Set-Content -Path $cfg -Value @(
         '[general]', 'Hotkey=Win+S', 'MoveHotkey=F23', 'RestoreHotkey=F22',
-        'Mode=minimize', 'Debug=true'
+        'CheckUpdates=false', 'Mode=minimize', 'Debug=true'
     ) -Encoding UTF8
     Remove-Item $log -ErrorAction SilentlyContinue
 

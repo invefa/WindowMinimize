@@ -123,6 +123,8 @@ internal static class ConfigStore {
         ; MonitorB        second screen device name for the swap pair, empty chooses the first other
         ; RestoreAnimation  native, fade, disable or default
         ; TrackAllMinimized  record minimized windows from every program for Win+W
+        ; CheckUpdates  check GitHub for a newer release at startup
+        ; AutoUpdate     download and install a newer release automatically
         ; Mode       minimize = minimize to the taskbar (default), hide = hide the window
         ; AutoStart  start with Windows, true or false to take effect, leave the line out to keep
         ;            the registry untouched
@@ -140,6 +142,8 @@ internal static class ConfigStore {
         MonitorB=
         RestoreAnimation=native
         TrackAllMinimized=false
+        CheckUpdates=true
+        AutoUpdate=false
         Mode=minimize
         Language=auto
         NotifyStartup=true
@@ -212,6 +216,14 @@ internal static class ConfigStore {
 
                 case "trackallminimized":
                     config.TrackAllMinimized = ParseBool(value, config.TrackAllMinimized);
+                    break;
+
+                case "checkupdates":
+                    config.CheckUpdates = ParseBool(value, config.CheckUpdates);
+                    break;
+
+                case "autoupdate":
+                    config.AutoUpdate = ParseBool(value, config.AutoUpdate);
                     break;
 
                 case "autostart":

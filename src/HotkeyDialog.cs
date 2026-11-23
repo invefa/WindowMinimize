@@ -15,6 +15,8 @@ internal sealed class HotkeyDialog : Form {
     private readonly ComboBox _monitorBBox;
     private readonly ComboBox _restoreAnimationBox;
     private readonly CheckBox _trackAllMinimizedBox;
+    private readonly CheckBox _checkUpdatesBox;
+    private readonly CheckBox _autoUpdateBox;
     private readonly RadioButton _minimizeRadio;
     private readonly RadioButton _hideRadio;
     private readonly CheckBox _autoStartBox;
@@ -45,6 +47,10 @@ internal sealed class HotkeyDialog : Form {
     };
 
     internal bool TrackAllMinimized => _trackAllMinimizedBox.Checked;
+
+    internal bool CheckUpdates => _checkUpdatesBox.Checked;
+
+    internal bool AutoUpdate => _autoUpdateBox.Checked;
 
     internal string Mode => _hideRadio.Checked ? "hide" : "minimize";
 
@@ -201,6 +207,28 @@ internal sealed class HotkeyDialog : Form {
             Checked = config.TrackAllMinimized,
             Margin = new Padding(0, 3, 0, 3),
         };
+
+        var updateBoxes = new FlowLayoutPanel {
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            Margin = new Padding(0, 3, 0, 3),
+        };
+        _checkUpdatesBox = new CheckBox {
+            Text = Strings.DialogCheckUpdates,
+            AutoSize = true,
+            Checked = config.CheckUpdates,
+            Margin = new Padding(0, 3, 0, 3),
+        };
+        _autoUpdateBox = new CheckBox {
+            Text = Strings.DialogAutoUpdate,
+            AutoSize = true,
+            Checked = config.AutoUpdate,
+            Margin = new Padding(0, 3, 0, 3),
+        };
+        updateBoxes.Controls.Add(_checkUpdatesBox);
+        updateBoxes.Controls.Add(_autoUpdateBox);
 
         var startupLabel = RowLabel(Strings.DialogStartup);
 
@@ -376,14 +404,15 @@ internal sealed class HotkeyDialog : Form {
         layout.Controls.Add(restoreAnimationLabel, 0, 8);
         layout.Controls.Add(_restoreAnimationBox, 1, 8);
         layout.Controls.Add(_trackAllMinimizedBox, 1, 9);
-        layout.Controls.Add(startupLabel, 0, 10);
-        layout.Controls.Add(startupBoxes, 1, 10);
-        layout.Controls.Add(debugLabel, 0, 11);
-        layout.Controls.Add(_debugBox, 1, 11);
-        layout.Controls.Add(notificationsLabel, 0, 12);
-        layout.Controls.Add(notificationBoxes, 1, 12);
-        layout.Controls.Add(_hint, 1, 13);
-        layout.Controls.Add(buttonRow, 0, 14);
+        layout.Controls.Add(updateBoxes, 1, 10);
+        layout.Controls.Add(startupLabel, 0, 11);
+        layout.Controls.Add(startupBoxes, 1, 11);
+        layout.Controls.Add(debugLabel, 0, 12);
+        layout.Controls.Add(_debugBox, 1, 12);
+        layout.Controls.Add(notificationsLabel, 0, 13);
+        layout.Controls.Add(notificationBoxes, 1, 13);
+        layout.Controls.Add(_hint, 1, 14);
+        layout.Controls.Add(buttonRow, 0, 15);
         layout.SetColumnSpan(buttonRow, 2);
 
         Controls.Add(layout);

@@ -103,6 +103,30 @@
   <data name="DialogTrackAllMinimized" xml:space="preserve">
     <value>Record minimized windows from all programs</value>
   </data>
+  <data name="DialogCheckUpdates" xml:space="preserve">
+    <value>Check for updates at startup</value>
+  </data>
+  <data name="DialogAutoUpdate" xml:space="preserve">
+    <value>Install updates automatically</value>
+  </data>
+  <data name="MenuCheckUpdate" xml:space="preserve">
+    <value>Check for updates</value>
+  </data>
+  <data name="UpdateNone" xml:space="preserve">
+    <value>This is the latest version.</value>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>Version {1} is available. You have {0}. Download and install it now?</value>
+  </data>
+  <data name="UpdateDownloading" xml:space="preserve">
+    <value>Downloading update {0}...</value>
+  </data>
+  <data name="UpdateStarting" xml:space="preserve">
+    <value>Installing update {0}. The program will restart.</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>Update failed: {0}</value>
+  </data>
   <data name="MonitorDisplay" xml:space="preserve">
     <value>Display {0}: {1}x{2}</value>
   </data>

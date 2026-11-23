@@ -92,6 +92,8 @@ internal static class Program {
             if (app.ActiveSpec is null && !cli.NoTray) app.ShowSettingsDialog();
         }
 
+        app.BeginUpdateCheck();
+
         Application.Run(app);
         Log.Info("WindowMinimize exiting");
         return 0;

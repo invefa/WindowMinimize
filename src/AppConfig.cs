@@ -29,6 +29,12 @@ internal sealed class AppConfig {
     /// <summary>Track minimized windows from every program, not only this tool's own actions.</summary>
     internal bool TrackAllMinimized { get; set; }
 
+    /// <summary>Check GitHub for a newer release when the program starts.</summary>
+    internal bool CheckUpdates { get; set; } = true;
+
+    /// <summary>Install a newer release automatically when one is found.</summary>
+    internal bool AutoUpdate { get; set; }
+
     /// <summary>Whether the config file explicitly contains the move hotkey.</summary>
     internal bool MoveHotkeyConfigured { get; set; }
 

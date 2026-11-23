@@ -70,6 +70,18 @@ internal static class Strings {
     internal static string RestoreAnimationDisable => Get(nameof(RestoreAnimationDisable));
     internal static string RestoreAnimationDefault => Get(nameof(RestoreAnimationDefault));
     internal static string DialogTrackAllMinimized => Get(nameof(DialogTrackAllMinimized));
+    internal static string DialogCheckUpdates => Get(nameof(DialogCheckUpdates));
+    internal static string DialogAutoUpdate => Get(nameof(DialogAutoUpdate));
+    internal static string MenuCheckUpdate => Get(nameof(MenuCheckUpdate));
+    internal static string UpdateNone => Get(nameof(UpdateNone));
+    internal static string UpdateAvailable(string current, string latest) =>
+        Format(nameof(UpdateAvailable), current, latest);
+    internal static string UpdateDownloading(string version) =>
+        Format(nameof(UpdateDownloading), version);
+    internal static string UpdateStarting(string version) =>
+        Format(nameof(UpdateStarting), version);
+    internal static string UpdateFailed(string error) =>
+        Format(nameof(UpdateFailed), error);
     internal static string MonitorPrimary   => Get(nameof(MonitorPrimary));
     internal static string DialogSyntaxHint => Get(nameof(DialogSyntaxHint));
     internal static string DialogMode       => Get(nameof(DialogMode));

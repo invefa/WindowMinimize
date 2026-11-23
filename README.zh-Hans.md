@@ -59,6 +59,8 @@ MonitorA=
 MonitorB=
 RestoreAnimation=native
 TrackAllMinimized=false
+CheckUpdates=true
+AutoUpdate=false
 Mode=minimize
 Language=auto
 NotifyStartup=true
@@ -76,6 +78,8 @@ Debug=false
 | MonitorB | 空 | 交换屏幕对的第二个屏幕设备名；为空时选择第一块其他屏幕 |
 | RestoreAnimation | native | 移动过的窗口如何还原：`native`移动最小化位置并保留原生动画，`fade`在目标屏幕淡入，`disable`无过渡还原，`default`不调整原生过渡及其起点 |
 | TrackAllMinimized | false | 设为`true`时记录所有程序的最小化窗口，`Win+W`也会还原这些窗口 |
+| CheckUpdates | true | 启动时检查GitHub上的最新版本 |
+| AutoUpdate | false | 发现新版本时自动下载并安装，而不是只提示 |
 | Mode | minimize | `minimize`最小化到任务栏；`hide`直接隐藏窗口 |
 | Language | auto | 界面语言：`auto`跟随Windows，`en`或`zh`强制指定；在设置界面修改后立即更新托盘 |
 | NotifyStartup | true | 是否显示启动时的热键确认气泡 |
@@ -100,7 +104,7 @@ Debug=false
 | 隐藏的窗口 | 子菜单列出每个用`hide`方式隐藏的窗口；选择一项即可恢复，`恢复所有隐藏窗口`可一次全部恢复。列表只保存在内存中，程序退出后丢失 |
 | 热键：xxx | 只显示当前生效的热键 |
 | 暂停热键 / 恢复热键 | 临时禁用热键，适合游戏或录制时使用；按住Shift点击可暂停5分钟，之后自动恢复 |
-| 设置 | 打开设置界面，可修改三个热键、屏幕配对、还原动效、全窗口最小化记录、方式、语言、通知分类、普通或管理员自启和调试日志 |
+| 设置 | 打开设置界面，可修改三个热键、屏幕配对、还原动效、全窗口最小化记录、更新检查与自动更新、方式、语言、通知分类、普通或管理员自启和调试日志 |
 | 打开配置文件 | 用记事本打开`hotkey.ini` |
 | 重新载入配置 | 手动重新读取配置；通常不需要 |
 | 开机自动启动 | 自启总开关。勾选后用普通Run项随Windows启动；取消后关闭自启 |
@@ -166,6 +170,12 @@ Windows自身占用的组合，例如`Win+S`打开搜索或`Win+D`显示桌面�
 还原热键使用一个最小化窗口栈。新最小化的窗口压到栈顶，窗口或进程失效的旧项会被清理，`Win+W`弹出最新仍有效的窗口。栈只保存在内存中，程序重启后清空。
 
 开启`TrackAllMinimized`后，程序用Shell最小化事件记录所有程序的最小化窗口，包括点击任务栏和显示桌面产生的窗口。开启时会把当前已最小化的窗口加入历史，`Win+W`从这份更大的历史中弹出最新一条。
+
+## 更新
+
+程序启动时会向GitHub Release API查询最新稳定版本，并与当前版本比较。托盘菜单中也有`检查更新`。发现新版本后会显示版本号并在下载前询问；开启`AutoUpdate`后则自动下载匹配的完整版或Lite版可执行文件。
+
+如果Release提供了`SHA256SUMS.txt`，下载完成后会校验SHA-256。随后一个独立的PowerShell辅助进程等待当前程序退出，替换可执行文件并重新启动。更新文件保存在`%LOCALAPPDATA%\WindowMinimize\updates`。
 
 三个热键动作会串行执行。切换屏幕会等到延迟移动完成才处理下一个动作，还原会等到还原动画结束，因此快速连按不会把两次操作交叉插入。还原时还会取消该窗口尚未执行的后台最小化重试，所以快速按`Win+W`不会被延迟重试重新最小化。
 
