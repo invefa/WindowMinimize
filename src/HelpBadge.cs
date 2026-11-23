@@ -16,13 +16,13 @@ internal sealed class HelpBadge : Control {
             | ControlStyles.SupportsTransparentBackColor,
             true
         );
-        Size = new Size(16, 16);
+        Size = new Size(20, 20);
         Cursor = Cursors.Help;
         TabStop = false;
         BackColor = Color.Transparent;
         AccessibleRole = AccessibleRole.PushButton;
         AccessibleName = "?";
-        Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+        Font = new Font("Segoe UI", 11f, FontStyle.Regular);
     }
 
     protected override void OnPaint(PaintEventArgs e) {
@@ -34,7 +34,7 @@ internal sealed class HelpBadge : Control {
             e.Graphics.FillEllipse(fill, circle);
         }
 
-        using (var border = new Pen(SystemColors.GrayText)) {
+        using (var border = new Pen(SystemColors.ControlDark)) {
             e.Graphics.DrawEllipse(border, circle);
         }
 
