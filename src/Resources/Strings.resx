@@ -103,6 +103,12 @@
   <data name="DialogTrackAllMinimized" xml:space="preserve">
     <value>Record minimized windows from all programs</value>
   </data>
+  <data name="DialogTracking" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="DialogUpdates" xml:space="preserve">
+    <value>Updates</value>
+  </data>
   <data name="DialogCheckUpdates" xml:space="preserve">
     <value>Check for updates at startup</value>
   </data>

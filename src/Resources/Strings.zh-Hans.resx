@@ -102,6 +102,12 @@
   <data name="DialogTrackAllMinimized" xml:space="preserve">
     <value>记录所有程序的最小化窗口</value>
   </data>
+  <data name="DialogTracking" xml:space="preserve">
+    <value>记录</value>
+  </data>
+  <data name="DialogUpdates" xml:space="preserve">
+    <value>更新</value>
+  </data>
   <data name="DialogCheckUpdates" xml:space="preserve">
     <value>启动时检查更新</value>
   </data>

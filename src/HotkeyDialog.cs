@@ -162,6 +162,7 @@ internal sealed class HotkeyDialog : Form {
         _languageBox = new ComboBox {
             DropDownStyle = ComboBoxStyle.DropDownList,
             Width = 180,
+            Anchor = AnchorStyles.Left,
             Margin = new Padding(0, 3, 0, 3),
         };
         _languageBox.Items.AddRange([
@@ -186,6 +187,7 @@ internal sealed class HotkeyDialog : Form {
         _restoreAnimationBox = new ComboBox {
             DropDownStyle = ComboBoxStyle.DropDownList,
             Width = 300,
+            Anchor = AnchorStyles.Left,
             Margin = new Padding(0, 3, 0, 3),
         };
         _restoreAnimationBox.Items.AddRange([
@@ -231,6 +233,9 @@ internal sealed class HotkeyDialog : Form {
         updateBoxes.Controls.Add(_autoUpdateBox);
 
         var startupLabel = RowLabel(Strings.DialogStartup);
+
+        var trackingLabel = RowLabel(Strings.DialogTracking);
+        var updatesLabel = RowLabel(Strings.DialogUpdates);
 
         var startupBoxes = new FlowLayoutPanel {
             AutoSize = true,
@@ -403,7 +408,9 @@ internal sealed class HotkeyDialog : Form {
         layout.Controls.Add(_monitorBBox, 1, 7);
         layout.Controls.Add(restoreAnimationLabel, 0, 8);
         layout.Controls.Add(_restoreAnimationBox, 1, 8);
+        layout.Controls.Add(trackingLabel, 0, 9);
         layout.Controls.Add(_trackAllMinimizedBox, 1, 9);
+        layout.Controls.Add(updatesLabel, 0, 10);
         layout.Controls.Add(updateBoxes, 1, 10);
         layout.Controls.Add(startupLabel, 0, 11);
         layout.Controls.Add(startupBoxes, 1, 11);
@@ -424,7 +431,7 @@ internal sealed class HotkeyDialog : Form {
         Text = text,
         AutoSize = true,
         Anchor = AnchorStyles.Top | AnchorStyles.Left,
-        Margin = new Padding(3, 6, 12, 3),
+        Margin = new Padding(3, 3, 12, 3),
     };
 
     private static List<MonitorChoice> BuildMonitorChoices() {

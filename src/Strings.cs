@@ -70,6 +70,8 @@ internal static class Strings {
     internal static string RestoreAnimationDisable => Get(nameof(RestoreAnimationDisable));
     internal static string RestoreAnimationDefault => Get(nameof(RestoreAnimationDefault));
     internal static string DialogTrackAllMinimized => Get(nameof(DialogTrackAllMinimized));
+    internal static string DialogTracking => Get(nameof(DialogTracking));
+    internal static string DialogUpdates => Get(nameof(DialogUpdates));
     internal static string DialogCheckUpdates => Get(nameof(DialogCheckUpdates));
     internal static string DialogAutoUpdate => Get(nameof(DialogAutoUpdate));
     internal static string MenuCheckUpdate => Get(nameof(MenuCheckUpdate));
