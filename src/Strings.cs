@@ -161,6 +161,9 @@ internal static class Strings {
     internal static string ErrorF12Reserved         => Get(nameof(ErrorF12Reserved));
     internal static string ErrorBareKeyOnlyFunction => Get(nameof(ErrorBareKeyOnlyFunction));
     internal static string ErrorReservedCombo       => Get(nameof(ErrorReservedCombo));
+    internal static string ErrorHotkeyConflict(string hotkey) =>
+        Format(nameof(ErrorHotkeyConflict), hotkey);
+    internal static string HotkeyCapturePrompt => Get(nameof(HotkeyCapturePrompt));
 
     internal static string ErrorComboTaken(string hotkey) =>
         Format(nameof(ErrorComboTaken), hotkey);

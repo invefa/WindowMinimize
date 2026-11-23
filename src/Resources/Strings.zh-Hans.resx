@@ -142,7 +142,7 @@
     <value>主屏幕</value>
   </data>
   <data name="DialogSyntaxHint" xml:space="preserve">
-    <value>修饰键 Ctrl、Alt、Shift、Win 加一个主键&#10;用 + 连接，例如 Win+Q</value>
+    <value>点击输入框后按下快捷键。Esc取消，Backspace清除。</value>
   </data>
   <data name="DialogStartup" xml:space="preserve">
     <value>启动</value>
@@ -242,6 +242,12 @@
   </data>
   <data name="ErrorReservedCombo" xml:space="preserve">
     <value>该组合被系统占用（例如 Alt+Tab、Win+L），请换一个</value>
+  </data>
+  <data name="ErrorHotkeyConflict" xml:space="preserve">
+    <value>快捷键{0}已经分配给另一个操作。</value>
+  </data>
+  <data name="HotkeyCapturePrompt" xml:space="preserve">
+    <value>按下快捷键</value>
   </data>
   <data name="ErrorComboTaken" xml:space="preserve">
     <value>组合 {0} 已被其他程序注册（Win32 1409）</value>

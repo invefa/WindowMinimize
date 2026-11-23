@@ -143,7 +143,7 @@
     <value>Primary</value>
   </data>
   <data name="DialogSyntaxHint" xml:space="preserve">
-    <value>Ctrl, Alt, Shift and Win plus one main key&#10;joined with +, for example Win+Q</value>
+    <value>Click a field, then press the shortcut. Esc cancels; Backspace clears.</value>
   </data>
   <data name="DialogStartup" xml:space="preserve">
     <value>Startup</value>
@@ -243,6 +243,12 @@
   </data>
   <data name="ErrorReservedCombo" xml:space="preserve">
     <value>that combination is taken by Windows (like Alt+Tab or Win+L), pick another one</value>
+  </data>
+  <data name="ErrorHotkeyConflict" xml:space="preserve">
+    <value>The shortcut {0} is already assigned to another action.</value>
+  </data>
+  <data name="HotkeyCapturePrompt" xml:space="preserve">
+    <value>Press a shortcut</value>
   </data>
   <data name="ErrorComboTaken" xml:space="preserve">
     <value>combination {0} is already registered by another program (Win32 1409)</value>

@@ -2,6 +2,13 @@
 
 All notable changes to WindowMinimize. Versions follow SemVer.
 
+## Unreleased
+
+### Changed
+
+- Hotkey fields capture the next key combination directly, and duplicate assignments are rejected
+  before saving.
+
 ## 1.3.3 - 2026-11-23
 
 ### Changed

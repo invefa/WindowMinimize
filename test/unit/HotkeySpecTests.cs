@@ -154,4 +154,20 @@ public class HotkeySpecTests {
         Assert.Equal(Parse("ctrl+alt+m"), Parse("Ctrl+Alt+M"));
         Assert.NotEqual(Parse("Ctrl+Alt+M"), Parse("Ctrl+Shift+M"));
     }
+
+    [Fact]
+    public void CreatesACombinationFromCapturedInput() {
+        Assert.True(HotkeySpec.TryCreate(
+            Native.MOD_CONTROL | Native.MOD_SHIFT, 0x79, out HotkeySpec? spec, out _
+        ));
+        Assert.Equal("Ctrl+Shift+F10", spec!.Text);
+    }
+
+    [Theory]
+    [InlineData(0u, 0x41)]
+    [InlineData(Native.MOD_ALT, 0x09)]
+    [InlineData(0u, 0x7B)]
+    public void RejectsUnsafeCapturedInput(uint modifiers, uint virtualKey) {
+        Assert.False(HotkeySpec.TryCreate(modifiers, virtualKey, out _, out _));
+    }
 }

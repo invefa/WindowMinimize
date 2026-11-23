@@ -181,8 +181,18 @@ internal sealed class HotkeySpec : IEquatable<HotkeySpec> {
         }
 
         uint vk = keyCode;
+        if (!TryCreate(modifiers, vk, out spec, out error)) return false;
+        Log.Debug($"hotkey {text} parsed as {spec!.Text}");
+        return true;
+    }
 
-        // F12 is reserved by Windows, and a bare key of any kind would steal normal typing
+    /// <summary>Create a hotkey from a captured modifier and virtual-key pair.</summary>
+    internal static bool TryCreate(
+        uint modifiers, uint vk, out HotkeySpec? spec, out string error
+    ) {
+        spec = null;
+        error = string.Empty;
+
         if (vk == 0x7B) {
             error = Strings.ErrorF12Reserved;
             return false;
@@ -199,7 +209,6 @@ internal sealed class HotkeySpec : IEquatable<HotkeySpec> {
         }
 
         spec = new HotkeySpec(modifiers, vk, Format(modifiers, vk));
-        Log.Debug($"hotkey {text} parsed as {spec.Text}");
         return true;
     }
 

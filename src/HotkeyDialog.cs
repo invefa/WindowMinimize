@@ -10,9 +10,9 @@ namespace WindowMinimize;
 /// working while the dialog is open.
 /// </summary>
 internal sealed class HotkeyDialog : Form {
-    private readonly TextBox _hotkeyBox;
-    private readonly TextBox _moveHotkeyBox;
-    private readonly TextBox _restoreHotkeyBox;
+    private readonly HotkeyCaptureBox _hotkeyBox;
+    private readonly HotkeyCaptureBox _moveHotkeyBox;
+    private readonly HotkeyCaptureBox _restoreHotkeyBox;
     private readonly ComboBox _monitorABox;
     private readonly ComboBox _monitorBBox;
     private readonly ComboBox _restoreAnimationBox;
@@ -108,10 +108,8 @@ internal sealed class HotkeyDialog : Form {
 
         var hotkeyLabel = RowLabel(Strings.DialogHotkey);
 
-        _hotkeyBox = new TextBox {
+        _hotkeyBox = new HotkeyCaptureBox(config.Hotkey, Strings.HotkeyCapturePrompt) {
             Dock = DockStyle.Fill,
-            Margin = new Padding(0, 3, 0, 3),
-            Text = config.Hotkey,
         };
 
         var syntaxHint = new Label {
@@ -124,18 +122,18 @@ internal sealed class HotkeyDialog : Form {
 
         var moveHotkeyLabel = RowLabel(Strings.DialogMoveHotkey);
 
-        _moveHotkeyBox = new TextBox {
+        _moveHotkeyBox = new HotkeyCaptureBox(
+            config.MoveHotkey, Strings.HotkeyCapturePrompt
+        ) {
             Dock = DockStyle.Fill,
-            Margin = new Padding(0, 3, 0, 3),
-            Text = config.MoveHotkey,
         };
 
         var restoreHotkeyLabel = RowLabel(Strings.DialogRestoreHotkey);
 
-        _restoreHotkeyBox = new TextBox {
+        _restoreHotkeyBox = new HotkeyCaptureBox(
+            config.RestoreHotkey, Strings.HotkeyCapturePrompt
+        ) {
             Dock = DockStyle.Fill,
-            Margin = new Padding(0, 3, 0, 3),
-            Text = config.RestoreHotkey,
         };
 
         var modeLabel = RowLabel(Strings.DialogMode);
@@ -334,6 +332,16 @@ internal sealed class HotkeyDialog : Form {
             Visible = false,
             Margin = new Padding(0, 6, 0, 0),
         };
+
+        foreach (HotkeyCaptureBox box in new[] {
+            _hotkeyBox, _moveHotkeyBox, _restoreHotkeyBox,
+        }) {
+            box.CaptureRejected += error => {
+                _hint.Text = error;
+                _hint.Visible = true;
+            };
+            box.CaptureAccepted += () => _hint.Visible = false;
+        }
 
         var buttonRow = new TableLayoutPanel {
             AutoSize = true,
@@ -593,6 +601,10 @@ internal sealed class HotkeyDialog : Form {
     }
 
     private void OnSaveClicked(object? sender, EventArgs e) {
+        _hotkeyBox.CancelCapture();
+        _moveHotkeyBox.CancelCapture();
+        _restoreHotkeyBox.CancelCapture();
+
         if (!HotkeySpec.TryParse(_hotkeyBox.Text, out HotkeySpec? spec, out string error)) {
             ShowHotkeyError(_hotkeyBox, error);
             return;
@@ -612,9 +624,30 @@ internal sealed class HotkeyDialog : Form {
             return;
         }
 
+        if (spec!.Equals(moveSpec)) {
+            ShowHotkeyError(
+                _moveHotkeyBox, Strings.ErrorHotkeyConflict(spec.Text)
+            );
+            return;
+        }
+
+        if (spec.Equals(restoreSpec)) {
+            ShowHotkeyError(
+                _restoreHotkeyBox, Strings.ErrorHotkeyConflict(spec.Text)
+            );
+            return;
+        }
+
+        if (moveSpec!.Equals(restoreSpec)) {
+            ShowHotkeyError(
+                _restoreHotkeyBox, Strings.ErrorHotkeyConflict(moveSpec.Text)
+            );
+            return;
+        }
+
         // write the canonical text back, win+alt+m becomes Win+Alt+M
-        _hotkeyBox.Text = spec!.Text;
-        _moveHotkeyBox.Text = moveSpec!.Text;
+        _hotkeyBox.Text = spec.Text;
+        _moveHotkeyBox.Text = moveSpec.Text;
         _restoreHotkeyBox.Text = restoreSpec!.Text;
         DialogResult = DialogResult.OK;
         Close();

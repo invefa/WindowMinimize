@@ -36,9 +36,9 @@ while such a window is in front. Turn on "Start with Windows", then tick "Start 
 administrator" to start it elevated at every logon without a UAC prompt.
 
 The first run creates `hotkey.ini` next to the exe. Save your changes and they take effect
-immediately, with no restart. Left-clicking the tray icon opens the settings dialog, where the
-hotkeys, the mode, the language and notification categories, the screen pair, the auto start and
-the debug log can be changed without editing the file.
+immediately, with no restart. Left-clicking the tray icon opens the settings dialog; click a hotkey
+field and press the combination to capture it, and duplicate assignments are rejected before
+saving.
 
 When the program is already running, starting it again asks that instance to open its settings
 instead of showing an "already running" message.
