@@ -18,18 +18,18 @@ internal sealed class HelpBadge : Control {
             | ControlStyles.SupportsTransparentBackColor,
             true
         );
-        Size = new Size(20, 20);
+        Size = new Size(22, 22);
         Cursor = Cursors.Help;
         TabStop = false;
         BackColor = Color.Transparent;
         AccessibleRole = AccessibleRole.PushButton;
         AccessibleName = "?";
-        Font = new Font("Segoe MDL2 Assets", 13f, FontStyle.Regular);
+        Font = new Font("Segoe MDL2 Assets", 16f, FontStyle.Regular);
     }
 
     protected override void OnPaint(PaintEventArgs e) {
         e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-        Color color = _hover ? SystemColors.ControlText : SystemColors.GrayText;
+        Color color = _hover ? SystemColors.ControlText : SystemColors.ControlDark;
         TextRenderer.DrawText(
             e.Graphics, Glyph, Font, ClientRectangle, color,
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
