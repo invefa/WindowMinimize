@@ -12,6 +12,7 @@ internal sealed class HotkeyCaptureBox : TextBox {
     private Native.LowLevelKeyboardProc? _hookProc;
     private IntPtr _hook;
     private string _previous = string.Empty;
+    private uint _modifiers;
     private bool _capturing;
 
     internal HotkeyCaptureBox(string text, string prompt) {
@@ -53,6 +54,7 @@ internal sealed class HotkeyCaptureBox : TextBox {
 
         _capturing = true;
         _previous = Text;
+        _modifiers = CurrentModifiers();
         Text = _prompt;
         ForeColor = SystemColors.GrayText;
         _hookProc = HookProc;
@@ -77,6 +79,7 @@ internal sealed class HotkeyCaptureBox : TextBox {
         }
 
         _hookProc = null;
+        _modifiers = 0;
         if (!keep) Text = _previous;
         ForeColor = SystemColors.WindowText;
     }
@@ -94,15 +97,19 @@ internal sealed class HotkeyCaptureBox : TextBox {
         var info = Marshal.PtrToStructure<Native.KbdLlHookStruct>(lParam);
         uint vk = info.VkCode;
 
+        if (IsModifier(vk)) {
+            UpdateModifier(vk, down);
+            return new IntPtr(1);
+        }
+
         if (!down) return new IntPtr(1);
-        if (IsModifier(vk)) return new IntPtr(1);
 
         if (vk == 0x1B) {
             EndCapture(keep: false);
             return new IntPtr(1);
         }
 
-        uint modifiers = CurrentModifiers();
+        uint modifiers = _modifiers | CurrentModifiers();
         if ((vk == 0x08 || vk == 0x2E) && modifiers == 0) {
             _previous = string.Empty;
             EndCapture(keep: true);
@@ -122,7 +129,21 @@ internal sealed class HotkeyCaptureBox : TextBox {
     }
 
     private static bool IsModifier(uint vk) => vk is
-        0x10 or 0x11 or 0x12 or 0x5B or 0x5C;
+        0x10 or 0x11 or 0x12 or 0x5B or 0x5C
+        or 0xA0 or 0xA1 or 0xA2 or 0xA3 or 0xA4 or 0xA5;
+
+    private void UpdateModifier(uint vk, bool down) {
+        uint bit = vk switch {
+            0x10 or 0xA0 or 0xA1 => Native.MOD_SHIFT,
+            0x11 or 0xA2 or 0xA3 => Native.MOD_CONTROL,
+            0x12 or 0xA4 or 0xA5 => Native.MOD_ALT,
+            0x5B or 0x5C => Native.MOD_WIN,
+            _ => 0,
+        };
+
+        if (down) _modifiers |= bit;
+        else _modifiers &= ~bit;
+    }
 
     private static uint CurrentModifiers() {
         uint modifiers = 0;

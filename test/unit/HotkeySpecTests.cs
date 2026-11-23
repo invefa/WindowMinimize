@@ -161,6 +161,11 @@ public class HotkeySpecTests {
             Native.MOD_CONTROL | Native.MOD_SHIFT, 0x79, out HotkeySpec? spec, out _
         ));
         Assert.Equal("Ctrl+Shift+F10", spec!.Text);
+
+        Assert.True(HotkeySpec.TryCreate(
+            Native.MOD_WIN, 0x51, out HotkeySpec? winSpec, out _
+        ));
+        Assert.Equal("Win+Q", winSpec!.Text);
     }
 
     [Theory]
