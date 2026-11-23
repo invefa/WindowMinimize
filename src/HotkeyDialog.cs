@@ -9,7 +9,7 @@ namespace WindowMinimize;
 /// Settings dialog: hotkey, mode, auto start and the debug log. The hotkey that is in effect keeps
 /// working while the dialog is open.
 /// </summary>
-internal sealed class HotkeyDialog : Form {
+internal sealed class HotkeyDialog : Form, IMessageFilter {
     private readonly HotkeyCaptureBox _hotkeyBox;
     private readonly HotkeyCaptureBox _moveHotkeyBox;
     private readonly HotkeyCaptureBox _restoreHotkeyBox;
@@ -349,6 +349,8 @@ internal sealed class HotkeyDialog : Form {
             box.CaptureAccepted += () => _hint.Visible = false;
         }
 
+        Application.AddMessageFilter(this);
+
         var buttonRow = new TableLayoutPanel {
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
@@ -465,6 +467,22 @@ internal sealed class HotkeyDialog : Form {
         _hotkeyBox.ResumeCapture();
         _moveHotkeyBox.ResumeCapture();
         _restoreHotkeyBox.ResumeCapture();
+    }
+
+    public bool PreFilterMessage(ref Message m) {
+        if (m.Msg is not (0x0201 or 0x0204 or 0x0207)) return false;
+
+        Control? target = Control.FromHandle(m.HWnd);
+        if (target is null || target.FindForm() != this) return false;
+        if (target is HotkeyCaptureBox or ClearIconButton) return false;
+
+        StopHotkeyCapture();
+        return false;
+    }
+
+    protected override void Dispose(bool disposing) {
+        if (disposing) Application.RemoveMessageFilter(this);
+        base.Dispose(disposing);
     }
 
     private static TableLayoutPanel HotkeyRow(HotkeyCaptureBox box) {
